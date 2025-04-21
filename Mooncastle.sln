@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.35906.104
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MooncastleEditor", "MooncastleEditor\MooncastleEditor.csproj", "{EB308928-7F36-48F1-B8A8-AE983474590B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mooncastle", "Mooncastle\Mooncastle.vcxproj", "{D3427DF2-BC13-428A-868D-08F1F5B6026D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.ActiveCfg = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.Build.0 = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.ActiveCfg = Release|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.Build.0 = Release|x64
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|x64.Build.0 = Debug|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|x64.ActiveCfg = Release|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E21021DB-9849-4262-B38A-B9C3F0AC6204}
+	EndGlobalSection
+EndGlobal
