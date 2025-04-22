@@ -23,6 +23,7 @@ namespace MooncastleEditor.GameProject
         public NewProjectView()
         {
             InitializeComponent();
+
         }
     }
 }
