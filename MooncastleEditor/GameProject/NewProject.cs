@@ -49,6 +49,7 @@ namespace MooncastleEditor.GameProject
                 if (projectName != value)
                 {
                     projectName = value;
+                    IsProjectPathValid();
                     OnPropertyChanged(nameof(ProjectName));
                 }
             }
@@ -66,13 +67,90 @@ namespace MooncastleEditor.GameProject
                 if (path != value)
                 {
                     path = value;
+                    IsProjectPathValid();
                     OnPropertyChanged(nameof(ProjectPath));
+                }
+            }
+        }
+
+        private bool _isValid;
+        public bool IsValid
+        {
+            get
+            {
+                return _isValid;
+            }
+            set
+            {
+                if (_isValid != value)
+                {
+                    _isValid = value;
+                    OnPropertyChanged(nameof(IsValid));
+                }
+            }
+        }
+
+        private string _errorMessage;
+        public string ErrorMessage
+        {
+            get
+            {
+                return _errorMessage;
+            }
+            set
+            {
+                if (_errorMessage != value)
+                {
+                    _errorMessage = value;
+                    OnPropertyChanged(nameof(ErrorMessage));
                 }
             }
         }
 
         private ObservableCollection<ProjectTemplate> _projectTemplates = new ObservableCollection<ProjectTemplate>();
         public ReadOnlyObservableCollection<ProjectTemplate> ProjectTemplates {get;}
+
+        private bool IsProjectPathValid()
+        {
+            var path = ProjectPath;
+
+            if (!Path.EndsInDirectorySeparator(path))
+            {
+                path += Path.DirectorySeparatorChar;
+            }
+
+            path += $@"{ProjectName}\";
+
+            IsValid = false;
+
+            if (string.IsNullOrWhiteSpace(ProjectName))
+            {
+                ErrorMessage = "Project name cannot be empty.";
+            }
+            else if (ProjectName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+            {
+                ErrorMessage = "Project name should not include invalid characters.";
+            }
+            else if (string.IsNullOrWhiteSpace(ProjectPath))
+            {
+                ErrorMessage = "Select a valid path for your project.";
+            }
+            else if (ProjectPath.IndexOfAny(Path.GetInvalidPathChars()) != -1)
+            {
+                ErrorMessage = "Project path should not include invalid characters.";
+            }
+            else if (Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                ErrorMessage = "The path you have chosen already exists and is not empty.";
+            }
+            else
+            {
+                ErrorMessage = string.Empty;
+                IsValid = true;
+            }
+
+            return IsValid;
+        }
 
         public NewProject()
         {
@@ -96,6 +174,8 @@ namespace MooncastleEditor.GameProject
 
                     _projectTemplates.Add(template);
                 }
+
+                IsProjectPathValid();
             }
             catch (Exception e)
             {
