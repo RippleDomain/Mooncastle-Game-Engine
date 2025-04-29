@@ -24,5 +24,23 @@ namespace MooncastleEditor.GameProject
         {
             InitializeComponent();
         }
+
+        private void On_Create_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as NewProject;
+            var projectPath = vm.CreateProject(templateListBox.SelectedItem as ProjectTemplate);
+
+            bool result = false;
+
+            var window = Window.GetWindow(this);
+
+            if (string.IsNullOrEmpty(projectPath) != true)
+            {
+                result = true;
+            }
+
+            window.DialogResult = result;
+            window.Close();
+        }
     }
 }

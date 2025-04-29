@@ -152,6 +152,56 @@ namespace MooncastleEditor.GameProject
             return IsValid;
         }
 
+        public string CreateProject(ProjectTemplate template)
+        {
+            IsProjectPathValid();
+
+            if (IsValid != true)
+            {
+                return string.Empty;
+            }
+            if (Path.EndsInDirectorySeparator(ProjectPath) != true)
+            {
+                ProjectPath += Path.DirectorySeparatorChar;
+
+                return string.Empty;
+            }
+            
+            var path = $@"{ProjectPath}{ProjectName}\";
+
+            try
+            {
+                if (Directory.Exists(path) == false)
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                foreach (var folder in template.Folders)
+                {
+                    Directory.CreateDirectory(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(path), folder)));
+                }
+
+                var directoryInfo = new DirectoryInfo(path + @".Mooncastle\");
+                directoryInfo.Attributes |= FileAttributes.Hidden;
+
+                File.Copy(template.IconFilePath, Path.GetFullPath(Path.Combine(directoryInfo.FullName, "Icon.png")));
+                File.Copy(template.ScreenShotFilePath, Path.GetFullPath(Path.Combine(directoryInfo.FullName, "ScreenShot.png")));
+
+                var projectXMLFile = File.ReadAllText(template.ProjectFilePath);
+                projectXMLFile = string.Format(projectXMLFile, ProjectName, ProjectPath);
+                var projectFilePath = Path.GetFullPath(Path.Combine(path, $"{ProjectName}{Project.Extension}"));
+                File.WriteAllText(projectFilePath, projectXMLFile);
+
+                return path;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+
+                return string.Empty;
+            }
+        }
+
         public NewProject()
         {
             ProjectTemplates = new ReadOnlyObservableCollection<ProjectTemplate>(_projectTemplates);
