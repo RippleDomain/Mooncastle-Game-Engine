@@ -37,6 +37,8 @@ namespace MooncastleEditor.GameProject
             if (string.IsNullOrEmpty(projectPath) != true)
             {
                 result = true;
+
+                var project = OpenProject.Open(new ProjectData() { ProjectName = vm.ProjectName, ProjectPath = projectPath });
             }
 
             window.DialogResult = result;
