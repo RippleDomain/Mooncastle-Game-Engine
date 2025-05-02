@@ -9,18 +9,28 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mooncastle", "Mooncastle\Mo
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.ActiveCfg = Debug|x64
-		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.Build.0 = Debug|x64
-		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.ActiveCfg = Release|x64
-		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.Build.0 = Release|x64
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{EB308928-7F36-48F1-B8A8-AE983474590B}.Debug|x64.Build.0 = Debug|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|x64.ActiveCfg = Release|Any CPU
 		{EB308928-7F36-48F1-B8A8-AE983474590B}.Release|x64.Build.0 = Release|Any CPU
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|Any CPU.Build.0 = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.ActiveCfg = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Debug|x64.Build.0 = Debug|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|Any CPU.ActiveCfg = Release|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|Any CPU.Build.0 = Release|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.ActiveCfg = Release|x64
+		{D3427DF2-BC13-428A-868D-08F1F5B6026D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
