@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MooncastleEditor.GameProject
 {
@@ -23,9 +25,52 @@ namespace MooncastleEditor.GameProject
         [DataMember]
         public DateTime Date { get; set; }
 
-        public string FullPath { get => $"{ProjectPath}{ProjectName}{Project.Extension}"; } 
-        public byte[] Icon { get; set; }
-        public byte[] ScreenShot { get; set; }
+        public string FullPath { get => Path.Combine(ProjectPath, ProjectName + Project.Extension); }
+        public string IconPath { get; set; }
+        public string ScreenShotPath { get; set; }
+
+        private ImageSource _icon;
+        public ImageSource Icon
+        {
+            get
+            {
+                if (_icon == null && File.Exists(IconPath)) 
+                {
+                    _icon = LoadImage(IconPath);
+                }
+
+                return _icon;
+            }
+        }
+
+        private ImageSource _screenShot;
+        public ImageSource ScreenShot
+        {
+            get
+            {
+                if (_screenShot == null && File.Exists(ScreenShotPath))
+                {
+                    _screenShot = LoadImage(ScreenShotPath);
+                }
+                    
+                return _screenShot;
+            }
+        }
+
+        private static BitmapImage LoadImage(string path)
+        {
+            var image = new BitmapImage();
+
+            image.BeginInit();
+
+            image.UriSource = new Uri(path);
+            image.CacheOption = BitmapCacheOption.OnLoad;
+
+            image.EndInit();
+            image.Freeze();
+
+            return image;
+        }
     }
 
     [DataContract]
@@ -54,8 +99,8 @@ namespace MooncastleEditor.GameProject
                 {
                     if (File.Exists(project.FullPath))
                     {
-                        project.Icon = File.ReadAllBytes($@"{project.ProjectPath}\.Mooncastle\Icon.png");
-                        project.ScreenShot = File.ReadAllBytes($@"{project.ProjectPath}\.Mooncastle\ScreenShot.png");
+                        project.IconPath = Path.Combine(project.ProjectPath, ".Mooncastle", "Icon.png");
+                        project.ScreenShotPath = Path.Combine(project.ProjectPath, ".Mooncastle", "ScreenShot.png");
 
                         _projects.Add(project);
                     }

@@ -1,15 +1,17 @@
-﻿using System;
+﻿using MooncastleEditor.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using System.ComponentModel;
-using System.IO;
-using System.Diagnostics;
-using System.Runtime.Serialization;
-using MooncastleEditor.Utilities;
-using System.Collections.ObjectModel;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MooncastleEditor.GameProject
 {
@@ -23,12 +25,53 @@ namespace MooncastleEditor.GameProject
         [DataMember]
         public List<string> Folders {get; set;}
 
-        public byte[] Icon {get; set;}
-        public byte[] ScreenShot {get; set;}
         public string IconFilePath {get; set;}
         public string ScreenShotFilePath {get; set;}
         public string ProjectFilePath {get; set;}
 
+        private ImageSource _icon;
+        public ImageSource Icon
+        {
+            get
+            {
+                if (_icon == null && File.Exists(IconFilePath))
+                {
+                    _icon = LoadImage(IconFilePath);
+                }
+                    
+                return _icon;
+            }
+        }
+
+
+        private ImageSource _screenshot;
+        public ImageSource ScreenShot
+        {
+            get
+            {
+                if (_screenshot == null && File.Exists(ScreenShotFilePath))
+                {
+                    _screenshot = LoadImage(ScreenShotFilePath);
+                }
+
+                return _screenshot;
+            }
+        }
+
+        private static BitmapImage LoadImage(string path)
+        {
+            var image = new BitmapImage();
+
+            image.BeginInit();
+
+            image.UriSource = new Uri(path);
+            image.CacheOption = BitmapCacheOption.OnLoad;
+
+            image.EndInit();
+            image.Freeze();
+
+            return image;
+        }
     }
 
     class NewProject : ViewModelBase
@@ -217,9 +260,7 @@ namespace MooncastleEditor.GameProject
                     var template = Serializer.FromFile<ProjectTemplate>(file);
 
                     template.IconFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "Icon.png"));
-                    template.Icon = File.ReadAllBytes(template.IconFilePath);
-                    template.ScreenShotFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "Screenshot.png"));
-                    template.ScreenShot = File.ReadAllBytes(template.ScreenShotFilePath);
+                    template.ScreenShotFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "ScreenShot.png"));
                     template.ProjectFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), template.ProjectName));
 
                     _projectTemplates.Add(template);
