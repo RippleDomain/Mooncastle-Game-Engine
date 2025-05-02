@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.GameProject;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +22,7 @@ namespace MooncastleEditor
         {
             InitializeComponent();
             Loaded += MainWindowLoaded;
+            Closing += MainWindowClosing;
         }
         private void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
@@ -28,17 +30,25 @@ namespace MooncastleEditor
             openProjectBrowser();
         }
 
+        private void MainWindowClosing(object sender, CancelEventArgs e)
+        {
+            Closing -= MainWindowClosing;
+            Project.Current?.Unload();
+        }
+
         private void openProjectBrowser()
         {
             var projectBrowser = new ProjectBrowser();
 
-            if (projectBrowser.ShowDialog() == false)
+            if (projectBrowser.ShowDialog() == false || projectBrowser.DataContext == null)
             {
                 Application.Current.Shutdown();
             }
             else
             {
-                
+                Project.Current?.Unload();
+
+                DataContext = projectBrowser.DataContext;
             }
         }
     }

@@ -33,11 +33,29 @@ namespace MooncastleEditor.GameProject
         [DataMember]
         public Project Project { get; private set; }
 
+        private bool _isOnScreen;
+        [DataMember]
+        public bool IsOnScreen
+        {
+            get
+            {
+                return _isOnScreen;
+            }
+            set
+            {
+                if (_isOnScreen != value)
+                {
+                    _isOnScreen = value;
+                    OnPropertyChanged(nameof(IsOnScreen));
+                }
+            }
+        }
+
         public Scene(string name, Project project)
         {
             Debug.Assert(project != null);
             Project = project;
-            name = name;
+            Name = name;
         }
     }
 }

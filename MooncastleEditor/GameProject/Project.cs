@@ -1,11 +1,14 @@
-﻿using System;
+﻿using MooncastleEditor.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace MooncastleEditor.GameProject
@@ -16,23 +19,69 @@ namespace MooncastleEditor.GameProject
         public static string Extension = ".mooncastle";
 
         [DataMember]
-        public string Name { get; private set; }
+        public string Name { get; private set; } = "NewProject";
         [DataMember]
         public string Path { get; private set; }
         public string FullPath => $"{Path}{Name}{Extension}";
 
         [DataMember(Name = "Scenes")]
         private ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
-        private ReadOnlyObservableCollection<Scene> Scenes
+        public ReadOnlyObservableCollection<Scene> Scenes { get; private set; }
+
+        private Scene _sceneOnScreen;
+        public Scene SceneOnScreen
         {
-            get;
+            get
+            {
+                return _sceneOnScreen;
+            }
+            set
+            {
+                if (_sceneOnScreen != value)
+                {
+                    _sceneOnScreen = value;
+                    OnPropertyChanged(nameof(SceneOnScreen));
+                }
+            }
         }
+
+        public static Project Current => Application.Current.MainWindow.DataContext as Project;
+
+        public static Project Load(string file)
+        {
+            Debug.Assert(File.Exists(file));
+
+            return Serializer.FromFile<Project>(file);
+        }
+
+        public void Unload()
+        {
+
+        }
+
+        public static void Save(Project project)
+        {
+            Serializer.ToFile(project, project.FullPath);
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            if (_scenes != null)
+            {
+                Scenes = new ReadOnlyObservableCollection<Scene>(_scenes);
+                OnPropertyChanged(nameof(Scenes));
+            }
+
+            SceneOnScreen = Scenes.FirstOrDefault(x => x.IsOnScreen);
+        }
+
         public Project(string name, string path)
         {
             Name = name;
             Path = path;
 
-            _scenes.Add(new Scene("Default Scene", this));
+            OnDeserialized(new StreamingContext());
         }
     }
 }
