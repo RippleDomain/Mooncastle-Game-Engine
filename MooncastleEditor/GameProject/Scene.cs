@@ -54,6 +54,7 @@ namespace MooncastleEditor.GameProject
         public Scene(string name, Project project)
         {
             Debug.Assert(project != null);
+
             Project = project;
             Name = name;
         }
