@@ -5,41 +5,56 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:util="clr-namespace:MooncastleEditor.Utilities"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition />
-            </Grid.RowDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <Button Command="{Binding Undo}" Content="Undo" />
+            <Button
+                Margin="32,0,0,0"
+                Command="{Binding Redo}"
+                Content="Redo" />
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <GridSplitter
+                    Grid.Row="1"
+                    Height="5"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top" />
+                <util:UndoRedoView Grid.Row="1" DataContext="{Binding UndoRedo}" />
+            </Grid>
             <GridSplitter
-                Grid.Row="1"
-                Height="5"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top" />
-        </Grid>
-        <GridSplitter
-            Grid.Column="1"
-            Width="5"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Stretch" />
-        <Grid Grid.Column="1" Margin="5,0,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <GridSplitter
-                Grid.Row="1"
-                Height="5"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top" />
-            <local:ProjectLayoutView />
+                Grid.Column="1"
+                Width="5"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch" />
+            <Grid Grid.Column="1" Margin="5,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <GridSplitter
+                    Grid.Row="1"
+                    Height="5"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top" />
+                <local:ProjectLayoutView />
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

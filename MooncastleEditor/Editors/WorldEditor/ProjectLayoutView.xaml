@@ -23,7 +23,7 @@
             Margin="20,0,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
-            Click="OnAddScene_Button_Click"
+            Command="{Binding AddScene}"
             Content="Add Scene"
             Focusable="False" />
         <ScrollViewer
@@ -41,7 +41,15 @@
                         <Expander IsExpanded="{Binding IsOnScreen, Mode=OneWay}">
                             <Expander.Header>
                                 <Grid>
-                                    <TextBlock Text="{Binding Name}" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" />
+                                        <Button
+                                            Margin="20,0"
+                                            Command="{Binding DataContext.RemoveScene, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Remove"
+                                            Focusable="True" />
+                                    </StackPanel>
                                 </Grid>
                             </Expander.Header>
                             <Border Height="100" Background="Blue" />

@@ -1,5 +1,4 @@
-﻿using MooncastleEditor.GameProject;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MooncastleEditor.Editors
+namespace MooncastleEditor.Utilities
 {
     /// <summary>
-    /// Interaction logic for ProjectLayoutView.xaml
+    /// Interaction logic for UndoRedoView.xaml
     /// </summary>
-    public partial class ProjectLayoutView : UserControl
+    public partial class UndoRedoView : UserControl
     {
-        public ProjectLayoutView()
+        public UndoRedoView()
         {
             InitializeComponent();
         }
