@@ -47,6 +47,20 @@ namespace MooncastleEditor.GameProject
 
         public static Project Current => Application.Current.MainWindow.DataContext as Project;
 
+        public void AddScene(string sceneName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(sceneName.Trim()));
+
+            _scenes.Add(new Scene(sceneName, this));
+        }
+
+        public void RemoveScene(Scene scene)
+        {
+            Debug.Assert(_scenes.Contains(scene));
+
+            _scenes.Remove(scene);
+        }
+
         public static Project Load(string file)
         {
             Debug.Assert(File.Exists(file));

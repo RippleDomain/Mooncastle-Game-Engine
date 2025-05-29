@@ -6,7 +6,7 @@
 	<Scenes>
 		<Scene z:Id="i2">
 			<IsOnScreen>true</IsOnScreen>
-			<Name i:nil="true"/>
+			<Name>Default Scene</Name>
 			<Project z:Ref="i1"/>
 		</Scene>
 	</Scenes>

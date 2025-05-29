@@ -3,11 +3,10 @@
 	xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
 	<Name>{0}</Name>
 	<Path>{1}</Path>
-	<SceneOnScreen z:Ref="i2"/>
 	<Scenes>
 		<Scene z:Id="i2">
 			<IsOnScreen>true</IsOnScreen>
-			<Name i:nil="true"/>
+			<Name>Default Scene</Name>
 			<Project z:Ref="i1"/>
 		</Scene>
 	</Scenes>

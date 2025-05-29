@@ -23,6 +23,16 @@ namespace MooncastleEditor.GameProject
         public OpenProjectView()
         {
             InitializeComponent();
+
+            Loaded += (s, e) =>
+            {
+                var item = projectsListBox.ItemContainerGenerator.ContainerFromIndex(projectsListBox.SelectedIndex) as ListBoxItem;
+
+                if (item != null)
+                {
+                    item.Focus();
+                }
+            };
         }
 
         private void On_Open_Button_Click(object sender, RoutedEventArgs e)
