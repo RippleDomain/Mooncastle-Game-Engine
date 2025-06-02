@@ -38,8 +38,8 @@
             x:Name="browserContent"
             Grid.Row="1"
             Orientation="Horizontal">
-            <local:OpenProjectView />
-            <local:NewProjectView />
+            <local:OpenProjectView x:Name="openProjectView" />
+            <local:NewProjectView x:Name="newProjectView" />
         </StackPanel>
     </Grid>
 </Window>

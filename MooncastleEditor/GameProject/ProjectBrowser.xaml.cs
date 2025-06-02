@@ -22,6 +22,20 @@ namespace MooncastleEditor.GameProject
         public ProjectBrowser()
         {
             InitializeComponent();
+            Loaded += OnProjectBrowserLoaded;
+        }
+
+        private void OnProjectBrowserLoaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= OnProjectBrowserLoaded;
+
+            if (!OpenProject.Projects.Any())
+            {
+                openProjectButton.IsEnabled = false;
+                openProjectView.Visibility = Visibility.Hidden;
+                
+                onToggleButton_Clicked(createProjectButton, new RoutedEventArgs());
+            }
         }
 
         private void onToggleButton_Clicked(object sender, RoutedEventArgs e)

@@ -1,0 +1,15 @@
+﻿<ResourceDictionary
+    x:Class="MooncastleEditor.Dictionaries.ControlTemplates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="TextBoxStyle" TargetType="{x:Type TextBox}">
+        <!--  TODO: Define the visual look of the textbox.  -->
+    </Style>
+
+    <Style
+        x:Key="{x:Type TextBox}"
+        BasedOn="{StaticResource TextBoxStyle}"
+        TargetType="{x:Type TextBox}">
+        <EventSetter Event="KeyDown" Handler="OnTextBox_KeyDown" />
+    </Style>
+</ResourceDictionary>
