@@ -240,8 +240,9 @@ namespace MooncastleEditor.GameProject
             catch (Exception e)
             {
                 Debug.WriteLine(e.Message);
+                Logger.Log(MessageType.Error, $"Failed to create {ProjectName} to {path}");
 
-                return string.Empty;
+                throw;
             }
         }
 
@@ -270,8 +271,10 @@ namespace MooncastleEditor.GameProject
             }
             catch (Exception e)
             {
-                //TODO: Handle the exceptions properly.
                 Debug.WriteLine(e.Message);
+                Logger.Log(MessageType.Error, $"Failed to read project templates.");
+
+                throw;
             }
         }
     }

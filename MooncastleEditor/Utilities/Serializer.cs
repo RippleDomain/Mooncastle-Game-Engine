@@ -21,8 +21,10 @@ namespace MooncastleEditor.Utilities
             }
             catch (Exception e)
             {
-                //TODO: Properly handle the exception.
                 Debug.WriteLine(e.Message);
+                Logger.Log(MessageType.Error, $"Failed to serialize {instance} to {path}");
+
+                throw;
             }
         }
 
@@ -38,10 +40,10 @@ namespace MooncastleEditor.Utilities
             }
             catch (Exception e)
             {
-                //TODO: Properly handle the exception.
                 Debug.WriteLine(e.Message);
+                Logger.Log(MessageType.Error, $"Failed to deserialize {path}");
 
-                return default(T);
+                throw;
             }
         }
     }

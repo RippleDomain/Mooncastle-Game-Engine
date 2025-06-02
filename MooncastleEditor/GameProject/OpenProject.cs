@@ -154,8 +154,10 @@ namespace MooncastleEditor.GameProject
             }
             catch (Exception ex)
             {
-                //TODO: Handle exceptions.
                 Debug.WriteLine(ex.Message);
+                Logger.Log(MessageType.Error, $"Failed to read project data.");
+
+                throw;
             }
         }
     }

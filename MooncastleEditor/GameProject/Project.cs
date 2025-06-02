@@ -81,12 +81,13 @@ namespace MooncastleEditor.GameProject
 
         public void Unload()
         {
-
+            UndoRedo.Reset();
         }
 
         public static void Save(Project project)
         {
             Serializer.ToFile(project, project.FullPath);
+            Logger.Log(MessageType.Info, $"Saved project to {project.FullPath}");
         }
 
         [OnDeserialized]

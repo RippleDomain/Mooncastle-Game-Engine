@@ -72,6 +72,14 @@ namespace MooncastleEditor.Components
 
                 Project.UndoRedo.Add(new UndoRedoAction(nameof(Name), this, oldName, x, $"Rename '{oldName}' to '{x}'"));
             }, x => x != _name);
+
+            EnableCommand = new RelayCommand<bool>(x => 
+            {
+                var oldValue = _isEnabled;
+                IsEnabled = x;
+
+                Project.UndoRedo.Add(new UndoRedoAction(nameof(IsEnabled), this, oldValue, x, x ? $"Enable {Name}" : $"Disable {Name}"));
+            });
         }
 
         public GameEntity(Scene scene)
