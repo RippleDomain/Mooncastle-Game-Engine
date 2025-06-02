@@ -69,6 +69,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top" />
                 <local:ProjectLayoutView />
+                <local:GameEntityView Grid.Row="1" />
             </Grid>
         </Grid>
     </Grid>

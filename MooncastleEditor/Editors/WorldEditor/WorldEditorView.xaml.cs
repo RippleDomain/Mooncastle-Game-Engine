@@ -1,5 +1,7 @@
-﻿using System;
+﻿using MooncastleEditor.GameProject;
+using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +32,7 @@ namespace MooncastleEditor.Editors
         {
             Loaded -= OnWorldEditorViewLoaded;
             Focus();
+            ((INotifyCollectionChanged)Project.UndoRedo.UndoList).CollectionChanged += (s, args) => Focus();
         }
     }
 }

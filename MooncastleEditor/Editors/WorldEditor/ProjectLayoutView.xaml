@@ -49,10 +49,30 @@
                                             CommandParameter="{Binding}"
                                             Content="Remove"
                                             Focusable="True" />
+                                        <Button
+                                            Click="OnAddGameEntity_Button_Click"
+                                            Content="+"
+                                            IsEnabled="{Binding IsOnScreen}" />
                                     </StackPanel>
                                 </Grid>
                             </Expander.Header>
-                            <Border Height="100" Background="Blue" />
+                            <ListBox
+                                IsEnabled="{Binding IsOnScreen}"
+                                ItemsSource="{Binding GameEntities}"
+                                SelectionChanged="OnGameEntities_ListBox_SelectionChanged"
+                                SelectionMode="Extended">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" />
+                                            <Button
+                                                Command="{Binding ParentScene.RemoveGameEntityCommand}"
+                                                CommandParameter="{Binding}"
+                                                Content="Remove" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </Expander>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
