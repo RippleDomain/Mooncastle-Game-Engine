@@ -50,10 +50,8 @@ namespace MooncastleEditor.Components
         {
             Debug.Assert(scene != null);
             ParentScene = scene;
-
-            Components = new ReadOnlyObservableCollection<Component>(_components);
             _components.Add(new Transform(this));
-            OnPropertyChanged(nameof(Components));
+            OnDeserialized(new StreamingContext());
         }
     }
 }

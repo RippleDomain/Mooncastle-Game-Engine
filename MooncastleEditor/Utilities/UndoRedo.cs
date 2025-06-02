@@ -42,6 +42,8 @@ namespace MooncastleEditor.Utilities
 
     public class UndoRedo
     {
+        private bool _enableAdd = true;
+
         private readonly ObservableCollection<IUndoRedo> _redoList = new ObservableCollection<IUndoRedo>();
         private readonly ObservableCollection<IUndoRedo> _undoList = new ObservableCollection<IUndoRedo>();
         public ReadOnlyObservableCollection<IUndoRedo> RedoList { get; }
@@ -54,7 +56,9 @@ namespace MooncastleEditor.Utilities
                 var item = _undoList.Last();
 
                 _undoList.RemoveAt(_undoList.Count - 1);
+                _enableAdd = false;
                 item.Undo();
+                _enableAdd = true;
 
                 _redoList.Insert(0, item);
             }
@@ -67,7 +71,9 @@ namespace MooncastleEditor.Utilities
                 var item = _redoList.First();
 
                 _redoList.RemoveAt(0);
+                _enableAdd = false;
                 item.Redo();
+                _enableAdd = true;
 
                 _undoList.Add(item);
             }
@@ -75,8 +81,11 @@ namespace MooncastleEditor.Utilities
 
         public void Add(IUndoRedo item)
         {
-            _undoList.Add(item);
-            _redoList.Clear();
+            if (_enableAdd)
+            {
+                _undoList.Add(item);
+                _redoList.Clear();
+            }
         }
 
         public void Reset()
