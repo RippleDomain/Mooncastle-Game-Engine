@@ -23,7 +23,7 @@
             Margin="20,0,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
-            Command="{Binding AddScene}"
+            Command="{Binding AddSceneCommand}"
             Content="Add Scene"
             Focusable="False" />
         <ScrollViewer
@@ -45,7 +45,7 @@
                                         <TextBlock Text="{Binding Name}" />
                                         <Button
                                             Margin="20,0"
-                                            Command="{Binding DataContext.RemoveScene, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            Command="{Binding DataContext.RemoveSceneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Content="Remove"
                                             Focusable="True" />

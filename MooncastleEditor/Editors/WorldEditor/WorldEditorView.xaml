@@ -8,17 +8,32 @@
     xmlns:util="clr-namespace:MooncastleEditor.Utilities"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Focusable="True"
     mc:Ignorable="d">
+    <UserControl.InputBindings>
+        <KeyBinding
+            Key="Z"
+            Command="{Binding UndoCommand}"
+            Modifiers="Ctrl" />
+        <KeyBinding
+            Key="Y"
+            Command="{Binding RedoCommand}"
+            Modifiers="Ctrl" />
+        <KeyBinding
+            Key="S"
+            Command="{Binding SaveCommand}"
+            Modifiers="Ctrl" />
+    </UserControl.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition />
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal">
-            <Button Command="{Binding Undo}" Content="Undo" />
+            <Button Command="{Binding UndoCommand}" Content="Undo" />
             <Button
                 Margin="32,0,0,0"
-                Command="{Binding Redo}"
+                Command="{Binding RedoCommand}"
                 Content="Redo" />
         </StackPanel>
         <Grid Grid.Row="1">
