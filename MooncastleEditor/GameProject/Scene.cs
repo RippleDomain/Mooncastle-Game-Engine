@@ -13,7 +13,7 @@ using System.Windows.Input;
 namespace MooncastleEditor.GameProject
 {
     [DataContract]
-    public class Scene : ViewModelBase
+    class Scene : ViewModelBase
     {
         private string name;
 

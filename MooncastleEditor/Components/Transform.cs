@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace MooncastleEditor.Components
 {
     [DataContract]
-    public class Transform : Component
+    class Transform : Component
     {
         private Vector3 _position;
         [DataMember]

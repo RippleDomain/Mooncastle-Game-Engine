@@ -15,7 +15,7 @@ using static System.Formats.Asn1.AsnWriter;
 namespace MooncastleEditor.GameProject
 {
     [DataContract(Name = "Game")]
-    public class Project : ViewModelBase
+    class Project : ViewModelBase
     {
         public static string Extension = ".mooncastle";
 

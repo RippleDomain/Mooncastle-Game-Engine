@@ -80,7 +80,7 @@ namespace MooncastleEditor.GameProject
         public List<ProjectData> Projects { get; set; } = new List<ProjectData>();
     }
 
-    public class OpenProject : ViewModelBase
+    class OpenProject : ViewModelBase
     {
         private static readonly string _appDataPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\MooncastleEditor\";
         private static readonly string _projectDataPath;
