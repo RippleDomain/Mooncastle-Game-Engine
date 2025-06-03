@@ -23,6 +23,25 @@ namespace MooncastleEditor.Utilities
         public LoggerView()
         {
             InitializeComponent();
+            Logger.Log(MessageType.Info, "LoggerView initialized.");
+            Logger.Log(MessageType.Warning, "watch your step lil bro");
+            Logger.Log(MessageType.Error, "youre cooked");
+        }
+
+        private void OnClear_Button_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.Clear();
+        }
+
+        private void OnMessageFilter_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var filter = 0x0;
+
+            if (toggleInfo.IsChecked == true) filter |= (int)MessageType.Info;
+            if (toggleWarning.IsChecked == true) filter |= (int)MessageType.Warning;
+            if (toggleError.IsChecked == true) filter |= (int)MessageType.Error;
+
+            Logger.SetMessageFilter(filter);
         }
     }
 }

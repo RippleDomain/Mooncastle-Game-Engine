@@ -8,18 +8,84 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
-    <Grid>
-        <ItemsControl ItemsSource="{Binding Source={x:Static local:Logger.FilteredMessages}}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Message}" />
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </Grid>
+    <DockPanel>
+        <Border Height="32" DockPanel.Dock="Top">
+            <StackPanel
+                Margin="4,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <Button
+                    Margin="1,0"
+                    Click="OnClear_Button_Click"
+                    Content="Clear"
+                    Focusable="False" />
+                <CheckBox
+                    x:Name="toggleInfo"
+                    Margin="1,0"
+                    Click="OnMessageFilter_Button_Click"
+                    Content="Info"
+                    IsChecked="True"
+                    ToolTip="Show or hide information messages." />
+                <CheckBox
+                    x:Name="toggleWarning"
+                    Margin="1,0"
+                    Click="OnMessageFilter_Button_Click"
+                    Content="Warning"
+                    IsChecked="True"
+                    ToolTip="Show or hide warning messages." />
+                <CheckBox
+                    x:Name="toggleError"
+                    Margin="1,0"
+                    Click="OnMessageFilter_Button_Click"
+                    Content="Error"
+                    IsChecked="True"
+                    ToolTip="Show or hide error messages." />
+            </StackPanel>
+        </Border>
+        <ScrollViewer
+            x:Name="ScrollViewer"
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Source={x:Static local:Logger.FilteredMessages}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel ToolTip="{Binding MetaData}">
+                            <DockPanel.Style>
+                                <Style TargetType="DockPanel">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="Gray" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DockPanel.Style>
+                            <TextBlock Margin="5,0" Text="{Binding Time, StringFormat=hh:mm:ss}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="LightBlue" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Warning}">
+                                                <Setter Property="Foreground" Value="Orange" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MessageType}" Value="{x:Static local:MessageType.Error}">
+                                                <Setter Property="Foreground" Value="Red" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>
