@@ -10,8 +10,8 @@ namespace mooncastle::id
 	{
 		constexpr u32 generationBits{ 8 };
 		constexpr u32 indexBits{ sizeof(idType) * 8 - generationBits };
-		constexpr idType indexMask{ idType{ 1 } << indexBits - 1 };
-		constexpr idType generationMask{ idType{ 1 } << generationBits - 1 };
+		constexpr idType indexMask{ (idType{ 1 } << indexBits) - 1 };
+		constexpr idType generationMask{ (idType{ 1 } << generationBits) - 1 };
 	}
 
 	constexpr idType invalidId{ idType(-1) };
