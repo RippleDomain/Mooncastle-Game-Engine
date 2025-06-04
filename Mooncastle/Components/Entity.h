@@ -17,8 +17,8 @@ namespace mooncastle
 			transform::initInfo* transform{ nullptr };
 		};
 
-		EntityId createGameEntity(const entityInfo& info);
-		void removeGameEntity(EntityId entityId);
-		bool isAlive(EntityId entityId);
+		entity createGameEntity(const entityInfo& info);
+		void removeGameEntity(entity e);
+		bool isAlive(entity e);
 	}
 }

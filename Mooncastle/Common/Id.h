@@ -5,35 +5,44 @@
 namespace mooncastle::id
 {
 	using idType = u32;
-	constexpr u32 generationBits{ 8 };
-	constexpr u32 indexBits{ sizeof(idType) * 8 - generationBits };
-	constexpr idType indexMask{ idType{ 1 } << indexBits - 1 };
-	constexpr idType generationMask{ idType{ 1 } << generationBits - 1 };
-	constexpr idType idMask{ idType{ -1 } };
 
-	using generationType = std::conditional_t < generationBits <= 16, std::conditional_t < generationBits <= 8, u8, u16 >, u32 > ;
+	namespace internal
+	{
+		constexpr u32 generationBits{ 8 };
+		constexpr u32 indexBits{ sizeof(idType) * 8 - generationBits };
+		constexpr idType indexMask{ idType{ 1 } << indexBits - 1 };
+		constexpr idType generationMask{ idType{ 1 } << generationBits - 1 };
+	}
 
-	static_assert(generationBits <= sizeof(generationType) * 8);
+	constexpr idType invalidId{ idType(-1) };
+	constexpr u32 minDeletedElements{ 1024 };
+
+	using generationType = std::conditional_t < internal::generationBits <= 16, std::conditional_t < internal::generationBits <= 8, u8, u16 >, u32 > ;
+
+	static_assert(internal::generationBits <= sizeof(generationType) * 8);
 	static_assert(sizeof(idType) - sizeof(generationType) > 0);
 
-	inline bool isValid(idType id)
+	constexpr bool isValid(idType id)
 	{
-		return (id != idMask);
+		return (id != invalidId);
 	}
-	inline idType index(idType id)
+	constexpr idType index(idType id)
 	{
-		return id & indexMask;
+		idType index{ id & internal::indexMask };
+		assert(index != internal::indexMask);
+
+		return id & internal::indexMask;
 	}
-	inline idType generation(idType id)
+	constexpr idType generation(idType id)
 	{
-		return (id >> indexBits) & generationMask;
+		return (id >> internal::indexBits) & internal::generationMask;
 	}
-	inline idType newGeneration(idType id)
+	constexpr idType newGeneration(idType id)
 	{
 		const idType currentGeneration{ id::generation(id) + 1 };
-		assert(currentGeneration < 255);
+		assert(currentGeneration < (((u64)1 << internal::generationBits) - 1));
 
-		return (index(id) | (currentGeneration << indexBits));
+		return (index(id) | (currentGeneration << internal::indexBits));
 	}
 
 #if _DEBUG
@@ -53,7 +62,7 @@ namespace mooncastle::id
 	struct name final : id::internal::idBase                        \
 	{                                                               \
 		constexpr explicit name(id::idType id) : idBase{ id } {};   \
-		constexpr name() : idBase{ id::idMask } {};                 \
+		constexpr name() : idBase{ 0 } {};                          \
 	}
 #else
 #define DEFINE_TYPED_ID(name) using name = id::idType;

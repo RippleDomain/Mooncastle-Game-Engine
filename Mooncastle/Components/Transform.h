@@ -4,8 +4,6 @@
 
 namespace mooncastle::transform
 {
-	DEFINE_TYPED_ID(transformId);
-
 	struct initInfo
 	{
 		f32 position[3]{}; //x, y, z
@@ -13,7 +11,6 @@ namespace mooncastle::transform
 		f32 scale[3]{ 1.f, 1.f, 1.f }; //x, y, z
 	};
 
-	transformId createTransform(const initInfo& info, gameEntity::EntityId entityId);
-
-	void removeTransform(transformId id);
+	component createTransform(const initInfo& info, gameEntity::entity entity);
+	void removeTransform(component c);
 }
