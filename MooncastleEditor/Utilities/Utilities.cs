@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace MooncastleEditor.Utilities
 {
-    public static class MathUtil
+    public static class ID
+    {
+        public static int InvalidID = -1;
+        public static bool isValid(int id) => id != InvalidID;
+    }
+
+    public static class Utilities
     {
         public static float Epsilon = 0.00001f;
 

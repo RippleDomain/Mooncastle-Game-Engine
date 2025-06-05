@@ -1,4 +1,5 @@
-﻿using MooncastleEditor.GameProject;
+﻿using MooncastleEditor.DllWrappers;
+using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,45 @@ namespace MooncastleEditor.Components
     [KnownType(typeof(Transform))]
     class GameEntity : ViewModelBase
     {
+        private int _entityId = ID.InvalidID;
+        public int EntityId
+        {
+            get => _entityId;
+            set
+            {
+                if (_entityId != value)
+                {
+                    _entityId = value;
+                    OnPropertyChanged(nameof(EntityId));
+                }
+            }
+        }
+
+        private bool _isActive;
+        public bool isActive
+        {
+            get => _isActive;
+            set
+            {
+                if (_isActive != value)
+                {
+                    _isActive = value;
+
+                    if (_isActive == true)
+                    {
+                        EntityId = EngineAPI.CreateGameEntity(this);
+                        Debug.Assert(ID.isValid(EntityId));
+                    }
+                    else
+                    {
+                        EngineAPI.RemoveGameEntity(this);
+                    }
+
+                    OnPropertyChanged(nameof(isActive));
+                }
+            }
+        }
+
         [DataMember]
         private bool _isEnabled = true;
         public bool IsEnabled
@@ -53,6 +93,9 @@ namespace MooncastleEditor.Components
         [DataMember(Name = nameof(Components))]
         private readonly ObservableCollection<Component> _components = new ObservableCollection<Component>();
         public ReadOnlyObservableCollection<Component> Components { get; private set; }
+
+        public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
+        public T GetComponent<T>() where T : Component => GetComponent(typeof(T)) as T;
 
         [OnDeserialized]
         void OnDeserialized(StreamingContext context)
