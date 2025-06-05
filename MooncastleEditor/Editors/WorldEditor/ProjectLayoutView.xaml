@@ -42,7 +42,7 @@
                             <Expander.Header>
                                 <Grid>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Style="{DynamicResource LightTextBlockStyle}" Text="{Binding Name}" />
                                         <Button
                                             Margin="20,0"
                                             Command="{Binding DataContext.RemoveSceneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -64,7 +64,7 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Name}" />
+                                            <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
                                             <Button
                                                 Command="{Binding ParentScene.RemoveGameEntityCommand}"
                                                 CommandParameter="{Binding}"

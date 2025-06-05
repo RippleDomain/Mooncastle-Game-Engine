@@ -12,52 +12,73 @@
     <UserControl.DataContext>
         <local:OpenProject />
     </UserControl.DataContext>
-    <StackPanel Background="White">
-        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-            <ListBox
-                x:Name="projectsListBox"
-                Width="195"
-                Height="250"
-                ItemsSource="{Binding Projects}"
-                SelectedIndex="0">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <EventSetter Event="MouseDoubleClick" Handler="On_Mouse_Double_Click_On_List_Box" />
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <Image Margin="0,0,5,0" Source="{Binding Icon}" />
-                            <TextBlock Text="{Binding ProjectName}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Border
-                Width="400"
-                Height="250"
-                Margin="5,0,0,0">
-                <Border.Background>
-                    <ImageBrush ImageSource="{Binding Path=SelectedItem.ScreenShot, ElementName=projectsListBox}" />
-                </Border.Background>
-            </Border>
-            <Border />
+    <Border
+        Width="700"
+        Height="450"
+        HorizontalAlignment="Center"
+        Background="{DynamicResource Editor.Window.GrayBrush3}"
+        CornerRadius="3">
+        <StackPanel>
+            <StackPanel
+                Margin="0,20,0,0"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <ListBox
+                    x:Name="projectsListBox"
+                    Width="195"
+                    Height="250"
+                    ItemsSource="{Binding Projects}"
+                    SelectedIndex="0">
+                    <ListBox.ItemContainerStyle>
+                        <Style BasedOn="{StaticResource ListBoxItemStyle}" TargetType="ListBoxItem">
+                            <EventSetter Event="MouseDoubleClick" Handler="On_Mouse_Double_Click_On_List_Box" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Width="180">
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Margin="0,0,5,0" Source="{Binding Icon}" />
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontFamily="Bahnschrift condensed"
+                                        FontSize="18"
+                                        Text="{Binding ProjectName}" />
+                                </StackPanel>
+                                <TextBlock
+                                    FontSize="8"
+                                    Text="{Binding ProjectPath}"
+                                    TextTrimming="WordEllipsis" />
+                                <TextBlock FontSize="8" Text="{Binding Date}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Border
+                    Width="400"
+                    Height="250"
+                    Margin="5,0,0,0">
+                    <Border.Background>
+                        <ImageBrush ImageSource="{Binding Path=SelectedItem.ScreenShot, ElementName=projectsListBox}" />
+                    </Border.Background>
+                </Border>
+                <Border />
+            </StackPanel>
+            <StackPanel
+                Margin="0,60,0,0"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <Button
+                    Width="96"
+                    Click="On_Open_Button_Click"
+                    Content="Open"
+                    IsDefault="True" />
+                <Button
+                    Width="96"
+                    Margin="30,0,0,0"
+                    Content="Exit"
+                    IsCancel="True" />
+            </StackPanel>
         </StackPanel>
-        <StackPanel
-            Margin="0,30,0,0"
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
-            <Button
-                Width="96"
-                Click="On_Open_Button_Click"
-                Content="Open"
-                IsDefault="True" />
-            <Button
-                Width="96"
-                Margin="30,0,0,0"
-                Content="Exit"
-                IsCancel="True" />
-        </StackPanel>
-    </StackPanel>
+    </Border>
 </UserControl>

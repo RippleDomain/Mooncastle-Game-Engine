@@ -9,37 +9,124 @@
     Width="800"
     Height="600"
     ResizeMode="NoResize"
+    Style="{StaticResource MooncastleDialogStyle}"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
+    <Window.Resources>
+        <Style TargetType="{x:Type ToggleButton}">
+            <Setter Property="FontSize" Value="32" />
+            <Setter Property="FontFamily" Value="Bahnschrift condensed" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Editor.Disabled.FontBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <TextBlock Style="{x:Null}" Text="{TemplateBinding Button.Content}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect
+                                    BlurRadius="2"
+                                    Opacity="0.6"
+                                    ShadowDepth="1" />
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush4}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="False" />
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{DynamicResource Editor.FontBrush}" />
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <StackPanel
-            Margin="20"
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
+        <Canvas x:Name="canvas">
+            <Rectangle
+                x:Name="highlightRect"
+                Canvas.Left="200"
+                Width="{Binding Path=ActualWidth, ElementName=createProjectButton}"
+                Height="{Binding Path=ActualHeight, ElementName=canvas}"
+                Opacity="0.3">
+                <Rectangle.Effect>
+                    <BlurEffect KernelType="Gaussian" Radius="10" />
+                </Rectangle.Effect>
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.5,1" GradientOrigin="0.5,1" RadiusY="2">
+                        <RadialGradientBrush.GradientStops>
+                            <GradientStop Offset="0" Color="White" />
+                            <GradientStop Offset="1" Color="Transparent" />
+                        </RadialGradientBrush.GradientStops>
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.OpacityMask>
+                    <RadialGradientBrush Center="0.5,1" GradientOrigin="0.5,1" RadiusY="0.5">
+                        <RadialGradientBrush.GradientStops>
+                            <GradientStop Offset="0" Color="White" />
+                            <GradientStop Offset="1" Color="Transparent" />
+                        </RadialGradientBrush.GradientStops>
+                    </RadialGradientBrush>
+                </Rectangle.OpacityMask>
+            </Rectangle>
+        </Canvas>
+        <Rectangle
+            Height="2"
+            Margin="40,0"
+            VerticalAlignment="Bottom">
+            <Rectangle.Fill>
+                <LinearGradientBrush>
+                    <LinearGradientBrush.GradientStops>
+                        <GradientStop Offset="0" Color="Transparent" />
+                        <GradientStop Offset="0.33" Color="{DynamicResource Editor.Disabled.FontColor}" />
+                        <GradientStop Offset="0.66" Color="{DynamicResource Editor.Disabled.FontColor}" />
+                        <GradientStop Offset="1" Color="Transparent" />
+                    </LinearGradientBrush.GradientStops>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
             <ToggleButton
                 x:Name="openProjectButton"
+                Margin="10,20,0,20"
                 Click="onToggleButton_Clicked"
-                Content="Open Project"
-                FontSize="32"
+                Content="OPEN PROJECT"
                 IsChecked="True" />
             <ToggleButton
                 x:Name="createProjectButton"
-                Margin="30,0,0,0"
+                Margin="40,20,0,20"
                 Click="onToggleButton_Clicked"
-                Content="Create Project"
-                FontSize="32"
+                Content="CREATE PROJECT"
                 IsChecked="False" />
         </StackPanel>
         <StackPanel
             x:Name="browserContent"
             Grid.Row="1"
             Orientation="Horizontal">
+            <!--  DROP SHADOW CAUSES WHOLE PANEL TO BE BLURRED  -->
+            <!--<StackPanel.Effect>
+                <DropShadowEffect
+                    BlurRadius="15"
+                    Opacity="0.6"
+                    ShadowDepth="2" />
+            </StackPanel.Effect>-->
             <local:OpenProjectView x:Name="openProjectView" />
-            <local:NewProjectView x:Name="newProjectView" />
+            <local:NewProjectView x:Name="newProjectView" Margin="800,0,0,0" />
         </StackPanel>
     </Grid>
 </Window>

@@ -9,6 +9,7 @@
     Title="Mooncastle Editor"
     Width="800"
     Height="450"
+    Style="{StaticResource MooncastleWindowStyle}"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Grid>

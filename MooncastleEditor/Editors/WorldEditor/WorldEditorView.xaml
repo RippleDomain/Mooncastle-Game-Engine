@@ -50,8 +50,12 @@
                     Grid.Row="1"
                     Height="5"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Top" />
-                <TabControl Grid.Row="1">
+                    VerticalAlignment="Top"
+                    Background="Transparent" />
+                <TabControl
+                    Grid.Row="1"
+                    Margin="0,5,0,0"
+                    Background="{DynamicResource Editor.Window.GrayBrush2}">
                     <TabItem Header="History">
                         <util:UndoRedoView Grid.Row="1" DataContext="{Binding UndoRedo}" />
                     </TabItem>
@@ -64,7 +68,8 @@
                 Grid.Column="1"
                 Width="5"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Stretch" />
+                VerticalAlignment="Stretch"
+                Background="Transparent" />
             <Grid Grid.Column="1" Margin="5,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition />
@@ -74,9 +79,13 @@
                     Grid.Row="1"
                     Height="5"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Top" />
-                <local:ProjectLayoutView />
-                <local:GameEntityView Grid.Row="1" />
+                    VerticalAlignment="Top"
+                    Background="Transparent" />
+                <local:ProjectLayoutView Background="{DynamicResource Editor.Window.GrayBrush3}" />
+                <local:GameEntityView
+                    Grid.Row="1"
+                    Margin="0,5,0,0"
+                    Background="{DynamicResource Editor.Window.GrayBrush3}" />
             </Grid>
         </Grid>
     </Grid>
