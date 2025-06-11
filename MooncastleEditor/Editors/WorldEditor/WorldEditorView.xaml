@@ -2,6 +2,7 @@
     x:Class="MooncastleEditor.Editors.WorldEditorView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrls="clr-namespace:MooncastleEditor.Utilities.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -46,6 +47,51 @@
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
+                <Border Background="{DynamicResource Editor.Selected.BackgroundBrush}">
+                    <StackPanel VerticalAlignment="Center">
+                        <ctrls:NumberBox Foreground="{DynamicResource Editor.FontBrush}" Value="0" />
+                        <ctrls:ScalarBox Multiplier="10" Value="10" />
+                        <ctrls:VectorBox
+                            VectorType="Vector2"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                        <ctrls:VectorBox
+                            VectorType="Vector3"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                        <ctrls:VectorBox
+                            VectorType="Vector4"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                        <ctrls:VectorBox
+                            Orientation="Vertical"
+                            VectorType="Vector2"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                        <ctrls:VectorBox
+                            Orientation="Vertical"
+                            VectorType="Vector3"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                        <ctrls:VectorBox
+                            Orientation="Vertical"
+                            VectorType="Vector4"
+                            W="3"
+                            X="0"
+                            Y="1"
+                            Z="2" />
+                    </StackPanel>
+                </Border>
                 <GridSplitter
                     Grid.Row="1"
                     Height="5"
