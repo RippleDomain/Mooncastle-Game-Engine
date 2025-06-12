@@ -11,6 +11,16 @@ namespace mooncastle::script
 		utl::vector<id::generationType>     generations;
 		utl::vector <scriptId>              freeIds;
 
+		using scriptRegistery = std::unordered_map<size_t, detail::script_creator>;
+
+		scriptRegistery& registery() 
+		{
+			static scriptRegistery reg;
+			return reg;
+		}
+
+		scriptRegistery reg;
+
 		bool exists(scriptId id) 
 		{
 			assert(id::isValid(id));
@@ -22,6 +32,17 @@ namespace mooncastle::script
 
 			return (generations[index] == id::generation(id)) && (entityScripts[idMapping[index]]) && (entityScripts[idMapping[index]])->isValid();
 		};
+	}
+
+	namespace detail
+	{
+		u8 registerScript(size_t tag, script_creator func) 
+		{
+			bool result{ registery().insert(scriptRegistery::value_type{tag, func}).second };
+			assert(result);
+
+			return result;
+		}
 	}
 
 	component create(initInfo info, gameEntity::entity entity)

@@ -4,6 +4,8 @@
 #include "TransformComponent.h"
 #include "ScriptComponent.h"
 
+#include <string>
+
 namespace mooncastle
 {
 	namespace gameEntity
@@ -41,6 +43,9 @@ namespace mooncastle
 		{
 			using script_ptr = std::unique_ptr<entity_script>;
 			using script_creator = script_ptr(*)(gameEntity::entity entity);
+			using string_hash = std::hash<std::string>;
+
+			u8 registerScript(size_t, script_creator);
 
 			template<class script_class>
 
@@ -49,6 +54,16 @@ namespace mooncastle
 				assert(entity.isValid());
 
 				return std::make_unique<script_class>(entity);
+			}
+
+#define REGISTER_SCRIPT(TYPE)                                        \
+		class TYPE;                                                  \
+		namespace {                                                  \
+			static u8                                                \
+			_reg##TYPE =                                             \
+			{ mooncastle::script::detail::registerScript(            \
+			mooncastle::script::detail::string_hash()(#TYPE),        \
+			&mooncastle::script::detail::create_script<TYPE>) };     \
 			}
 		}
 	}
