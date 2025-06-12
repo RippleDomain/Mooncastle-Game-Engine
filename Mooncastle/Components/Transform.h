@@ -11,6 +11,6 @@ namespace mooncastle::transform
 		f32 scale[3]{ 1.f, 1.f, 1.f };  //x, y, z
 	};
 
-	component createTransform(const initInfo& info, gameEntity::entity entity);
-	void removeTransform(component c);
+	component create(initInfo info, gameEntity::entity entity);
+	void remove(component c);
 }

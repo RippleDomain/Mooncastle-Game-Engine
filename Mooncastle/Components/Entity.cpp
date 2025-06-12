@@ -1,17 +1,19 @@
 #include "Entity.h"
 #include "Transform.h"
+#include "Script.h"
 
 namespace mooncastle::gameEntity 
 {
 	namespace
 	{
 		utl::vector<transform::component>     transforms;
+		utl::vector<script::component>        scripts;
 
 		utl::vector<id::generationType>       generations;
 		utl::deque<entityId>                  freeIds;
 	}
 
-	entity createGameEntity(const entityInfo& info) 
+	entity create(entityInfo info) 
 	{
 		assert(info.transform); //All components must have a transform.
 		if (!info.transform) return entity{};
@@ -21,7 +23,7 @@ namespace mooncastle::gameEntity
 		if (freeIds.size() > id::minDeletedElements) 
 		{
 			id = freeIds.front();
-			assert(!isAlive(entity{ id }));
+			assert(!isAlive(id));
 			freeIds.pop_front();
 			
 			id = entityId{ id::newGeneration(id) };
@@ -42,46 +44,51 @@ namespace mooncastle::gameEntity
 
 		//Create the transform component.
 		assert(!transforms[index].isValid());
-		transforms[index] = transform::createTransform(*info.transform, newEntity);
+		transforms[index] = transform::create(*info.transform, newEntity);
 
 		if (!transforms[index].isValid()) return {};
+
+		//Create the script component.
+		if (info.script && info.script->scriptCreator) 
+		{
+			assert(!scripts[index].isValid());
+			scripts[index] = script::create(*info.script, newEntity);
+			assert(scripts[index].isValid());
+		}
 
 		return newEntity;
 	}
 
-	void removeGameEntity(entity e)
+	void remove(entityId id)
 	{
-		const entityId id{ e.getId() };
 		const id::idType index{ id::index(id) };
+		assert(isAlive(id));
 
-		assert(isAlive(e));
-
-		if (isAlive(e)) 
-		{
-			transform::removeTransform(transforms[index]);
-			transforms[index] = {};
-			freeIds.push_back(id);
-		}
+		transform::remove(transforms[index]);
+		transforms[index] = {};
+		freeIds.push_back(id);
 	}
 
-	bool isAlive(entity e)
+	bool isAlive(entityId id)
 	{
-		assert(e.isValid());
-
-		const entityId id{ e.getId() };
+		assert(id::isValid(id));
 		const id::idType index{ id::index(id) };
-
 		assert(index < generations.size());
 		assert(generations[index] == id::generation(id));
-
 		return (generations[index] == id::generation(id) && transforms[index].isValid());
 	}
 
-	transform::component entity::transform() const 
+	transform::component entity::transform() const
 	{
-		assert(isAlive(*this));
+		assert(isAlive(_id));
 		const id::idType index{ id::index(_id) };
-		
 		return transforms[index];
+	}
+
+	script::component entity::script() const
+	{
+		assert(isAlive(_id));
+		const id::idType index{ id::index(_id) };
+		return scripts[index];
 	}
 }

@@ -58,7 +58,7 @@ id::idType CreateGameEntity(gameEntityDescriptor* e)
 	transform::initInfo transformInfo{ desc.transform.toInitInfo() };
 	gameEntity::entityInfo entityInfo{&transformInfo};
 
-	return gameEntity::createGameEntity(entityInfo).getId();
+	return gameEntity::create(entityInfo).getId();
 }
 
 EDITOR_INTERFACE
@@ -66,5 +66,5 @@ void RemoveGameEntity(id::idType id)
 {
 	assert(id::isValid(id));
 
-	gameEntity::removeGameEntity(entityFromId(id));
+	gameEntity::remove(gameEntity::entityId{ id });
 }

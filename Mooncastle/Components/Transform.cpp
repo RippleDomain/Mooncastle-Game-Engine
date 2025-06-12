@@ -10,7 +10,7 @@ namespace mooncastle::transform
 		utl::vector<math::v3> scales;
 	}
 
-	component createTransform(const initInfo& info, gameEntity::entity entity) 
+	component create(initInfo info, gameEntity::entity entity) 
 	{
 		assert(entity.isValid());
 		const id::idType entityIndex{ id::index(entity.getId()) };
@@ -33,7 +33,7 @@ namespace mooncastle::transform
 		return component(transformId{ (id::idType)positions.size() - 1 });
 	}
 
-	void removeTransform(component c)
+	void remove(component c)
 	{
 		assert(c.isValid());
 	}

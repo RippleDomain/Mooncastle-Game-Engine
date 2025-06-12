@@ -2,21 +2,54 @@
 
 #include "..\Components\ComponentsCommon.h"
 #include "TransformComponent.h"
+#include "ScriptComponent.h"
 
-namespace mooncastle::gameEntity 
+namespace mooncastle
 {
-	DEFINE_TYPED_ID(entityId);
-
-	class entity 
+	namespace gameEntity
 	{
-	public:
-		constexpr explicit entity(entityId id) : _id{ id } {}
-		constexpr entity() : _id{ id::invalidId } {}
-		constexpr entityId getId() const { return _id; }
-		constexpr bool isValid() const { return id::isValid(_id); }
+		DEFINE_TYPED_ID(entityId);
 
-		transform::component transform() const;
-	private:
-		entityId _id;
-	};
+		class entity
+		{
+		public:
+			constexpr explicit entity(entityId id) : _id{ id } {}
+			constexpr entity() : _id{ id::invalidId } {}
+			constexpr entityId getId() const { return _id; }
+			constexpr bool isValid() const { return id::isValid(_id); }
+
+			transform::component transform() const;
+			script::component script() const;
+		private:
+			entityId _id;
+		};
+	}
+
+	namespace script 
+	{
+		class entity_script : public gameEntity::entity
+		{
+		public:
+			virtual ~entity_script() = default;
+			virtual void beginPlay() {}
+			virtual void update(float deltaTime) {}
+		protected:
+			constexpr explicit entity_script(gameEntity::entity entity) : gameEntity::entity{ entity.getId()} {}
+		};
+
+		namespace detail
+		{
+			using script_ptr = std::unique_ptr<entity_script>;
+			using script_creator = script_ptr(*)(gameEntity::entity entity);
+
+			template<class script_class>
+
+			script_ptr create_script(gameEntity::entity entity)
+			{
+				assert(entity.isValid());
+
+				return std::make_unique<script_class>(entity);
+			}
+		}
+	}
 }
