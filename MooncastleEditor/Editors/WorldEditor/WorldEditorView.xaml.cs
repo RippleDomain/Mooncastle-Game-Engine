@@ -32,7 +32,6 @@ namespace MooncastleEditor.Editors
         {
             Loaded -= OnWorldEditorViewLoaded;
             Focus();
-            ((INotifyCollectionChanged)Project.UndoRedo.UndoList).CollectionChanged += (s, args) => Focus();
         }
     }
 }

@@ -16,6 +16,8 @@ namespace MooncastleEditor.Components
     [DataContract]
     abstract class Component : ViewModelBase
     {
+        public abstract IMSComponent GetMultiSelectionComponent(MSEntity msEntity);
+
         [DataMember]
         public GameEntity Owner { get; private set; }
 
@@ -28,6 +30,34 @@ namespace MooncastleEditor.Components
 
     abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
     {
+        private bool _enableUpdates = true;
 
+        public List<T> SelectedComponents { get; }
+
+        protected abstract bool UpdateSelectedComponents(string propertyName);
+        protected abstract bool UpdateMSComponents();
+
+        public void Refresh()
+        {
+            _enableUpdates = false;
+
+            UpdateMSComponents();
+
+            _enableUpdates = true;
+        }
+
+        public MSComponent(MSEntity msEntity)
+        {
+            Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
+            SelectedComponents = msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>()).ToList();
+
+            PropertyChanged += (s, e) =>
+            {
+                if (_enableUpdates)
+                {
+                    UpdateSelectedComponents(e.PropertyName);
+                }
+            };
+        }
     }
 }
