@@ -37,6 +37,7 @@ namespace mooncastle::gameEntity
 
 			//Resize components. (NOT using resize() to avoid more memory allocations)
 			transforms.emplace_back();
+			scripts.emplace_back();
 		}
 
 		const entity newEntity{ id };
@@ -63,6 +64,12 @@ namespace mooncastle::gameEntity
 	{
 		const id::idType index{ id::index(id) };
 		assert(isAlive(id));
+
+		if (scripts[index].isValid())
+		{
+			script::remove(scripts[index]);
+			scripts[index] = {};
+		}
 
 		transform::remove(transforms[index]);
 		transforms[index] = {};

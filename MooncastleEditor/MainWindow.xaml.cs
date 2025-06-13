@@ -1,5 +1,6 @@
 ﻿using MooncastleEditor.GameProject;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,7 +10,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MooncastleEditor
 {
@@ -18,6 +18,8 @@ namespace MooncastleEditor
     /// </summary>
     public partial class MainWindow : Window
     {
+        public static string MooncastlePath { get; private set; } = @"C:\Users\mfurk\source\repos\Mooncastle";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -27,7 +29,32 @@ namespace MooncastleEditor
         private void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
             Loaded -= MainWindowLoaded;
+            GetEnginePath();
             openProjectBrowser();
+        }
+
+        private void GetEnginePath()
+        {
+            var mooncastlePath = Environment.GetEnvironmentVariable("MOONCASTLE_PATH", EnvironmentVariableTarget.User);
+
+            if (mooncastlePath == null || !Directory.Exists(Path.Combine(mooncastlePath, @"Mooncastle\EngineAPI")))
+            {
+                var dlg = new EnginePathDialog();
+
+                if (dlg.ShowDialog() == true)
+                {
+                    MooncastlePath = dlg.MooncastlePath;
+                    Environment.SetEnvironmentVariable("MOONCASTLE_PATH", MooncastlePath.ToUpper(), EnvironmentVariableTarget.User);
+                }
+                else
+                {
+                    Application.Current.Shutdown();
+                }
+            }
+            else
+            {
+                MooncastlePath = mooncastlePath;
+            }
         }
 
         private void MainWindowClosing(object sender, CancelEventArgs e)

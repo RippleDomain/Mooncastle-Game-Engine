@@ -71,10 +71,12 @@ namespace mooncastle::script
 		}
 
 		assert(id::isValid(id));
-		entityScripts.emplace_back(info.scriptCreator(entity));
-		assert(entityScripts.back()->getId() == entity.getId());
 
 		const id::idType index{ (id::idType)entityScripts.size() };
+		entityScripts.emplace_back(info.scriptCreator(entity));
+
+		assert(entityScripts.back()->getId() == entity.getId());
+
 		idMapping[id::index(id)] = index;
 
 		return component{ id };

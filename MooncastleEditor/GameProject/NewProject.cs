@@ -28,6 +28,7 @@ namespace MooncastleEditor.GameProject
         public string IconFilePath {get; set;}
         public string ScreenShotFilePath {get; set;}
         public string ProjectFilePath {get; set;}
+        public string TemplatePath {get; set;}
 
         private ImageSource _icon;
         public ImageSource Icon
@@ -235,6 +236,8 @@ namespace MooncastleEditor.GameProject
                 var projectFilePath = Path.GetFullPath(Path.Combine(path, $"{ProjectName}{Project.Extension}"));
                 File.WriteAllText(projectFilePath, projectXMLFile);
 
+                CreateMSVCSolution(template, path);
+
                 return path;
             }
             catch (Exception e)
@@ -244,6 +247,32 @@ namespace MooncastleEditor.GameProject
 
                 throw;
             }
+        }
+
+        private void CreateMSVCSolution(ProjectTemplate template, string projectPath)
+        {
+            Debug.Assert(Path.Exists(Path.Combine(template.TemplatePath, "MSVCSolution")));
+            Debug.Assert(Path.Exists(Path.Combine(template.TemplatePath, "MSVCProject")));
+
+            var engineAPIPath = Path.Combine(MainWindow.MooncastlePath, @"Mooncastle\EngineAPI");
+
+            Debug.WriteLine($"[CreateMSVCSolution] engineAPIPath = '{engineAPIPath}'");
+            Debug.Assert(Directory.Exists(engineAPIPath));
+
+            var _0 = ProjectName;
+            var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+            var _2 = engineAPIPath;
+            var _3 = MainWindow.MooncastlePath;
+
+            var solution = File.ReadAllText((Path.Combine(template.TemplatePath, "MSVCSolution")));
+            solution = string.Format(solution, _0, _1, "{" + Guid.NewGuid().ToString().ToUpper() + "}");
+
+            File.WriteAllText(Path.GetFullPath(Path.Combine(projectPath, $"{_0}.sln")), solution);
+
+            var project = File.ReadAllText((Path.Combine(template.TemplatePath, "MSVCProject")));
+            project = string.Format(project, _0, _1, _2, _3);
+
+            File.WriteAllText(Path.GetFullPath(Path.Combine(projectPath, $@"GameCode\{_0}.vcxproj")), project);
         }
 
         public NewProject()
@@ -263,6 +292,7 @@ namespace MooncastleEditor.GameProject
                     template.IconFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "Icon.png"));
                     template.ScreenShotFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "ScreenShot.png"));
                     template.ProjectFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), template.ProjectName));
+                    template.TemplatePath = Path.GetDirectoryName(file);
 
                     _projectTemplates.Add(template);
                 }
