@@ -1,4 +1,5 @@
-﻿using MooncastleEditor.Utilities;
+﻿using MooncastleEditor.GameDev;
+using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,7 +24,8 @@ namespace MooncastleEditor.GameProject
         public string Name { get; private set; } = "NewProject";
         [DataMember]
         public string Path { get; private set; }
-        public string FullPath => $@"{Path}{Name}\{Name}{Extension}";
+        public string FullPath => $@"{Path}{Name}{Extension}";
+        public string Solution => $@"{Path}{Name}.sln";
 
         [DataMember(Name = "Scenes")]
         private ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
@@ -81,6 +83,7 @@ namespace MooncastleEditor.GameProject
 
         public void Unload()
         {
+            VisualStudio.CloseVisualStudio();
             UndoRedo.Reset();
         }
 

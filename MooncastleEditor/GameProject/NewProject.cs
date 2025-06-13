@@ -232,7 +232,7 @@ namespace MooncastleEditor.GameProject
                 File.Copy(template.ScreenShotFilePath, Path.GetFullPath(Path.Combine(directoryInfo.FullName, "ScreenShot.png")));
 
                 var projectXMLFile = File.ReadAllText(template.ProjectFilePath);
-                projectXMLFile = string.Format(projectXMLFile, ProjectName, ProjectPath);
+                projectXMLFile = string.Format(projectXMLFile, ProjectName, path);
                 var projectFilePath = Path.GetFullPath(Path.Combine(path, $"{ProjectName}{Project.Extension}"));
                 File.WriteAllText(projectFilePath, projectXMLFile);
 
@@ -289,10 +289,10 @@ namespace MooncastleEditor.GameProject
                 {
                     var template = Serializer.FromFile<ProjectTemplate>(file);
 
-                    template.IconFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "Icon.png"));
-                    template.ScreenShotFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "ScreenShot.png"));
-                    template.ProjectFilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), template.ProjectName));
                     template.TemplatePath = Path.GetDirectoryName(file);
+                    template.IconFilePath = Path.GetFullPath(Path.Combine(template.TemplatePath, "Icon.png"));
+                    template.ScreenShotFilePath = Path.GetFullPath(Path.Combine(template.TemplatePath, "ScreenShot.png"));
+                    template.ProjectFilePath = Path.GetFullPath(Path.Combine(template.TemplatePath, template.ProjectName));
 
                     _projectTemplates.Add(template);
                 }
