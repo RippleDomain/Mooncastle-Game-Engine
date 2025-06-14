@@ -90,6 +90,45 @@ namespace MooncastleEditor.GameProject
         public ICommand SaveCommand { get; private set; }
         public ICommand BuildCommand { get; private set; }
 
+        private void SetCommands()
+        {
+            AddSceneCommand = new RelayCommand<object>(x =>
+            {
+                AddScene($"NewScene {_scenes.Count}");
+
+                var newScene = _scenes.Last();
+                var sceneIndex = _scenes.Count - 1;
+
+                UndoRedo.Add(new UndoRedoAction(
+                    () => RemoveScene(newScene),
+                    () => _scenes.Insert(sceneIndex, newScene),
+                    $"Add {newScene.Name}"));
+            });
+
+            RemoveSceneCommand = new RelayCommand<Scene>(x =>
+            {
+                var sceneIndex = _scenes.IndexOf(x);
+                RemoveScene(x);
+
+                UndoRedo.Add(new UndoRedoAction(
+                    () => _scenes.Insert(sceneIndex, x),
+                    () => RemoveScene(x),
+                    $"Remove {x.Name}"));
+            }, x => !x.IsOnScreen);
+
+            UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo(), x => UndoRedo.UndoList.Any());
+            RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
+            SaveCommand = new RelayCommand<object>(x => Save(this));
+            BuildCommand = new RelayCommand<bool>(async x => await BuildGameCodeDll(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
+
+            OnPropertyChanged(nameof(AddSceneCommand));
+            OnPropertyChanged(nameof(RemoveSceneCommand));
+            OnPropertyChanged(nameof(UndoCommand));
+            OnPropertyChanged(nameof(RedoCommand));
+            OnPropertyChanged(nameof(SaveCommand));
+            OnPropertyChanged(nameof(BuildCommand));
+        }
+
         private static string GetBuildConfigName(BuildConfiguration config) => _buildConfigNames[(int)config];
 
         private void AddScene(string sceneName)
@@ -125,12 +164,12 @@ namespace MooncastleEditor.GameProject
             Logger.Log(MessageType.Info, $"Saved project to {project.FullPath}");
         }
 
-        private void BuildGameCodeDll(bool showWindow = true)
+        private async Task BuildGameCodeDll(bool showWindow = true)
         {
             try
             {
                 UnloadGameCodeDll();
-                VisualStudio.BuildSolution(this, GetBuildConfigName(DllBuildConfig), showWindow);
+                await Task.Run(() => VisualStudio.BuildSolution(this, GetBuildConfigName(DllBuildConfig), showWindow));
 
                 if (VisualStudio.BuildSucceeded)
                 {
@@ -169,7 +208,7 @@ namespace MooncastleEditor.GameProject
         }
 
         [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
+        private async void OnDeserialized(StreamingContext context)
         {
             if (_scenes != null)
             {
@@ -179,36 +218,9 @@ namespace MooncastleEditor.GameProject
 
             SceneOnScreen = Scenes.FirstOrDefault(x => x.IsOnScreen);
 
-            BuildGameCodeDll(false);
+            await BuildGameCodeDll(false);
 
-            AddSceneCommand = new RelayCommand<object>(x =>
-            {
-                AddScene($"NewScene {_scenes.Count}");
-
-                var newScene = _scenes.Last();
-                var sceneIndex = _scenes.Count - 1;
-
-                UndoRedo.Add(new UndoRedoAction(
-                    () => RemoveScene(newScene),
-                    () => _scenes.Insert(sceneIndex, newScene),
-                    $"Add {newScene.Name}"));
-            });
-
-            RemoveSceneCommand = new RelayCommand<Scene>(x =>
-            {
-                var sceneIndex = _scenes.IndexOf(x);
-                RemoveScene(x);
-
-                UndoRedo.Add(new UndoRedoAction(
-                    () => _scenes.Insert(sceneIndex, x),
-                    () => RemoveScene(x),
-                    $"Remove {x.Name}"));
-            }, x => !x.IsOnScreen);
-
-            UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo(), x => UndoRedo.UndoList.Any());
-            RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
-            SaveCommand = new RelayCommand<object>(x => Save(this));
-            BuildCommand = new RelayCommand<bool>(x => BuildGameCodeDll(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
+            SetCommands();
         }
 
         public Project(string name, string path)

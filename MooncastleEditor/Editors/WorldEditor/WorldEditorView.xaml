@@ -29,6 +29,7 @@
             Key="S"
             Command="{Binding SaveCommand}"
             Modifiers="Ctrl" />
+        <KeyBinding Key="F7" Command="{Binding BuildCommand}" />
     </UserControl.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -41,7 +42,10 @@
                 Margin="5,0"
                 Command="{Binding RedoCommand}"
                 Content="Redo" />
-            <Button Click="OnNewScript_Button_Click" Content="New Script" />
+            <Button
+                Click="OnNewScript_Button_Click"
+                Content="New Script"
+                IsEnabled="{Binding Path=IsEnabled, ElementName=buildButton}" />
             <Button
                 x:Name="buildButton"
                 Margin="5,0"

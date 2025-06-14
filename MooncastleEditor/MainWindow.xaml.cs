@@ -18,7 +18,7 @@ namespace MooncastleEditor
     /// </summary>
     public partial class MainWindow : Window
     {
-        public static string MooncastlePath { get; private set; } = @"C:\Users\mfurk\source\repos\Mooncastle";
+        public static string MooncastlePath { get; private set; }
 
         public MainWindow()
         {
