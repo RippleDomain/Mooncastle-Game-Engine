@@ -19,7 +19,14 @@ namespace mooncastle::script
 			return reg;
 		}
 
-		scriptRegistery reg;
+		#ifdef USE_WITH_EDITOR
+		utl::vector<std::string>& scriptNames()
+		{
+			static utl::vector<std::string> names;
+			return names;
+		}
+
+		#endif
 
 		bool exists(scriptId id) 
 		{
@@ -43,6 +50,26 @@ namespace mooncastle::script
 
 			return result;
 		}
+
+		script_creator getScriptCreator(size_t tag) 
+		{
+			auto script = mooncastle::script::registery().find(tag);
+
+			assert(script != mooncastle::script::registery().end() && script->first == tag);
+
+			return script->second;
+		}
+
+		#ifdef USE_WITH_EDITOR
+		u8 addScriptName(const char* name)
+		{
+			scriptNames().emplace_back(name);
+
+			return true;
+		}
+
+		#endif
+
 	}
 
 	component create(initInfo info, gameEntity::entity entity)
@@ -96,3 +123,25 @@ namespace mooncastle::script
 		idMapping[id::index(id)] = id::invalidId;
 	}
 }
+
+#ifdef USE_WITH_EDITOR
+
+#include <atlsafe.h>
+
+extern "C" __declspec(dllexport)
+LPSAFEARRAY getScriptNames()
+{
+	const u32 size{ (u32)mooncastle::script::scriptNames().size() };
+
+	if (!size) return nullptr;
+
+	CComSafeArray<BSTR> names(size);
+
+	for (u32 i{ 0 }; i < size; ++i)
+	{
+		names.SetAt(i, A2BSTR_EX(mooncastle::script::scriptNames()[i].c_str()), false);
+	}
+
+	return names.Detach();
+}
+#endif

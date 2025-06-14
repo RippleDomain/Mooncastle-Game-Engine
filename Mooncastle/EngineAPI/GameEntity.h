@@ -47,6 +47,11 @@ namespace mooncastle
 
 			u8 registerScript(size_t, script_creator);
 
+			#ifdef USE_WITH_EDITOR
+			extern "C" __declspec(dllexport)
+			#endif
+			script_creator getScriptCreator(size_t tag);
+
 			template<class script_class>
 
 			script_ptr create_script(gameEntity::entity entity)
@@ -56,6 +61,19 @@ namespace mooncastle
 				return std::make_unique<script_class>(entity);
 			}
 
+#ifdef USE_WITH_EDITOR
+u8 addScriptName(const char* name);
+#define REGISTER_SCRIPT(TYPE)                                        \
+		namespace {                                                  \
+			static u8                                                \
+			_reg##TYPE =                                             \
+			{ mooncastle::script::detail::registerScript(            \
+			mooncastle::script::detail::string_hash()(#TYPE),        \
+			&mooncastle::script::detail::create_script<TYPE>) };     \
+			const u8 __name__##TYPE                                  \
+			{ mooncastle::script::detail::addScriptName(#TYPE) }     \
+			}
+#else
 #define REGISTER_SCRIPT(TYPE)                                        \
 		class TYPE;                                                  \
 		namespace {                                                  \
@@ -65,6 +83,8 @@ namespace mooncastle
 			mooncastle::script::detail::string_hash()(#TYPE),        \
 			&mooncastle::script::detail::create_script<TYPE>) };     \
 			}
+
+#endif
 		}
 	}
 }

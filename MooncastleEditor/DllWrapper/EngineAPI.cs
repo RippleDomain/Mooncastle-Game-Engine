@@ -19,9 +19,16 @@ namespace MooncastleEditor.EngineAPIStructs
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    class ScriptComponent
+    {
+        public IntPtr ScriptCreator;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     class GameEntityDescriptor
     {
         public TransformComponent Transform = new TransformComponent();
+        public ScriptComponent Script = new ScriptComponent();
     }
 }
 
@@ -35,6 +42,11 @@ namespace MooncastleEditor.DllWrappers
         public static extern int LoadGameCodeDll(string dllPath);
         [DllImport(_engineDll)]
         public static extern int UnloadGameCodeDll();
+        [DllImport(_engineDll)]
+        public static extern IntPtr GetScriptCreator(string name);
+        [DllImport(_engineDll)]
+        [return: MarshalAs(UnmanagedType.SafeArray)]
+        public static extern string[] GetScriptNames();
 
         internal static class EntityAPI
         {
@@ -51,6 +63,10 @@ namespace MooncastleEditor.DllWrappers
                     descriptor.Transform.Rotation = c.Rotation;
                     descriptor.Transform.Scale = c.Scale;
                 }
+                //Script
+                //{
+                    //var c = entity.GetComponent<Script>();
+                //}
 
                 return CreateGameEntity(descriptor);
             }
