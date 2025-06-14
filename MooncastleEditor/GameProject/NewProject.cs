@@ -78,7 +78,7 @@ namespace MooncastleEditor.GameProject
     class NewProject : ViewModelBase
     {
         //TODO: Get the path from the installation location instead.
-        private readonly string _templatePath = @"..\..\MooncastleEditor\ProjectTemplates";
+        private readonly string _templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\MooncastleEditor\ProjectTemplates"));
 
         private string projectName = "NewProject";
 

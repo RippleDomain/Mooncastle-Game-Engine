@@ -14,6 +14,9 @@ namespace MooncastleEditor.GameDev
 {
     static class VisualStudio
     {
+        public static bool BuildSucceeded { get; private set; } = true;
+        public static bool BuildDone { get; private set; } = true;
+
         public static EnvDTE80.DTE2 _vsInstance = null;
         private static readonly string _programID = "VisualStudio.DTE.17.0";
 
@@ -88,7 +91,7 @@ namespace MooncastleEditor.GameDev
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-                Logger.Log(MessageType.Error,$"Failed to open Visual Studio.");
+                Logger.Log(MessageType.Error, $"Failed to open Visual Studio.");
             }
             finally
             {
@@ -152,6 +155,76 @@ namespace MooncastleEditor.GameDev
             }
 
             return true;
+        }
+
+        private static void OnBuildSolutionBegin(string project, string projectConfig, string platform, string solutionConfig)
+        {
+            Logger.Log(MessageType.Info, $"Building {project}, {projectConfig}, {platform}, {solutionConfig}");
+        }
+
+        private static void OnBuildSolutionDone(string project, string projectConfig, string platform, string solutionConfig, bool success)
+        {
+            if (BuildDone) return;
+
+            if (success) Logger.Log(MessageType.Info, $"Building {projectConfig} configuration succeeded");
+            else Logger.Log(MessageType.Error, $"Building {projectConfig} configuration failed");
+
+            BuildDone = true;
+            BuildSucceeded = success;
+        }
+
+        public static bool IsDebugging()
+        {
+            bool result = false;
+
+            try
+            {
+                result = _vsInstance != null && (_vsInstance.Debugger.CurrentProgram != null || _vsInstance.Debugger.CurrentMode == EnvDTE.dbgDebugMode.dbgRunMode);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+
+                if (result == false)
+                {
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+
+            return result;
+        }
+
+        public static void BuildSolution(GameProject.Project project, string buildConfigName, bool showWindow = true)
+        {
+            if (IsDebugging())
+            {
+                Logger.Log(MessageType.Warning, "Visual Studio is currently running a debugging process.");
+                return;
+            }
+
+            OpenVisualStudio(project.Solution);
+            BuildDone = BuildSucceeded = false;
+
+            try
+            {
+                if (!_vsInstance.Solution.IsOpen)
+                {
+                    _vsInstance.Solution.Open(project.Solution);
+                }
+
+                _vsInstance.MainWindow.Visible = showWindow;
+
+                _vsInstance.Events.BuildEvents.OnBuildProjConfigBegin += OnBuildSolutionBegin;
+                _vsInstance.Events.BuildEvents.OnBuildProjConfigDone += OnBuildSolutionDone;
+
+                _vsInstance.Solution.SolutionBuild.SolutionConfigurations.Item(buildConfigName).Activate();
+                _vsInstance.ExecuteCommand("Build.BuildSolution");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                System.Threading.Thread.Sleep(1000);
+            }
         }
     }
 }

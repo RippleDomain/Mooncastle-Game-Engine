@@ -1,70 +1,39 @@
-#ifndef  EDITOR_INTERFACE
-#define EDITOR_INTERFACE extern "C" __declspec(dllexport)
+#include "Common.h"
+#include "CommonHeaders.h"
+
+#ifndef WIN32_MEAN_AND_LEAN
+#define WIN32_MEAN_AND_LEAN
 #endif
 
-#include "CommonHeaders.h"
-#include "Id.h"
-#include "..\Mooncastle\Components\Entity.h"
-#include "..\Mooncastle\Components\Transform.h"
+#include <Windows.h>
 
 using namespace mooncastle;
 
-namespace 
+namespace
 {
-	struct transformComponent
-	{
-		f32 position[3];  // x, y, z
-		f32 rotation[3];  // x, y, z
-		f32 scale[3];     // x, y, z
-
-		transform::initInfo toInitInfo()
-		{
-			using namespace DirectX;
-
-			transform::initInfo info{};
-
-			memcpy(&info.position[0], &position[0], sizeof(f32) * _countof(position));
-			memcpy(&info.scale[0], &scale[0], sizeof(f32) * _countof(scale));
-			XMFLOAT3A rot{ &rotation[0] };
-			XMVECTOR quat{ XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3A(&rot)) };
-
-			XMFLOAT4A rot_quat{};
-			XMStoreFloat4A(&rot_quat, quat);
-
-			memcpy(&info.rotation[0], &rot_quat.x, sizeof(f32) * _countof(info.rotation));
-
-			return info;
-		}
-	};
-
-	struct gameEntityDescriptor
-	{
-		transformComponent transform;
-	};
-
-	gameEntity::entity entityFromId(id::idType id)
-	{
-		return gameEntity::entity{ gameEntity::entityId(id) };
-	}
+	HMODULE gameCodeDll{ nullptr };
 }
 
-EDITOR_INTERFACE
-id::idType CreateGameEntity(gameEntityDescriptor* e) 
+EDITOR_INTERFACE u32 LoadGameCodeDll(const char* dllPath) 
 {
-	assert(e);
+	if (gameCodeDll) return FALSE;
 
-	gameEntityDescriptor& desc{ *e };
+	gameCodeDll = LoadLibraryA(dllPath);
+	assert(gameCodeDll);
 
-	transform::initInfo transformInfo{ desc.transform.toInitInfo() };
-	gameEntity::entityInfo entityInfo{&transformInfo};
-
-	return gameEntity::create(entityInfo).getId();
+	return gameCodeDll ? TRUE : FALSE;
 }
 
-EDITOR_INTERFACE
-void RemoveGameEntity(id::idType id) 
+EDITOR_INTERFACE u32 UnloadGameCodeDll()
 {
-	assert(id::isValid(id));
+	if (!gameCodeDll) return FALSE;
 
-	gameEntity::remove(gameEntity::entityId{ id });
+	assert(gameCodeDll);
+
+	int result = FreeLibrary(gameCodeDll);
+	assert(result);
+
+	gameCodeDll = nullptr;
+
+	return TRUE;
 }

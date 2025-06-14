@@ -1,4 +1,5 @@
-﻿using MooncastleEditor.GameDev;
+﻿using MooncastleEditor.DllWrappers;
+using MooncastleEditor.GameDev;
 using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,14 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace MooncastleEditor.GameProject
 {
+    enum BuildConfiguration
+    {
+        Debug,
+        Release,
+        DebugEditor,
+        ReleaseEditor
+    }
+
     [DataContract(Name = "Game")]
     class Project : ViewModelBase
     {
@@ -26,6 +35,26 @@ namespace MooncastleEditor.GameProject
         public string Path { get; private set; }
         public string FullPath => $@"{Path}{Name}{Extension}";
         public string Solution => $@"{Path}{Name}.sln";
+
+        private static readonly string[] _buildConfigNames = new string[] { "Debug", "Release", "DebugEditor", "ReleaseEditor" };
+
+        private int _buildConfig;
+        [DataMember]
+        public int BuildConfig
+        {
+            get => _buildConfig;
+            set
+            {
+                if (_buildConfig != value)
+                {
+                    _buildConfig = value;
+                    OnPropertyChanged(nameof(BuildConfig));
+                }
+            }
+        }
+
+        public BuildConfiguration StandaloneBuildConfig => BuildConfig == 0 ? BuildConfiguration.Debug : BuildConfiguration.Release;
+        public BuildConfiguration DllBuildConfig => BuildConfig == 0 ? BuildConfiguration.DebugEditor : BuildConfiguration.ReleaseEditor;
 
         [DataMember(Name = "Scenes")]
         private ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
@@ -59,6 +88,9 @@ namespace MooncastleEditor.GameProject
         public ICommand AddSceneCommand { get; private set; }
         public ICommand RemoveSceneCommand { get; private set; }
         public ICommand SaveCommand { get; private set; }
+        public ICommand BuildCommand { get; private set; }
+
+        private static string GetBuildConfigName(BuildConfiguration config) => _buildConfigNames[(int)config];
 
         private void AddScene(string sceneName)
         {
@@ -93,6 +125,49 @@ namespace MooncastleEditor.GameProject
             Logger.Log(MessageType.Info, $"Saved project to {project.FullPath}");
         }
 
+        private void BuildGameCodeDll(bool showWindow = true)
+        {
+            try
+            {
+                UnloadGameCodeDll();
+                VisualStudio.BuildSolution(this, GetBuildConfigName(DllBuildConfig), showWindow);
+
+                if (VisualStudio.BuildSucceeded)
+                {
+                    LoadGameCodeDll();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+
+                throw;
+            }
+        }
+
+        private void LoadGameCodeDll()
+        {
+            var configName = GetBuildConfigName(DllBuildConfig);
+            var dllPath = $@"{Path}x64\{configName}\{Name}.dll";
+
+            if (File.Exists(dllPath) && EngineAPI.LoadGameCodeDll(dllPath) != 0)
+            {
+                Logger.Log(MessageType.Info, $"Successfully loaded game code DLL at {dllPath}");
+            }
+            else
+            {
+                Logger.Log(MessageType.Warning, $"Failed to load game code DLL. Try to build the project first.");
+            }
+        }
+
+        private void UnloadGameCodeDll()
+        {
+            if (EngineAPI.UnloadGameCodeDll() != 0)
+            {
+                Logger.Log(MessageType.Info, "Successfully unloaded game code DLL.");
+            }
+        }
+
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
@@ -103,6 +178,8 @@ namespace MooncastleEditor.GameProject
             }
 
             SceneOnScreen = Scenes.FirstOrDefault(x => x.IsOnScreen);
+
+            BuildGameCodeDll(false);
 
             AddSceneCommand = new RelayCommand<object>(x =>
             {
@@ -128,9 +205,10 @@ namespace MooncastleEditor.GameProject
                     $"Remove {x.Name}"));
             }, x => !x.IsOnScreen);
 
-            UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo());
-            RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo());
+            UndoCommand = new RelayCommand<object>(x => UndoRedo.Undo(), x => UndoRedo.UndoList.Any());
+            RedoCommand = new RelayCommand<object>(x => UndoRedo.Redo(), x => UndoRedo.RedoList.Any());
             SaveCommand = new RelayCommand<object>(x => Save(this));
+            BuildCommand = new RelayCommand<bool>(x => BuildGameCodeDll(x), x => !VisualStudio.IsDebugging() && VisualStudio.BuildDone);
         }
 
         public Project(string name, string path)

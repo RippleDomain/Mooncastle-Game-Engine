@@ -44,12 +44,12 @@ namespace MooncastleEditor.Components
 
                     if (_isActive == true)
                     {
-                        EntityId = EngineAPI.CreateGameEntity(this);
+                        EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
                         Debug.Assert(ID.isValid(EntityId));
                     }
                     else if (ID.isValid(EntityId))
                     {
-                        EngineAPI.RemoveGameEntity(this);
+                        EngineAPI.EntityAPI.RemoveGameEntity(this);
                         EntityId = ID.InvalidID;
                     }
 

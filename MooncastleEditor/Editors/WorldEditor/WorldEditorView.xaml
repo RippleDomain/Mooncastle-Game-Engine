@@ -6,11 +6,16 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:util="clr-namespace:MooncastleEditor.Utilities"
     d:DesignHeight="450"
     d:DesignWidth="800"
     Focusable="True"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <sys:Boolean x:Key="True">True</sys:Boolean>
+        <sys:Boolean x:Key="False">False</sys:Boolean>
+    </UserControl.Resources>
     <UserControl.InputBindings>
         <KeyBinding
             Key="Z"
@@ -37,6 +42,21 @@
                 Command="{Binding RedoCommand}"
                 Content="Redo" />
             <Button Click="OnNewScript_Button_Click" Content="New Script" />
+            <Button
+                x:Name="buildButton"
+                Margin="5,0"
+                Command="{Binding BuildCommand}"
+                CommandParameter="{StaticResource True}"
+                Content="Build" />
+            <ComboBox
+                x:Name="runConfig"
+                Width="72"
+                Margin="10,0"
+                VerticalAlignment="Center"
+                SelectedIndex="{Binding BuildConfig}">
+                <ComboBoxItem Content="Debug" />
+                <ComboBoxItem Content="Release" />
+            </ComboBox>
         </StackPanel>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -99,17 +119,23 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top"
                     Background="Transparent" />
-                <TabControl
-                    Grid.Row="1"
-                    Margin="0,5,0,0"
-                    Background="{DynamicResource Editor.Window.GrayBrush2}">
-                    <TabItem Header="History">
-                        <util:UndoRedoView Grid.Row="1" DataContext="{Binding UndoRedo}" />
-                    </TabItem>
-                    <TabItem Header="Log">
-                        <util:LoggerView />
-                    </TabItem>
-                </TabControl>
+                <Grid Grid.Row="1" Margin="0,5,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <util:UndoRedoView
+                        Grid.Column="0"
+                        Background="{DynamicResource Editor.Window.GrayBrush2}"
+                        DataContext="{Binding UndoRedo}" />
+                    <GridSplitter
+                        Grid.Column="1"
+                        Width="5"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        Background="Transparent" />
+                    <util:LoggerView Grid.Column="1" Margin="5,0,0,0" />
+                </Grid>
             </Grid>
             <GridSplitter
                 Grid.Column="1"

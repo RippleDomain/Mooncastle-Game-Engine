@@ -96,7 +96,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(Mooncastle_LibraryPath)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Mooncastle.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+	  <ProgramDatabaseFile>$(OutDir)$(TargetName)-$([System.DateTime]::Now.ToString("HH_mm_ss_fff")).pdb</ProgramDatabaseFile>
+	</Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
     <ClCompile>
@@ -113,7 +114,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(Mooncastle_LibraryPath)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Mooncastle.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+	  <ProgramDatabaseFile>$(OutDir)$(TargetName)-$([System.DateTime]::Now.ToString("HH_mm_ss_fff")).pdb</ProgramDatabaseFile>
+	</Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -132,7 +134,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(Mooncastle_LibraryPath)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Mooncastle.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+	  <ProgramDatabaseFile>$(OutDir)$(TargetName)-$([System.DateTime]::Now.ToString("HH_mm_ss_fff")).pdb</ProgramDatabaseFile>
+	</Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
     <ClCompile>
@@ -151,6 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(Mooncastle_LibraryPath)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Mooncastle.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName)-$([System.DateTime]::Now.ToString("HH_mm_ss_fff")).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
