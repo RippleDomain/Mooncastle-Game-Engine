@@ -240,5 +240,21 @@ namespace MooncastleEditor.GameDev
 
             while (!BuildDone) System.Threading.Thread.Sleep(100);
         }
+
+        public static void Run(GameProject.Project project, string configName, bool debug)
+        {
+            if (_vsInstance != null && !IsDebugging() && BuildDone && BuildSucceeded)
+            {
+                _vsInstance.ExecuteCommand(debug ? "Debug.Start" : "Debug.StartWithoutDebugging");
+            }
+        }
+
+        public static void Stop()
+        {
+            if (_vsInstance != null && IsDebugging())
+            {
+                _vsInstance.ExecuteCommand("Debug.StopDebugging");
+            }
+        }
     }
 }

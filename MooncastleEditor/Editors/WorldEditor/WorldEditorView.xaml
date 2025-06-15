@@ -29,6 +29,15 @@
             Key="S"
             Command="{Binding SaveCommand}"
             Modifiers="Ctrl" />
+        <KeyBinding Key="F5" Command="{Binding DebugStartCommand}" />
+        <KeyBinding
+            Key="F5"
+            Command="{Binding DebugStartWithoutDebuggingCommand}"
+            Modifiers="Ctrl" />
+        <KeyBinding
+            Key="F5"
+            Command="{Binding DebugStopCommand}"
+            Modifiers="Shift" />
         <KeyBinding Key="F7" Command="{Binding BuildCommand}" />
     </UserControl.InputBindings>
     <Grid>
