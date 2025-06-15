@@ -63,6 +63,7 @@ namespace mooncastle
 
 #ifdef USE_WITH_EDITOR
 u8 addScriptName(const char* name);
+
 #define REGISTER_SCRIPT(TYPE)                                        \
 		namespace {                                                  \
 			static u8                                                \
@@ -70,12 +71,11 @@ u8 addScriptName(const char* name);
 			{ mooncastle::script::detail::registerScript(            \
 			mooncastle::script::detail::string_hash()(#TYPE),        \
 			&mooncastle::script::detail::create_script<TYPE>) };     \
-			const u8 __name__##TYPE                                  \
-			{ mooncastle::script::detail::addScriptName(#TYPE) }     \
+			const u8 _name_##TYPE                                  \
+			{ mooncastle::script::detail::addScriptName(#TYPE) };     \
 			}
 #else
 #define REGISTER_SCRIPT(TYPE)                                        \
-		class TYPE;                                                  \
 		namespace {                                                  \
 			static u8                                                \
 			_reg##TYPE =                                             \
@@ -83,7 +83,6 @@ u8 addScriptName(const char* name);
 			mooncastle::script::detail::string_hash()(#TYPE),        \
 			&mooncastle::script::detail::create_script<TYPE>) };     \
 			}
-
 #endif
 		}
 	}

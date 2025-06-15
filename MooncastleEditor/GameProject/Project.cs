@@ -56,6 +56,20 @@ namespace MooncastleEditor.GameProject
         public BuildConfiguration StandaloneBuildConfig => BuildConfig == 0 ? BuildConfiguration.Debug : BuildConfiguration.Release;
         public BuildConfiguration DllBuildConfig => BuildConfig == 0 ? BuildConfiguration.DebugEditor : BuildConfiguration.ReleaseEditor;
 
+        private string[] _availabeScripts;
+        public string[] AvailableScripts
+        {
+            get => _availabeScripts;
+            set
+            {
+                if (_availabeScripts != value)
+                {
+                    _availabeScripts = value;
+                    OnPropertyChanged(nameof(AvailableScripts));
+                }
+            }
+        }
+
         [DataMember(Name = "Scenes")]
         private ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
         public ReadOnlyObservableCollection<Scene> Scenes { get; private set; }
@@ -169,6 +183,7 @@ namespace MooncastleEditor.GameProject
             try
             {
                 UnloadGameCodeDll();
+
                 await Task.Run(() => VisualStudio.BuildSolution(this, GetBuildConfigName(DllBuildConfig), showWindow));
 
                 if (VisualStudio.BuildSucceeded)
@@ -179,7 +194,6 @@ namespace MooncastleEditor.GameProject
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-
                 throw;
             }
         }
@@ -187,15 +201,19 @@ namespace MooncastleEditor.GameProject
         private void LoadGameCodeDll()
         {
             var configName = GetBuildConfigName(DllBuildConfig);
-            var dllPath = $@"{Path}x64\{configName}\{Name}.dll";
+
+            var dllPath = System.IO.Path.Combine(Path, "x64", configName, $"{Name}.dll");
+
+            AvailableScripts = null;
 
             if (File.Exists(dllPath) && EngineAPI.LoadGameCodeDll(dllPath) != 0)
             {
-                Logger.Log(MessageType.Info, $"Successfully loaded game code DLL at {dllPath}");
+                AvailableScripts = EngineAPI.GetScriptNames();
+                Logger.Log(MessageType.Info, $"Game code DLL loaded successfully.");
             }
             else
             {
-                Logger.Log(MessageType.Warning, $"Failed to load game code DLL. Try to build the project first.");
+                Logger.Log(MessageType.Warning, $"Game code DLL not found at {dllPath}");
             }
         }
 
@@ -204,6 +222,8 @@ namespace MooncastleEditor.GameProject
             if (EngineAPI.UnloadGameCodeDll() != 0)
             {
                 Logger.Log(MessageType.Info, "Successfully unloaded game code DLL.");
+
+                AvailableScripts = null;
             }
         }
 

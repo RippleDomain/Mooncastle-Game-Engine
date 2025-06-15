@@ -7,13 +7,44 @@
     xmlns:local="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:MooncastleEditor.Components"
+    d:DataContext="{d:DesignInstance Type=vm:MSGameEntity,
+                                     IsDesignTimeCreatable=True}"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Background="{DynamicResource Editor.Window.GrayBrush3}"
     mc:Ignorable="d">
     <UserControl.Resources>
         <DataTemplate DataType="{x:Type vm:MSTransform}">
             <local:TransformView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSScript}">
+            <local:ScriptView />
+        </DataTemplate>
+        <ContextMenu x:Key="addComponentMenu" IsOpen="{Binding Path=IsChecked, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ToggleButton}}}">
+            <MenuItem Header="Geometry" />
+            <MenuItem Header="Physics">
+                <MenuItem Header="Rigidbody" />
+            </MenuItem>
+            <MenuItem Header="Script" ItemsSource="{Binding SelectedEntities[0].ParentScene.Project.AvailableScripts}">
+                <MenuItem.Style>
+                    <Style TargetType="{x:Type MenuItem}">
+                        <Setter Property="Padding" Value="5,3,2,3" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedEntities[0].ParentScene.Project.AvailableScripts}" Value="{x:Null}">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </MenuItem.Style>
+                <MenuItem.ItemContainerStyle>
+                    <Style TargetType="{x:Type MenuItem}">
+                        <Setter Property="Padding" Value="5,3,2,3" />
+                        <Setter Property="Header" Value="{Binding}" />
+                        <EventSetter Event="Click" Handler="OnAddScriptComponent" />
+                    </Style>
+                </MenuItem.ItemContainerStyle>
+            </MenuItem>
+        </ContextMenu>
     </UserControl.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <ScrollViewer.Style>
@@ -25,13 +56,16 @@
                 </Style.Triggers>
             </Style>
         </ScrollViewer.Style>
-        <StackPanel>
-            <Border Height="32">
+        <StackPanel Background="{DynamicResource Editor.Window.GrayBrush4}">
+            <Border Height="32" Background="{DynamicResource Editor.Window.GrayBrush3}">
                 <ToggleButton
                     x:Name="addComponent"
                     Margin="5,0,0,0"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Center">
+                    VerticalAlignment="Center"
+                    ClickMode="Press"
+                    Focusable="False"
+                    PreviewMouseLeftButtonDown="OnAddComponent_Button_PreviewMouse_LBD">
                     <ToggleButton.Content>
                         <DockPanel>
                             <TextBlock Margin="5,0" Text="Add Component" />
@@ -45,7 +79,11 @@
                     </ToggleButton.Content>
                 </ToggleButton>
             </Border>
-            <Grid>
+            <Grid
+                Height="32"
+                Margin="0,1"
+                Background="{DynamicResource Editor.Window.GrayBrush3}"
+                SnapsToDevicePixels="True">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="78" />
                     <ColumnDefinition />

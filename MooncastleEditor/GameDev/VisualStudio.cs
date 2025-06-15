@@ -237,6 +237,8 @@ namespace MooncastleEditor.GameDev
                 Debug.WriteLine(ex.Message);
                 System.Threading.Thread.Sleep(1000);
             }
+
+            while (!BuildDone) System.Threading.Thread.Sleep(100);
         }
     }
 }

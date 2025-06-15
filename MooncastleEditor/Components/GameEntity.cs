@@ -16,6 +16,7 @@ namespace MooncastleEditor.Components
 {
     [DataContract]
     [KnownType(typeof(Transform))]
+    [KnownType(typeof(Script))]
     class GameEntity : ViewModelBase
     {
         private int _entityId = ID.InvalidID;
@@ -97,6 +98,39 @@ namespace MooncastleEditor.Components
 
         public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
         public T GetComponent<T>() where T : Component => GetComponent(typeof(T)) as T;
+
+        public bool AddComponent(Component component)
+        {
+            Debug.Assert(component != null);
+
+            if (!Components.Any(x => x.GetType() == component.GetType()))
+            {
+                isActive = false;
+                _components.Add(component);
+                isActive = true;
+
+                return true;
+            }
+
+            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component");
+
+            return false;
+        }
+
+        public void RemoveComponent(Component component)
+        {
+            Debug.Assert(component != null);
+
+            if (component is Transform) return;
+
+
+            if (_components.Contains(component))
+            {
+                isActive = false;
+                _components.Remove(component);
+                isActive = true;
+            }
+        }
 
         [OnDeserialized]
         void OnDeserialized(StreamingContext context)
