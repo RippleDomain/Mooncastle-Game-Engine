@@ -1,4 +1,5 @@
-﻿using MooncastleEditor.DllWrappers;
+﻿using MooncastleEditor.Components;
+using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameDev;
 using MooncastleEditor.Utilities;
 using System;
@@ -168,6 +169,7 @@ namespace MooncastleEditor.GameProject
 
         public void Unload()
         {
+            UnloadGameCodeDll();
             VisualStudio.CloseVisualStudio();
             UndoRedo.Reset();
         }
@@ -209,6 +211,8 @@ namespace MooncastleEditor.GameProject
             if (File.Exists(dllPath) && EngineAPI.LoadGameCodeDll(dllPath) != 0)
             {
                 AvailableScripts = EngineAPI.GetScriptNames();
+                SceneOnScreen.GameEntities.Where(x => x.GetComponent<Script>() != null).ToList().ForEach(x => x.IsActive = true);
+
                 Logger.Log(MessageType.Info, $"Game code DLL loaded successfully.");
             }
             else
@@ -219,6 +223,8 @@ namespace MooncastleEditor.GameProject
 
         private void UnloadGameCodeDll()
         {
+            SceneOnScreen.GameEntities.Where(x => x.GetComponent<Script>() != null).ToList().ForEach(x => x.IsActive = false);
+
             if (EngineAPI.UnloadGameCodeDll() != 0)
             {
                 Logger.Log(MessageType.Info, "Successfully unloaded game code DLL.");
@@ -237,6 +243,7 @@ namespace MooncastleEditor.GameProject
             }
 
             SceneOnScreen = Scenes.FirstOrDefault(x => x.IsOnScreen);
+            Debug.Assert(SceneOnScreen != null);
 
             await BuildGameCodeDll(false);
 

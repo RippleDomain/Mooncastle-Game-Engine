@@ -65,7 +65,7 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
-                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
@@ -147,7 +147,10 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Background="Transparent" />
-            <Grid Grid.Column="1" Margin="5,0,0,0">
+            <Grid
+                Grid.Column="1"
+                MinWidth="250"
+                Margin="5,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition />
                     <RowDefinition />

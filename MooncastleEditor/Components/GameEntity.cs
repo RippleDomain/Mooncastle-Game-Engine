@@ -34,7 +34,7 @@ namespace MooncastleEditor.Components
         }
 
         private bool _isActive;
-        public bool isActive
+        public bool IsActive
         {
             get => _isActive;
             set
@@ -54,7 +54,7 @@ namespace MooncastleEditor.Components
                         EntityId = ID.InvalidID;
                     }
 
-                    OnPropertyChanged(nameof(isActive));
+                    OnPropertyChanged(nameof(IsActive));
                 }
             }
         }
@@ -105,9 +105,9 @@ namespace MooncastleEditor.Components
 
             if (!Components.Any(x => x.GetType() == component.GetType()))
             {
-                isActive = false;
+                IsActive = false;
                 _components.Add(component);
-                isActive = true;
+                IsActive = true;
 
                 return true;
             }
@@ -126,9 +126,9 @@ namespace MooncastleEditor.Components
 
             if (_components.Contains(component))
             {
-                isActive = false;
+                IsActive = false;
                 _components.Remove(component);
-                isActive = true;
+                IsActive = true;
             }
         }
 

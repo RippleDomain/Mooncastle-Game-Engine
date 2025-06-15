@@ -3,6 +3,7 @@
 #include "Id.h"
 #include "..\Mooncastle\Components\Entity.h"
 #include "..\Mooncastle\Components\Transform.h"
+#include "..\Mooncastle\Components\Script.h"
 
 using namespace mooncastle;
 
@@ -34,9 +35,22 @@ namespace
 		}
 	};
 
+	struct script_component
+	{
+		script::detail::script_creator scriptCreator;
+
+		script::initInfo toInitInfo()
+		{
+			script::initInfo info{};
+			info.scriptCreator = scriptCreator;
+			return info;
+		}
+	};
+
 	struct gameEntityDescriptor
 	{
 		transformComponent transform;
+		script_component script;
 	};
 
 	gameEntity::entity entityFromId(id::idType id)
@@ -53,7 +67,12 @@ id::idType CreateGameEntity(gameEntityDescriptor* e)
 	gameEntityDescriptor& desc{ *e };
 
 	transform::initInfo transformInfo{ desc.transform.toInitInfo() };
-	gameEntity::entityInfo entityInfo{ &transformInfo };
+	script::initInfo scriptInfo{ desc.script.toInitInfo() };
+	gameEntity::entityInfo entityInfo
+	{ 
+		&transformInfo, 
+		&scriptInfo 
+	};
 
 	return gameEntity::create(entityInfo).getId();
 }

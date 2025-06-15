@@ -14,6 +14,7 @@
     Background="{DynamicResource Editor.Window.GrayBrush3}"
     mc:Ignorable="d">
     <UserControl.Resources>
+        <local:NullableBooltoBoolConverter x:Key="nullableBooltoBoolConverter" />
         <DataTemplate DataType="{x:Type vm:MSTransform}">
             <local:TransformView />
         </DataTemplate>
@@ -56,7 +57,7 @@
                 </Style.Triggers>
             </Style>
         </ScrollViewer.Style>
-        <StackPanel Background="{DynamicResource Editor.Window.GrayBrush4}">
+        <StackPanel VerticalAlignment="Top" Background="{DynamicResource Editor.Window.GrayBrush4}">
             <Border Height="32" Background="{DynamicResource Editor.Window.GrayBrush3}">
                 <ToggleButton
                     x:Name="addComponent"
@@ -65,6 +66,7 @@
                     VerticalAlignment="Center"
                     ClickMode="Press"
                     Focusable="False"
+                    IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBooltoBoolConverter}}"
                     PreviewMouseLeftButtonDown="OnAddComponent_Button_PreviewMouse_LBD">
                     <ToggleButton.Content>
                         <DockPanel>
@@ -92,14 +94,20 @@
                 <TextBlock
                     Grid.Column="0"
                     Margin="5,0,0,0"
+                    IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBooltoBoolConverter}}"
+                    Style="{StaticResource LightTextBlockStyle}"
                     Text="Name" />
                 <TextBox
                     Grid.Column="1"
                     GotKeyboardFocus="OnName_TextBox_GotKeyboardFocus"
+                    IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBooltoBoolConverter}}"
                     LostKeyboardFocus="OnName_TextBox_LostKeyboardFocus"
                     Text="{Binding Name, UpdateSourceTrigger=Explicit}" />
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <TextBlock Margin="5,0,0,0" Text="Enabled" />
+                    <TextBlock
+                        Margin="5,0,0,0"
+                        Style="{StaticResource LightTextBlockStyle}"
+                        Text="Enabled" />
                     <CheckBox
                         Margin="5,0"
                         VerticalAlignment="Center"
@@ -107,7 +115,11 @@
                         IsChecked="{Binding IsEnabled, Mode=OneWay}" />
                 </StackPanel>
             </Grid>
-            <ItemsControl ItemsSource="{Binding Components}">
+            <ItemsControl
+                IsEnabled="{Binding IsEnabled, Converter={StaticResource nullableBooltoBoolConverter}}"
+                IsTabStop="False"
+                ItemsSource="{Binding Components}"
+                SnapsToDevicePixels="True">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel />

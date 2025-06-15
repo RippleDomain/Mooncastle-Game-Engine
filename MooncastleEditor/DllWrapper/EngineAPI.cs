@@ -1,5 +1,7 @@
 ﻿using MooncastleEditor.Components;
 using MooncastleEditor.EngineAPIStructs;
+using MooncastleEditor.GameProject;
+using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,9 +66,26 @@ namespace MooncastleEditor.DllWrappers
                     descriptor.Transform.Scale = c.Scale;
                 }
                 //Script
-                //{
-                    //var c = entity.GetComponent<Script>();
-                //}
+                {
+                    /*
+                     * NOTE: Here we also check if current project is not null, so we can tell whether the game code DLL
+                     * has been loaded or not. This way, creation of entities with a script 
+                     * component is deferred until the DLL has been loaded.
+                     */
+                    var c = entity.GetComponent<Script>();
+
+                    if (c != null && Project.Current != null)
+                    {
+                        if (Project.Current.AvailableScripts.Contains(c.Name))
+                        {
+                            descriptor.Script.ScriptCreator = GetScriptCreator(c.Name);
+                        }
+                        else
+                        {
+                            Logger.Log(MessageType.Error, $"Unable to find script with name {c.Name}. Game entity will be created without script component!");
+                        }
+                    }
+                }
 
                 return CreateGameEntity(descriptor);
             }

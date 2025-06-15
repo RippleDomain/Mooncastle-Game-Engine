@@ -65,7 +65,7 @@ namespace MooncastleEditor.GameProject
         private void AddGameEntity(GameEntity entity, int index = -1)
         {
             Debug.Assert(!_gameEntities.Contains(entity));
-            entity.isActive = IsOnScreen;
+            entity.IsActive = IsOnScreen;
 
             if (index == -1)
             {
@@ -79,7 +79,7 @@ namespace MooncastleEditor.GameProject
         private void RemoveGameEntity(GameEntity entity)
         {
             Debug.Assert(_gameEntities.Contains(entity));
-            entity.isActive = false;
+            entity.IsActive = false;
             _gameEntities.Remove(entity);
         }
 
@@ -94,7 +94,7 @@ namespace MooncastleEditor.GameProject
 
             foreach (var entity in _gameEntities)
             {
-                entity.isActive = IsOnScreen;
+                entity.IsActive = IsOnScreen;
             }
 
             AddGameEntityCommand = new RelayCommand<GameEntity>(x =>

@@ -3,7 +3,7 @@ using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +20,19 @@ using System.Windows.Shapes;
 
 namespace MooncastleEditor.Editors
 {
+    public class NullableBooltoBoolConverter :IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b && b == true;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b && b == true;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for GameEntityView.xaml
     /// </summary>
@@ -113,9 +126,45 @@ namespace MooncastleEditor.Editors
             menu.IsOpen = true;
         }
 
+        private void AddComponent(ComponentType componentType, object data)
+        {
+            var creationFunction = ComponentFactory.GetCreationFunction(componentType);
+            var changedEntities = new List<(GameEntity entity, Component component)>();
+            var vm = DataContext as MSEntity;
+
+            foreach (var entity in vm.SelectedEntities)
+            {
+                var component = creationFunction(entity, data);
+
+                if (entity.AddComponent(component))
+                {
+                    changedEntities.Add((entity, component));
+                }
+            }
+
+            if (changedEntities.Any())
+            {
+                vm.Refresh();
+
+                Project.UndoRedo.Add(new UndoRedoAction(
+                    () =>
+                    {
+                        changedEntities.ForEach(x => x.entity.RemoveComponent(x.component));
+                        (DataContext as MSEntity).Refresh();
+                    },
+                    () =>
+                    {
+                        changedEntities.ForEach(x => x.entity.AddComponent(x.component));
+                        (DataContext as MSEntity).Refresh();
+                    },
+                    $"Add {componentType} component")
+                );
+            }
+        }
+
         private void OnAddScriptComponent(object sender, RoutedEventArgs e)
         {
-
+            AddComponent(ComponentType.Script, (sender as MenuItem).Header.ToString());
         }
     }
 }
