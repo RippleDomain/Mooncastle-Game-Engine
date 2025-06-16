@@ -6,7 +6,10 @@
 
 #if !defined(SHIPPING)
 
+#include <filesystem>
+#include <Windows.h>
 #include <fstream>
+
 namespace mooncastle::content
 {
     namespace
@@ -80,6 +83,14 @@ namespace mooncastle::content
 
     bool loadGame()
     {
+		wchar_t path[MAX_PATH];
+        const u32 pathLength{ GetModuleFileName(0, &path[0], MAX_PATH) };
+        
+        if (!pathLength || GetLastError() == ERROR_INSUFFICIENT_BUFFER) return false;
+
+		std::filesystem::path p{ path };
+        SetCurrentDirectory(p.parent_path().wstring().c_str());
+
         std::ifstream game("game.bin", std::ios::in | std::ios::binary);
         utl::vector<u8> buffer(std::istreambuf_iterator<char>(game), {});
 
@@ -94,12 +105,12 @@ namespace mooncastle::content
         for (u32 entity_index{ 0 }; entity_index < numEntities; ++entity_index)
         {
             gameEntity::entityInfo info{};
-            const u32 entity_type{ *at }; at += su32;
-            const u32 num_components{ *at }; at += su32;
+            const u32 entityType{ *at }; at += su32;
+            const u32 numComponents{ *at }; at += su32;
 
-            if (!num_components) return false;
+            if (!numComponents) return false;
 
-            for (u32 component_index{ 0 }; component_index < num_components; ++component_index)
+            for (u32 component_index{ 0 }; component_index < numComponents; ++component_index)
             {
                 const u32 componentType{ *at }; at += su32;
 

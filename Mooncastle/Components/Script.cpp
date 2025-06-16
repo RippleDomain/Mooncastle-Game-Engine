@@ -122,6 +122,14 @@ namespace mooncastle::script
 		idMapping[id::index(lastId)] = index;
 		idMapping[id::index(id)] = id::invalidId;
 	}
+
+	void update(float dt)
+	{
+		for (auto& ptr : entityScripts)
+		{
+			ptr->update(dt);
+		}
+	}
 }
 
 #ifdef USE_WITH_EDITOR
