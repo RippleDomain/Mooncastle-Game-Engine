@@ -8,7 +8,6 @@ namespace mooncastle::gameEntity
 	{
 		utl::vector<transform::component>     transforms;
 		utl::vector<script::component>        scripts;
-
 		utl::vector<id::generationType>       generations;
 		utl::deque<entityId>                  freeIds;
 	}
@@ -24,10 +23,9 @@ namespace mooncastle::gameEntity
 		{
 			id = freeIds.front();
 			assert(!isAlive(id));
-			freeIds.pop_front();
-			
-			id = entityId{ id::newGeneration(id) };
 
+			freeIds.pop_front();
+			id = entityId{ id::newGeneration(id) };
 			++generations[id::index(id)];
 		}
 		else
@@ -46,7 +44,6 @@ namespace mooncastle::gameEntity
 		//Create the transform component.
 		assert(!transforms[index].isValid());
 		transforms[index] = transform::create(*info.transform, newEntity);
-
 		if (!transforms[index].isValid()) return {};
 
 		//Create the script component.
@@ -56,7 +53,6 @@ namespace mooncastle::gameEntity
 			scripts[index] = script::create(*info.script, newEntity);
 			assert(scripts[index].isValid());
 		}
-
 		return newEntity;
 	}
 
@@ -64,7 +60,6 @@ namespace mooncastle::gameEntity
 	{
 		const id::idType index{ id::index(id) };
 		assert(isAlive(id));
-
 		if (scripts[index].isValid())
 		{
 			script::remove(scripts[index]);
@@ -87,15 +82,15 @@ namespace mooncastle::gameEntity
 
 	transform::component entity::transform() const
 	{
-		assert(isAlive(_id));
-		const id::idType index{ id::index(_id) };
+		assert(isAlive(id));
+		const id::idType index{ id::index(id) };
 		return transforms[index];
 	}
 
 	script::component entity::script() const
 	{
-		assert(isAlive(_id));
-		const id::idType index{ id::index(_id) };
+		assert(isAlive(id));
+		const id::idType index{ id::index(id) };
 		return scripts[index];
 	}
 }

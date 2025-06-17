@@ -15,11 +15,9 @@ int main()
 #endif
 
 	engineTest test{ };
-
 	if (test.initialize()) 
 	{
 		test.run();
 	}
-
 	test.shutDown();
 }

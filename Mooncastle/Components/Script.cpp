@@ -7,9 +7,8 @@ namespace mooncastle::script
 	{
 		utl::vector<detail::script_ptr>     entityScripts;
 		utl::vector<id::idType>             idMapping;
-
 		utl::vector<id::generationType>     generations;
-		utl::vector <scriptId>              freeIds;
+		utl::deque <scriptId>               freeIds;
 
 		using scriptRegistery = std::unordered_map<size_t, detail::script_creator>;
 
@@ -36,7 +35,6 @@ namespace mooncastle::script
 
 			assert(index < generations.size() && idMapping[index] < entityScripts.size());
 			assert(generations[index] == id::generation(id));
-
 			return (generations[index] == id::generation(id)) && (entityScripts[idMapping[index]]) && (entityScripts[idMapping[index]])->isValid();
 		};
 	}
@@ -47,16 +45,13 @@ namespace mooncastle::script
 		{
 			bool result{ registery().insert(scriptRegistery::value_type{tag, func}).second };
 			assert(result);
-
 			return result;
 		}
 
 		script_creator getScriptCreator(size_t tag) 
 		{
 			auto script = mooncastle::script::registery().find(tag);
-
 			assert(script != mooncastle::script::registery().end() && script->first == tag);
-
 			return script->second;
 		}
 
@@ -64,7 +59,6 @@ namespace mooncastle::script
 		u8 addScriptName(const char* name)
 		{
 			scriptNames().emplace_back(name);
-
 			return true;
 		}
 
@@ -76,34 +70,28 @@ namespace mooncastle::script
 	{
 		assert(entity.isValid());
 		assert(info.scriptCreator);
-
 		scriptId id{};
 
 		if (freeIds.size() > id::minDeletedElements)
 		{
 			id = freeIds.front();
-
 			assert(!exists(id));
 
-			freeIds.pop_back();
+			freeIds.pop_front();
 			id = scriptId{ id::newGeneration(id) };
 			++generations[id::index(id)];
 		}
 		else
 		{
 			id = scriptId{ (id::idType)idMapping.size() };
-
 			idMapping.emplace_back();
 			generations.push_back(0);
 		}
-
 		assert(id::isValid(id));
 
 		const id::idType index{ (id::idType)entityScripts.size() };
 		entityScripts.emplace_back(info.scriptCreator(entity));
-
 		assert(entityScripts.back()->getId() == entity.getId());
-
 		idMapping[id::index(id)] = index;
 
 		return component{ id };
@@ -118,7 +106,6 @@ namespace mooncastle::script
 		const scriptId lastId{ entityScripts.back()->script().getId()};
 
 		utl::eraseUnordered(entityScripts, index);
-
 		idMapping[id::index(lastId)] = index;
 		idMapping[id::index(id)] = id::invalidId;
 	}
@@ -140,7 +127,6 @@ extern "C" __declspec(dllexport)
 LPSAFEARRAY getScriptNames()
 {
 	const u32 size{ (u32)mooncastle::script::scriptNames().size() };
-
 	if (!size) return nullptr;
 
 	CComSafeArray<BSTR> names(size);
@@ -149,7 +135,6 @@ LPSAFEARRAY getScriptNames()
 	{
 		names.SetAt(i, A2BSTR_EX(mooncastle::script::scriptNames()[i].c_str()), false);
 	}
-
 	return names.Detach();
 }
 #endif

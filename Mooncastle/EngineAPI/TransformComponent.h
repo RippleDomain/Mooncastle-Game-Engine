@@ -9,15 +9,15 @@ namespace mooncastle::transform
 	class component final 
 	{
 	public:
-		constexpr explicit component(transformId id) : _id{ id } {}
-		constexpr component() : _id{ id::invalidId } {}
-		constexpr transformId getId() const { return _id; }
-		constexpr bool isValid() const { return id::isValid(_id); }
+		constexpr explicit component(transformId id) : id{ id } {}
+		constexpr component() : id{ id::invalidId } {}
+		constexpr transformId getId() const { return id; }
+		constexpr bool isValid() const { return id::isValid(id); }
 
 		math::v4 rotation() const;
 		math::v3 position() const;
 		math::v3 scale() const;
 	private:
-		transformId _id;
+		transformId id;
 	};
 }

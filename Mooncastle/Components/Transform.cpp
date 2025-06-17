@@ -29,7 +29,6 @@ namespace mooncastle::transform
 			positions.emplace_back(info.position);
 			scales.emplace_back(info.scale);
 		}
-
 		return component(transformId{ (id::idType)positions.size() - 1 });
 	}
 
@@ -41,18 +40,18 @@ namespace mooncastle::transform
 	math::v4 component::rotation() const 
 	{
 		assert(isValid());
-		return rotations[id::index(_id)];
+		return rotations[id::index(id)];
 	}
 
 	math::v3 component::position() const
 	{
 		assert(isValid());
-		return positions[id::index(_id)];
+		return positions[id::index(id)];
 	}
 
 	math::v3 component::scale() const
 	{
 		assert(isValid());
-		return scales[id::index(_id)];
+		return scales[id::index(id)];
 	}
 }

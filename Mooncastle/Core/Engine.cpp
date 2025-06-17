@@ -8,7 +8,6 @@
 bool engineInitialize() 
 {
 	bool result{ mooncastle::content::loadGame() };
-
 	return result;
 }
 

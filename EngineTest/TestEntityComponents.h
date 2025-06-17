@@ -60,7 +60,6 @@ private:
 	void removeRandom() 
 	{
 		u32 count = rand() % 20;
-
 		if (_entities.size() < 1000) return;
 
 		while (count > 0)

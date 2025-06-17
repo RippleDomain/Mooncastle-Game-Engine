@@ -18,7 +18,6 @@ namespace mooncastle::content
         {
             transform, 
             script,
-
             count
 		};
 
@@ -46,17 +45,14 @@ namespace mooncastle::content
             memcpy(&transformInfo.rotation[0], &rotQuat.x, sizeof(transformInfo.rotation));
 
 			info.transform = &transformInfo;
-
             return true;
 		}
 
         bool readScript(const u8*& data, gameEntity::entityInfo& info)
         {
             assert(!info.script);
-
             const u32 nameLength{ *data }; data += sizeof(u32);
             if (!nameLength) return false;
-
             assert(nameLength < 256);
 
             char script_name[256];
@@ -64,7 +60,6 @@ namespace mooncastle::content
             memcpy(&script_name[0], data, nameLength); data += nameLength;
             script_name[nameLength] = 0;
             scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()(script_name));
-
 			info.script = &scriptInfo;
 
             return scriptInfo.scriptCreator != nullptr;
@@ -77,7 +72,6 @@ namespace mooncastle::content
             readTransform,
             readScript
 		};
-
         static_assert(_countof(componentReaders) == ComponentType::count);
     }
 
@@ -93,13 +87,11 @@ namespace mooncastle::content
 
         std::ifstream game("game.bin", std::ios::in | std::ios::binary);
         utl::vector<u8> buffer(std::istreambuf_iterator<char>(game), {});
-
         assert(buffer.size());
 
         const u8* at{ buffer.data() };
         constexpr u32 su32{ sizeof(u32) };
         const u32 numEntities{ *at }; at += su32;
-
         if (!numEntities) return false;
 
         for (u32 entity_index{ 0 }; entity_index < numEntities; ++entity_index)
@@ -107,28 +99,22 @@ namespace mooncastle::content
             gameEntity::entityInfo info{};
             const u32 entityType{ *at }; at += su32;
             const u32 numComponents{ *at }; at += su32;
-
             if (!numComponents) return false;
 
             for (u32 component_index{ 0 }; component_index < numComponents; ++component_index)
             {
                 const u32 componentType{ *at }; at += su32;
-
 				assert(componentType < ComponentType::count);
-
                 if (!componentReaders[componentType](at, info)) return false;
             }
 
 			assert(info.transform);
-
 			gameEntity::entity entity{ gameEntity::create(info) };
             
             if (!entity.isValid()) return false;
 			entities.emplace_back(entity);
         }
-
         assert(at == buffer.data() + buffer.size());
-
         return true;
     }
 

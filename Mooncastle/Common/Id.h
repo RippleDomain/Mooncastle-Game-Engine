@@ -30,7 +30,6 @@ namespace mooncastle::id
 	{
 		idType index{ id & detail::indexMask };
 		assert(index != detail::indexMask);
-
 		return id & detail::indexMask;
 	}
 	constexpr idType generation(idType id)
@@ -41,7 +40,6 @@ namespace mooncastle::id
 	{
 		const idType currentGeneration{ id::generation(id) + 1 };
 		assert(currentGeneration < (((u64)1 << detail::generationBits) - 1));
-
 		return (index(id) | (currentGeneration << detail::indexBits));
 	}
 

@@ -15,15 +15,15 @@ namespace mooncastle
 		class entity
 		{
 		public:
-			constexpr explicit entity(entityId id) : _id{ id } {}
-			constexpr entity() : _id{ id::invalidId } {}
-			constexpr entityId getId() const { return _id; }
-			constexpr bool isValid() const { return id::isValid(_id); }
+			constexpr explicit entity(entityId id) : id{ id } {}
+			constexpr entity() : id{ id::invalidId } {}
+			constexpr entityId getId() const { return id; }
+			constexpr bool isValid() const { return id::isValid(id); }
 
 			transform::component transform() const;
 			script::component script() const;
 		private:
-			entityId _id;
+			entityId id;
 		};
 	}
 
@@ -57,7 +57,6 @@ namespace mooncastle
 			script_ptr create_script(gameEntity::entity entity)
 			{
 				assert(entity.isValid());
-
 				return std::make_unique<script_class>(entity);
 			}
 

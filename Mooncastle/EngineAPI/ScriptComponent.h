@@ -9,11 +9,11 @@ namespace mooncastle::script
 	class component final
 	{
 	public:
-		constexpr explicit component(scriptId id) : _id{ id } {}
-		constexpr component() : _id{ id::invalidId } {}
-		constexpr scriptId getId() const { return _id; }
-		constexpr bool isValid() const { return id::isValid(_id); }
+		constexpr explicit component(scriptId id) : id{ id } {}
+		constexpr component() : id{ id::invalidId } {}
+		constexpr scriptId getId() const { return id; }
+		constexpr bool isValid() const { return id::isValid(id); }
 	private:
-		scriptId _id;
+		scriptId id;
 	};
 }
