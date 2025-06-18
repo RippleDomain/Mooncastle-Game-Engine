@@ -18,10 +18,10 @@ namespace mooncastle::platform
 		bool isFullScreen() const;
 		void* handle() const;
 		void setCaption(const wchar_t* caption) const;
-		const math::u32v4 size() const;
+		math::u32v4 size() const;
 		void resize(u32 width, u32 height) const;
-		const u32 width() const;
-		const u32 height() const;
+		u32 width() const;
+		u32 height() const;
 		bool isClosed() const;
 
 	private:

@@ -20,8 +20,8 @@ namespace MooncastleEditor.GameProject
     enum BuildConfiguration
     {
         Debug,
-        Release,
         DebugEditor,
+        Release,
         ReleaseEditor
     }
 
@@ -37,7 +37,7 @@ namespace MooncastleEditor.GameProject
         public string FullPath => $@"{Path}{Name}{Extension}";
         public string Solution => $@"{Path}{Name}.sln";
 
-        private static readonly string[] _buildConfigNames = new string[] { "Debug", "Release", "DebugEditor", "ReleaseEditor" };
+        private static readonly string[] _buildConfigNames = new string[] { "Debug", "DebugEditor", "Release", "ReleaseEditor" };
 
         private int _buildConfig;
         [DataMember]

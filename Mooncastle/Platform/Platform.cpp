@@ -207,16 +207,20 @@ namespace mooncastle::platform
 		RegisterClassEx(&windowClass);
 
 		windowInfo info{};
-		RECT rc{ info.clientArea };
+
+		info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
+		info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
+
+		RECT rect{ info.clientArea };
 
 		//Adjust the window sized for the correct device size
-		AdjustWindowRect(&rc, info.style, FALSE);
+		AdjustWindowRect(&rect, info.style, FALSE);
 
 		const wchar_t* caption{ (initInfo && initInfo->caption) ? initInfo->caption : L"Mooncastle Game" };
-		const i32 left{ (initInfo && initInfo->left) ? initInfo->left : info.clientArea.left };
-		const i32 top{ (initInfo && initInfo->top) ? initInfo->top : info.clientArea.top };
-		const i32 width{ (initInfo && initInfo->width) ? initInfo->width : rc.right - rc.left };
-		const i32 height{ (initInfo && initInfo->height) ? initInfo->height : rc.bottom - rc.top };
+		const i32 left{ initInfo ? initInfo->left : info.topLeft.x };
+		const i32 top{ initInfo ? initInfo->top : info.topLeft.y };
+		const i32 width{ rect.right - rect.left };
+		const i32 height{ rect.bottom - rect.top };
 
 		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
 
@@ -235,7 +239,7 @@ namespace mooncastle::platform
 
 		if (info.hwnd) 
 		{
-			SetLastError(0);
+			DEBUG_OP(SetLastError(0));
 			const windowId id{ addToWindows(info) };
 			SetWindowLongPtr(info.hwnd, GWLP_USERDATA, (LONG_PTR)id);
 
@@ -260,7 +264,7 @@ namespace mooncastle::platform
 		removeFromWindows(id);
 	}
 
-#elif 
+#else
 #error "Must implement at least one platform."
 #endif
 
@@ -288,7 +292,7 @@ namespace mooncastle::platform
 		setWindowCaption(id, caption);
 	}
 
-	const math::u32v4 window::size() const 
+	math::u32v4 window::size() const 
 	{
 		assert(isValid());
 		return getWindowSize(id);
@@ -300,13 +304,13 @@ namespace mooncastle::platform
 		resizeWindow(id, width, height);
 	}
 
-	const u32 window::width() const 
+	u32 window::width() const 
 	{
 		math::u32v4 s{ size() };
 		return s.z - s.x;
 	}
 
-	const u32 window::height() const 
+	u32 window::height() const 
 	{
 		math::u32v4 s{ size() };
 		return s.w - s.y;
