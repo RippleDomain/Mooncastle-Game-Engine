@@ -33,7 +33,7 @@ public:
 		} while (getchar() != 'q');
 	}
 
-	void shutDown() override
+	void shutdown() override
 	{
 
 	}
