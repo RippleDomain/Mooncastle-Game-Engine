@@ -127,13 +127,11 @@ namespace mooncastle::platform
 					GetWindowRect(info.hwnd, &rect);
 					info.topLeft.x = rect.left;
 					info.topLeft.y = rect.top;
-					info.style = 0;
-					SetWindowLongPtr(info.hwnd, GWL_STYLE, info.style);
+					SetWindowLongPtr(info.hwnd, GWL_STYLE, 0);
 					ShowWindow(info.hwnd, SW_MAXIMIZE);
 				}
 				else
 				{
-					info.style = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
 					SetWindowLongPtr(info.hwnd, GWL_STYLE, info.style);
 					resizeWindow(info, info.clientArea);
 					ShowWindow(info.hwnd, SW_SHOWNORMAL);
@@ -160,7 +158,7 @@ namespace mooncastle::platform
 		math::u32v4 getWindowSize(windowId id)
 		{
 			windowInfo& info{ getWindowInfoFromId(id) };
-			RECT area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
+			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
 			return { (u32)area.left, (u32)area.top , (u32)area.right , (u32)area.bottom };
 		}
 
@@ -210,6 +208,7 @@ namespace mooncastle::platform
 
 		info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
 		info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
+		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
 
 		RECT rect{ info.clientArea };
 
@@ -221,8 +220,6 @@ namespace mooncastle::platform
 		const i32 top{ initInfo ? initInfo->top : info.topLeft.y };
 		const i32 width{ rect.right - rect.left };
 		const i32 height{ rect.bottom - rect.top };
-
-		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
 
 		//Create an instance of the window class
 		info.hwnd = CreateWindowEx(

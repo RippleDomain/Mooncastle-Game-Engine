@@ -81,51 +81,10 @@
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
-                <Border Background="{DynamicResource Editor.Selected.BackgroundBrush}">
-                    <StackPanel VerticalAlignment="Center">
-                        <ctrls:NumberBox Foreground="{DynamicResource Editor.FontBrush}" Value="0" />
-                        <ctrls:ScalarBox Multiplier="10" Value="10" />
-                        <ctrls:VectorBox
-                            VectorType="Vector2"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                        <ctrls:VectorBox
-                            VectorType="Vector3"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                        <ctrls:VectorBox
-                            VectorType="Vector4"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                        <ctrls:VectorBox
-                            Orientation="Vertical"
-                            VectorType="Vector2"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                        <ctrls:VectorBox
-                            Orientation="Vertical"
-                            VectorType="Vector3"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                        <ctrls:VectorBox
-                            Orientation="Vertical"
-                            VectorType="Vector4"
-                            W="3"
-                            X="0"
-                            Y="1"
-                            Z="2" />
-                    </StackPanel>
-                </Border>
+                <util:RenderSurfaceView />
+                <!--<Border Background="{DynamicResource Editor.Selected.BackgroundBrush}">
+
+                </Border>-->
                 <GridSplitter
                     Grid.Row="1"
                     Height="5"

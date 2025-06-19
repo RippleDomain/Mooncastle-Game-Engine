@@ -1,6 +1,9 @@
 #include "Common.h"
 #include "CommonHeaders.h"
 #include "..\Mooncastle\Components\Script.h"
+#include "..\Graphics\Renderer.h"
+#include "..\Platform\PlatformTypes.h"
+#include "..\Platform\Platform.h"
 
 #ifndef WIN32_MEAN_AND_LEAN
 #define WIN32_MEAN_AND_LEAN
@@ -19,6 +22,8 @@ namespace
 
 	using _get_script_names = LPSAFEARRAY(*)(void);
 	_get_script_names getScriptNames{ nullptr };
+
+	utl::vector<graphics::renderSurface> surfaces;
 }
 
 EDITOR_INTERFACE u32 LoadGameCodeDll(const char* dllPath) 
@@ -56,4 +61,30 @@ EDITOR_INTERFACE script::detail::script_creator GetScriptCreator(const char* nam
 EDITOR_INTERFACE LPSAFEARRAY GetScriptNames(const char* name)
 {
 	return (gameCodeDll && getScriptNames) ? getScriptNames() : nullptr;
+}
+
+EDITOR_INTERFACE u32
+CreateRenderSurface(HWND host, i32 width, i32 height)
+{
+	assert(host);
+	platform::windowInitInfo info{ nullptr, host, nullptr, 0, 0, width, height };
+	graphics::renderSurface surface{ platform::createWindow(&info), {} };
+	assert(surface.window.isValid());
+	surfaces.emplace_back(surface);
+
+	return (u32)surfaces.size() - 1;
+}
+
+EDITOR_INTERFACE void
+RemoveRenderSurface(u32 id)
+{
+	assert(id < surfaces.size());
+	platform::removeWindow(surfaces[id].window.getId());
+}
+
+EDITOR_INTERFACE HWND
+GetWindowHandle(u32 id)
+{
+	assert(id < surfaces.size());
+	return (HWND)surfaces[id].window.handle();
 }
