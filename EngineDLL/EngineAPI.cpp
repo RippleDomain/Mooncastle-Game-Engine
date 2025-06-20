@@ -63,8 +63,7 @@ EDITOR_INTERFACE LPSAFEARRAY GetScriptNames(const char* name)
 	return (gameCodeDll && getScriptNames) ? getScriptNames() : nullptr;
 }
 
-EDITOR_INTERFACE u32
-CreateRenderSurface(HWND host, i32 width, i32 height)
+EDITOR_INTERFACE u32 CreateRenderSurface(HWND host, i32 width, i32 height)
 {
 	assert(host);
 	platform::windowInitInfo info{ nullptr, host, nullptr, 0, 0, width, height };
@@ -75,16 +74,20 @@ CreateRenderSurface(HWND host, i32 width, i32 height)
 	return (u32)surfaces.size() - 1;
 }
 
-EDITOR_INTERFACE void
-RemoveRenderSurface(u32 id)
+EDITOR_INTERFACE void RemoveRenderSurface(u32 id)
 {
 	assert(id < surfaces.size());
 	platform::removeWindow(surfaces[id].window.getId());
 }
 
-EDITOR_INTERFACE HWND
-GetWindowHandle(u32 id)
+EDITOR_INTERFACE HWND GetWindowHandle(u32 id)
 {
 	assert(id < surfaces.size());
 	return (HWND)surfaces[id].window.handle();
+}
+
+EDITOR_INTERFACE void ResizeRenderSurface(u32 id)
+{
+	assert(id < surfaces.size());
+	surfaces[id].window.resize(0, 0);
 }

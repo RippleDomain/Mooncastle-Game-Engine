@@ -166,12 +166,20 @@ namespace mooncastle::platform
 		{
 			windowInfo& info{ getWindowInfoFromId(id) };
 
-			//We also resize while in fullscreen mode to support the case when the user changes the screen resolution.
-			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
-			area.bottom = area.top + height;
-			area.right = area.left + width;
+			//When we host the window in the level editor, we just update the internal data such as client area dimensions etc.
+			if (info.style && WS_CHILD) 
+			{
+				GetClientRect(info.hwnd, &info.clientArea);
+			}
+			else
+			{
+				//We also resize while in fullscreen mode to support the case when the user changes the screen resolution.
+				RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
+				area.bottom = area.top + height;
+				area.right = area.left + width;
 
-			resizeWindow(info, area);
+				resizeWindow(info, area);
+			}
 		}
 
 		bool isWindowClosed(windowId id)
