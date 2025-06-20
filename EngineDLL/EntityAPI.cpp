@@ -35,7 +35,7 @@ namespace
 		}
 	};
 
-	struct script_component
+	struct scriptComponent
 	{
 		script::detail::script_creator scriptCreator;
 
@@ -50,7 +50,7 @@ namespace
 	struct gameEntityDescriptor
 	{
 		transformComponent transform;
-		script_component script;
+		scriptComponent script;
 	};
 
 	gameEntity::entity entityFromId(id::idType id)
@@ -59,8 +59,7 @@ namespace
 	}
 }
 
-EDITOR_INTERFACE
-id::idType CreateGameEntity(gameEntityDescriptor* e)
+EDITOR_INTERFACE id::idType CreateGameEntity(gameEntityDescriptor* e)
 {
 	assert(e);
 
@@ -77,8 +76,7 @@ id::idType CreateGameEntity(gameEntityDescriptor* e)
 	return gameEntity::create(entityInfo).getId();
 }
 
-EDITOR_INTERFACE
-void RemoveGameEntity(id::idType id)
+EDITOR_INTERFACE void RemoveGameEntity(id::idType id)
 {
 	assert(id::isValid(id));
 
