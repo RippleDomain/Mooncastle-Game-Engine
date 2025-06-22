@@ -6,6 +6,27 @@
 
 namespace mooncastle::tools 
 {
+	namespace packedVertex
+	{
+		struct vertexStatic
+		{
+			math::v3	position;
+			u8			reserved[3];
+			u8			tSign; //Bit 0: tangent handedness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1)
+			u16			normal[2];
+			u16			tangent[2];
+			math::v2	uv;
+		};
+	}
+
+	struct vertex
+	{
+		math::v4 tangent{};
+		math::v3 position{};
+		math::v3 normal{};
+		math::v2 uv{};
+	};
+
 	struct mesh
 	{
 		//Initial mesh data
@@ -16,8 +37,14 @@ namespace mooncastle::tools
 		utl::vector<u32>                         rawIndices;
 
 		//Intermediate mesh data
+		utl::vector<vertex>                      vertices;
+		utl::vector<u32>                         indices;
 
 		//Output mesh data
+		std::string                              name;
+		utl::vector<packedVertex::vertexStatic>  packedVerticesStatic;
+		f32                                      lodThreshold{ -1.f };
+		u32                                      lodId{ u32_invalid_id };
 
 	};
 
@@ -48,4 +75,7 @@ namespace mooncastle::tools
 		u32                      bufferSize;
 		geometryImportSettings   settings;
 	};
+
+	void processScene(scene& scene, const geometryImportSettings& settings);
+	void packData(const scene& scene, sceneData& data);
 }
