@@ -336,5 +336,7 @@ namespace mooncastle::tools
                 packMeshData(m, buffer, at);
             }
         }
+
+        assert(sceneSize == at);
 	}
 }
