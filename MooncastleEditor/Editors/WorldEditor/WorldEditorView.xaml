@@ -70,6 +70,10 @@
                 <ComboBoxItem Content="Debug" />
                 <ComboBoxItem Content="Release" />
             </ComboBox>
+            <Button
+                Margin="10,0"
+                Click="OnCreatePrimitiveMesh_Button_Click"
+                Content="Primitive Mesh" />
         </StackPanel>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>

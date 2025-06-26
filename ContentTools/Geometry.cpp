@@ -10,11 +10,11 @@ namespace mooncastle::tools
         void recalculateNormals(mesh& m)
         {
             const u32 numIndices{ (u32)m.rawIndices.size() };
-            m.normals.reserve(numIndices);
+            m.normals.resize(numIndices);
 
             for (u32 i{ 0 }; i < numIndices; ++i)
             {
-                const u32 i0{ m.rawIndices[i++] };
+                const u32 i0{ m.rawIndices[i] };
                 const u32 i1{ m.rawIndices[i++] };
                 const u32 i2{ m.rawIndices[i++] };
 
