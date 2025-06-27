@@ -66,6 +66,9 @@ namespace mooncastle::tools
 					v2 uv{ uRange.x, 1.f - vRange.x };
 					uv.x += i * uStep;
 					uv.y -= j * vStep;
+					/*v2 uv{ 0, 1.f };
+					uv.x += (i % 2);
+					uv.y -= (j % 2);*/
 					uvs.emplace_back(uv);
 				}
 			}

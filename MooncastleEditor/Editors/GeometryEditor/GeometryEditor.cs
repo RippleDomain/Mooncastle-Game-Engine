@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.Content;
+using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -71,7 +72,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        private Point3D _cameraPosition = new Point3D(0, 0, -10);
+        private Point3D _cameraPosition = new Point3D(0, 0, 10);
         public Point3D CameraPosition
         {
             get => _cameraPosition;
@@ -80,6 +81,7 @@ namespace MooncastleEditor.Editors
                 if (_cameraPosition != value)
                 {
                     _cameraPosition = value;
+                    CameraDirection = new Vector3D(-value.X, -value.Y, -value.Z);
                     OnPropertyChanged(nameof(CameraPosition));
                     OnPropertyChanged(nameof(OffsetCameraPosition));
                 }
@@ -169,8 +171,10 @@ namespace MooncastleEditor.Editors
 
             //In order to properly decide the camera position and target, we need to figure out how big
             //the object that we are rendering is. Hence, we need to know its bounding box.
-            double minX, minY, minZ; minX = minY = minZ = double.MaxValue;
-            double maxX, maxY, maxZ; maxX = maxY = maxZ = double.MinValue;
+            double minX, minY, minZ; 
+            minX = minY = minZ = double.MaxValue;
+            double maxX, maxY, maxZ; 
+            maxX = maxY = maxZ = double.MinValue;
             Vector3D avgNormal = new Vector3D();
 
             //This is to unpack the packed normals.
@@ -193,9 +197,12 @@ namespace MooncastleEditor.Editors
                         vertexData.Positions.Add(new Point3D(posX, posY, posZ));
 
                         //Adjust the bounding box.
-                        minX = Math.Min(minX, posX); maxX = Math.Max(maxX, posX);
-                        minY = Math.Min(minY, posY); maxY = Math.Max(maxY, posY);
-                        minZ = Math.Min(minZ, posZ); maxZ = Math.Max(maxZ, posZ);
+                        minX = Math.Min(minX, posX);
+                        minY = Math.Min(minY, posY); 
+                        minZ = Math.Min(minZ, posZ);
+                        maxX = Math.Max(maxX, posX);
+                        maxY = Math.Max(maxY, posY);
+                        maxZ = Math.Max(maxZ, posZ);
 
                         //Read normals.
                         var nrmX = reader.ReadUInt16() * intervals - 1.0f;

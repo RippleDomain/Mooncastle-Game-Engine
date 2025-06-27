@@ -124,7 +124,7 @@ namespace MooncastleEditor.Utilities.Controls
 
                         var newValue = _originalValue + (distance * _multiplier * Multiplier);
 
-                    Value = newValue.ToString("0.#####");
+                    Value = newValue.ToString("G5");
                     _valueChanged = true;
                 }
             }

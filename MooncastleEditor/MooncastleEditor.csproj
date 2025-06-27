@@ -38,4 +38,8 @@
     </COMReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
+  </ItemGroup>
+
 </Project>

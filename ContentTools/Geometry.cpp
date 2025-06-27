@@ -114,7 +114,7 @@ namespace mooncastle::tools
                 idxRef[oldIndices[i]].emplace_back(i);
             }
 
-            for (u32 i{ 0 }; i < numIndices; ++i)
+            for (u32 i{ 0 }; i < numVertices; ++i)
             {
                 auto& refs{ idxRef[i] };
                 u32 numRefs{ (u32)refs.size() };
