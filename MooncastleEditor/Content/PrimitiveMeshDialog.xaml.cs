@@ -1,5 +1,6 @@
 ﻿using MooncastleEditor.ContentToolsAPIStructs;
 using MooncastleEditor.DllWrappers;
+using MooncastleEditor.Editors;
 using MooncastleEditor.Utilities.Controls;
 using System;
 using System.Collections.Generic;
@@ -65,6 +66,7 @@ namespace MooncastleEditor.Content
 
             var geometry = new Geometry();
             ContentToolsAPI.CreatePrimitiveMesh(geometry, info);
+            (DataContext as GeometryEditor).SetAsset(geometry);
         }
 
         public PrimitiveMeshDialog()

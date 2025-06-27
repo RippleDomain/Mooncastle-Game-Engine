@@ -155,7 +155,7 @@ namespace mooncastle::tools
                 const u16 normalX{ (u16)packFloat<16>(v.normal.x, -1.f, 1.f) };
                 const u16 normalY{ (u16)packFloat<16>(v.normal.y, -1.f, 1.f) };
 
-                //TODO: Pack tangents in sign and in x/y components
+                //TODO: Pack tangents in sign and in x/y components.
 
                 m.packedVerticesStatic.emplace_back(packedVertex::vertexStatic{ v.position, {0, 0, 0}, signs, {normalX, normalY}, {}, v.uv });
             }

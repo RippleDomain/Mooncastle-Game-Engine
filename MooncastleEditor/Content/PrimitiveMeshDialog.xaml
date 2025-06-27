@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ed="clr-namespace:MooncastleEditor.Editors"
     xmlns:local="clr-namespace:MooncastleEditor.Content"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -16,6 +17,9 @@
     UseLayoutRounding="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
+    <Window.DataContext>
+        <ed:GeometryEditor />
+    </Window.DataContext>
     <Window.Resources>
         <ObjectDataProvider
             x:Key="dataFromEnum"
