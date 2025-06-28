@@ -29,6 +29,10 @@
                 <x:Type TypeName="local:PrimitiveMeshType" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Margin" Value="5,5,0,0" />
+            <Setter Property="FontSize" Value="9" />
+        </Style>
     </Window.Resources>
     <DockPanel Background="{DynamicResource Editor.Window.GrayBrush2}">
         <Border
@@ -49,7 +53,7 @@
                     Width="100"
                     VerticalAlignment="Center"
                     ItemsSource="{Binding Source={StaticResource dataFromEnum}}"
-                    SelectedIndex="0"
+                    SelectedIndex="2"
                     SelectionChanged="OnPrimitiveType_ComboBox_SelectionChanged" />
                 <CheckBox
                     x:Name="textureCheckBox"
@@ -82,6 +86,7 @@
                 <Grid Margin="0,5">
                     <Border
                         Margin="5"
+                        Background="{DynamicResource Editor.Window.GrayBrush4}"
                         BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
                         BorderThickness="1"
                         CornerRadius="3">
@@ -131,17 +136,16 @@
                         </StackPanel>
                     </Border>
                     <Label
-                        Margin="20,-3,0,0"
                         Padding="5,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        Background="{DynamicResource Editor.Window.GrayBrush3}"
                         Content="Segments"
                         Foreground="{DynamicResource Editor.FontBrush}" />
                 </Grid>
                 <Grid Margin="0,5">
                     <Border
                         Margin="5"
+                        Background="{DynamicResource Editor.Window.GrayBrush4}"
                         BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
                         BorderThickness="1"
                         CornerRadius="3">
@@ -171,11 +175,9 @@
                         </StackPanel>
                     </Border>
                     <Label
-                        Margin="20,-3,0,0"
                         Padding="5,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        Background="{DynamicResource Editor.Window.GrayBrush3}"
                         Content="Size"
                         Foreground="{DynamicResource Editor.FontBrush}" />
                 </Grid>
@@ -186,6 +188,131 @@
             </StackPanel>
             <!--  CUBE SETTINGS  -->
             <!--  UVSPHERE SETTINGS  -->
+            <StackPanel Background="{DynamicResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.UvSphere}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        Background="{DynamicResource Editor.Window.GrayBrush4}"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Lon." />
+                                <TextBox
+                                    Width="30"
+                                    DockPanel.Dock="Right"
+                                    Text="{Binding Path=Value, ElementName=xSliderUvSphere}" />
+                                <Slider
+                                    x:Name="xSliderUvSphere"
+                                    HorizontalAlignment="Stretch"
+                                    Interval="1"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="64"
+                                    Minimum="2"
+                                    TickPlacement="BottomRight"
+                                    ValueChanged="OnSlider_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Lat." />
+                                <TextBox
+                                    Width="30"
+                                    DockPanel.Dock="Right"
+                                    Text="{Binding Path=Value, ElementName=ySliderUvSphere}" />
+                                <Slider
+                                    x:Name="ySliderUvSphere"
+                                    HorizontalAlignment="Stretch"
+                                    Interval="1"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="64"
+                                    Minimum="3"
+                                    TickPlacement="BottomRight"
+                                    ValueChanged="OnSlider_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="Segments"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        Background="{DynamicResource Editor.Window.GrayBrush4}"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="X" />
+                                <utl:ScalarBox
+                                    x:Name="xScalarBoxUvSphere"
+                                    ValueChanged="OnScalarBox_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Y" />
+                                <utl:ScalarBox
+                                    x:Name="yScalarBoxUvSphere"
+                                    ValueChanged="OnScalarBox_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                            <DockPanel Margin="5,5,5,0">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Z" />
+                                <utl:ScalarBox
+                                    x:Name="zScalarBoxUvSphere"
+                                    ValueChanged="OnScalarBox_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="Size"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
+                <Button
+                    Width="96"
+                    Margin="5,0"
+                    Content="Save" />
+            </StackPanel>
             <!--  ICOSPHERE SETTINGS  -->
             <!--  CYLINDER SETTINGS  -->
             <!--  CAPSULE SETTINGS  -->

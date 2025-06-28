@@ -19,7 +19,7 @@ namespace MooncastleEditor.Editors
     //Temporary class to display meshes until we implement a renderer.
     class MeshRendererVertexData : ViewModelBase
     {
-        private Brush _specular = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ff111111"));
+        private Brush _specular = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF111111"));
         public Brush Specular
         {
             get => _specular;
@@ -82,13 +82,13 @@ namespace MooncastleEditor.Editors
                 {
                     _cameraPosition = value;
                     CameraDirection = new Vector3D(-value.X, -value.Y, -value.Z);
-                    OnPropertyChanged(nameof(CameraPosition));
                     OnPropertyChanged(nameof(OffsetCameraPosition));
+                    OnPropertyChanged(nameof(CameraPosition));
                 }
             }
         }
 
-        private Point3D _cameraTarget = new Point3D(0, 0, 0);
+        private Point3D _cameraTarget = new Point3D(0, 0, 10);
         public Point3D CameraTarget
         {
             get => _cameraTarget;
@@ -106,7 +106,7 @@ namespace MooncastleEditor.Editors
         public Point3D OffsetCameraPosition =>
             new Point3D(CameraPosition.X + CameraTarget.X, CameraPosition.Y + CameraTarget.Y, CameraPosition.Z + CameraTarget.Z);
 
-        private Color _keyLight = (Color)ColorConverter.ConvertFromString("#ffaeaeae");
+        private Color _keyLight = (Color)ColorConverter.ConvertFromString("#FFAEAEAE");
         public Color KeyLight
         {
             get => _keyLight;
@@ -120,7 +120,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        private Color _skyLight = (Color)ColorConverter.ConvertFromString("#ff1b1b30");
+        private Color _skyLight = (Color)ColorConverter.ConvertFromString("#FF111B30");
         public Color SkyLight
         {
             get => _skyLight;
@@ -134,7 +134,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        private Color _groundLight = (Color)ColorConverter.ConvertFromString("#ff3f2f1e");
+        private Color _groundLight = (Color)ColorConverter.ConvertFromString("#FF3F2F1E");
         public Color GroundLight
         {
             get => _groundLight;
@@ -148,7 +148,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        private Color _ambientLight = (Color)ColorConverter.ConvertFromString("#ff3b3b3b");
+        private Color _ambientLight = (Color)ColorConverter.ConvertFromString("#ff3B3B3B");
         public Color AmbientLight
         {
             get => _ambientLight;

@@ -56,7 +56,14 @@ namespace MooncastleEditor.Content
                 case PrimitiveMeshType.Cube:
                     return;
                 case PrimitiveMeshType.UvSphere:
-                    return;
+                    {
+                        info.SegmentX = (int)xSliderUvSphere.Value;
+                        info.SegmentY = (int)ySliderUvSphere.Value;
+                        info.Size.X = Value(xScalarBoxUvSphere, 0.001f);
+                        info.Size.Y = Value(xScalarBoxUvSphere, 0.001f);
+                        info.Size.Z = Value(xScalarBoxUvSphere, 0.001f);
+                    }
+                    break;
                 case PrimitiveMeshType.IcoSphere:
                     return;
                 case PrimitiveMeshType.Cylinder:
@@ -78,6 +85,8 @@ namespace MooncastleEditor.Content
             var uris = new List<Uri>
             {
                 new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
+                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
+                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png")
             };
 
             _textures.Clear();

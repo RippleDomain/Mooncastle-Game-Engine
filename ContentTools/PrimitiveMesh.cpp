@@ -7,6 +7,7 @@ namespace mooncastle::tools
 	{
 		using primitiveMeshCreator = void(*)(scene&, const primitiveInitInfo& info);
 		using namespace math;
+		using namespace DirectX;
 
 		void createPlane(scene& scene, const primitiveInitInfo& info);
 		void createCube(scene& scene, const primitiveInitInfo& info);
@@ -114,6 +115,114 @@ namespace mooncastle::tools
 			return m;
 		}
 
+		mesh createUvSphere(const primitiveInitInfo& info) 
+		{
+			const u32 phiCount{ clamp(info.segments[axis::x], 3u, 64u) };
+			const u32 thetaCount{ clamp(info.segments[axis::y], 2u, 64u) };
+			const f32 thetaStep{ pi / thetaCount };
+			const f32 phiStep{ tau / phiCount };
+			const u32 numVertices{ 2 + phiCount * (thetaCount - 1) };
+			const u32 numIndices{ 2 * 3 * phiCount + 2 * 3 * phiCount * (thetaCount - 2)};
+
+			mesh m{};
+			m.name = "uvSphere";
+			m.positions.resize(numVertices);
+
+			//Add the top vertex.
+			u32 c{ 0 };
+			m.positions[c++] = { 0.f, info.size.y, 0.f };
+
+			for (u32 j{ 1 }; j <= (thetaCount - 1); ++j)
+			{
+				const f32 theta{ j * thetaStep };
+
+				for (u32 i{ 0 }; i < phiCount; ++i)
+				{
+					const f32 phi{ i * phiStep };
+					m.positions[c++] = {
+						info.size.x* XMScalarSin(theta)* XMScalarCos(phi),
+						info.size.y* XMScalarCos(theta),
+						-info.size.z * XMScalarSin(theta) * XMScalarSin(phi)
+					};
+				}
+			}
+
+			//Add the bottom vertex.
+			m.positions[c++] = { 0.f, -info.size.y, 0.f };
+			assert(c == numVertices);
+
+			c = 0;
+			m.rawIndices.resize(numIndices);
+
+			//Indices for the top cap, connecting the north pole of the mesh to the first ring in the middle.
+			for (u32 i{ 0 }; i < phiCount - 1; ++i)
+			{
+				m.rawIndices[c++] = 0;
+				m.rawIndices[c++] = i + 1;
+				m.rawIndices[c++] = i + 2;
+			}
+
+			m.rawIndices[c++] = 0;
+			m.rawIndices[c++] = phiCount;
+			m.rawIndices[c++] = 1;
+
+			//Indices for the section between the top and bottom rings (the middle ring).
+			for (u32 j{ 0 }; j < (thetaCount - 2); ++j)
+			{
+				for (u32 i{ 0 }; i < (phiCount - 1); ++i)
+				{
+					const u32 index[4]{
+						1 + i + j * phiCount,
+						1 + i + (j + 1) * phiCount,
+						1 + (i + 1) + (j + 1) * phiCount,
+						1 + (i + 1) + j * phiCount
+					};
+
+					m.rawIndices[c++] = index[0];
+					m.rawIndices[c++] = index[1];
+					m.rawIndices[c++] = index[2];
+
+					m.rawIndices[c++] = index[0];
+					m.rawIndices[c++] = index[2];
+					m.rawIndices[c++] = index[3];
+				}
+
+				const u32 index[4]{
+					phiCount + j * phiCount,
+					phiCount + (j + 1) * phiCount,
+					1 + (j + 1) * phiCount,
+					1 + j * phiCount
+				};
+
+				m.rawIndices[c++] = index[0];
+				m.rawIndices[c++] = index[1];
+				m.rawIndices[c++] = index[2];
+
+				m.rawIndices[c++] = index[0];
+				m.rawIndices[c++] = index[2];
+				m.rawIndices[c++] = index[3];
+			}
+
+			//Indices for the bottom cap, connecting the south pole to the last ring.
+			const u32 southPoleIndex{ (u32)m.positions.size() - 1 };
+
+			for (u32 i{ 0 }; i < (phiCount - 1); ++i)
+			{
+				m.rawIndices[c++] = southPoleIndex;
+				m.rawIndices[c++] = southPoleIndex - phiCount + i + 1;
+				m.rawIndices[c++] = southPoleIndex - phiCount + i;
+			}
+
+			m.rawIndices[c++] = southPoleIndex;
+			m.rawIndices[c++] = southPoleIndex - phiCount;
+			m.rawIndices[c++] = southPoleIndex - 1;
+
+			m.uvSets.resize(1);
+			m.uvSets[0].resize(m.rawIndices.size());
+
+			return m;
+		}
+
 		void createPlane(scene& scene, const primitiveInitInfo& info)
 		{
 			lodGroup lod{};
@@ -129,7 +238,10 @@ namespace mooncastle::tools
 
 		void createUvSphere(scene& scene, const primitiveInitInfo& info) 
 		{
-
+			lodGroup lod{};
+			lod.name = "UvSphere";
+			lod.meshes.emplace_back(createUvSphere(info));
+			scene.lodGroups.emplace_back(lod);
 		}
 
 		void createIcoSphere(scene& scene, const primitiveInitInfo& info)

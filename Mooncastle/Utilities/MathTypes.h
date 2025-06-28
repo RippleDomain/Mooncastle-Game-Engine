@@ -5,6 +5,7 @@
 namespace mooncastle::math
 {
 	constexpr float pi = 3.14159265358979323846f;
+	constexpr float tau = 2.f * pi;
 	constexpr float epsilon = 1e-5f;
 
 #if defined(_WIN64)
