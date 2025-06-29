@@ -1,9 +1,12 @@
-﻿using MooncastleEditor.ContentToolsAPIStructs;
+﻿using Microsoft.Win32;
+using MooncastleEditor.ContentToolsAPIStructs;
 using MooncastleEditor.DllWrappers;
 using MooncastleEditor.Editors;
+using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities.Controls;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -61,8 +64,8 @@ namespace MooncastleEditor.Content
                         info.SegmentX = (int)xSliderUvSphere.Value;
                         info.SegmentY = (int)ySliderUvSphere.Value;
                         info.Size.X = Value(xScalarBoxUvSphere, 0.001f);
-                        info.Size.Y = Value(xScalarBoxUvSphere, 0.001f);
-                        info.Size.Z = Value(xScalarBoxUvSphere, 0.001f);
+                        info.Size.Y = Value(yScalarBoxUvSphere, 0.001f);
+                        info.Size.Z = Value(zScalarBoxUvSphere, 0.001f);
                         smoothingAngle = (int)angleSliderUvSphere.Value;
                     }
                     break;
@@ -77,7 +80,7 @@ namespace MooncastleEditor.Content
             }
 
             var geometry = new Geometry();
-            geometry.ImportSettings.SmootingAngle = smoothingAngle;
+            geometry.ImportSettings.SmoothingAngle = smoothingAngle;
             ContentToolsAPI.CreatePrimitiveMesh(geometry, info);
             (DataContext as GeometryEditor).SetAsset(geometry);
             OnTexture_CheckBox_Click(textureCheckBox, null);
@@ -137,6 +140,23 @@ namespace MooncastleEditor.Content
             foreach (var mesh in vm.MeshRenderer.Meshes)
             {
                 mesh.Diffuse = brush;
+            }
+        }
+
+        private void OnSave_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog()
+            {
+                InitialDirectory = Project.Current.ContentPath,
+                Filter = "Asset file (*.mcasset)|*.mcasset"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                Debug.Assert(!string.IsNullOrEmpty(dlg.FileName));
+                var asset = (DataContext as IAssetEditor).Asset;
+                Debug.Assert(asset != null);
+                asset.Save(dlg.FileName);
             }
         }
     }

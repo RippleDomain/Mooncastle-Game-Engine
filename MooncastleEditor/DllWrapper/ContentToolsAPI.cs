@@ -27,7 +27,7 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         {
             var settings = geometry.ImportSettings;
 
-            SmoothingAngle = settings.SmootingAngle;
+            SmoothingAngle = settings.SmoothingAngle;
             CalculateNormals = ToByte(settings.CalculateNormals);
             CalculateTangents = ToByte(settings.CalculateTangents);
             ReverseHandedness = ToByte(settings.ReverseHandedness);

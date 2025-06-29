@@ -184,6 +184,7 @@
                 <Button
                     Width="96"
                     Margin="5,0"
+                    Click="OnSave_Button_Click"
                     Content="Save" />
             </StackPanel>
             <!--  CUBE SETTINGS  -->
@@ -315,39 +316,38 @@
                         BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
                         BorderThickness="1"
                         CornerRadius="3">
-                        <StackPanel Margin="5,15,5,5">
-                            <DockPanel Margin="5">
-                                <TextBlock
-                                    Width="40"
-                                    VerticalAlignment="Center"
-                                    DockPanel.Dock="Left"
-                                    Text="Angle" />
-                                <TextBox
-                                    Width="30"
-                                    DockPanel.Dock="Right"
-                                    Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" />
-                                <Slider
-                                    x:Name="angleSliderUvSphere"
-                                    HorizontalAlignment="Stretch"
-                                    Interval="1"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="180"
-                                    Minimum="0"
-                                    ValueChanged="OnSlider_ValueChanged"
-                                    Value="1" />
-                            </DockPanel>
-                        </StackPanel>
+                        <DockPanel Margin="5,15,5,5">
+                            <TextBlock
+                                Width="40"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Left"
+                                Text="Angle" />
+                            <TextBox
+                                Width="30"
+                                DockPanel.Dock="Right"
+                                Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" />
+                            <Slider
+                                x:Name="angleSliderUvSphere"
+                                HorizontalAlignment="Stretch"
+                                Interval="1"
+                                IsSnapToTickEnabled="True"
+                                Maximum="180"
+                                Minimum="0"
+                                ValueChanged="OnSlider_ValueChanged"
+                                Value="1" />
+                        </DockPanel>
                     </Border>
                     <Label
                         Padding="5,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        Content="Segments"
+                        Content="Smoothing Angle"
                         Foreground="{DynamicResource Editor.FontBrush}" />
                 </Grid>
                 <Button
                     Width="96"
                     Margin="5,0"
+                    Click="OnSave_Button_Click"
                     Content="Save" />
             </StackPanel>
             <!--  ICOSPHERE SETTINGS  -->
