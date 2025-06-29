@@ -40,6 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\PrimitiveMeshView\chess.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
   </ItemGroup>
 

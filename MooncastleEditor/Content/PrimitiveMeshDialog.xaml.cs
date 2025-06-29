@@ -42,6 +42,7 @@ namespace MooncastleEditor.Content
 
             var primitiveType = (PrimitiveMeshType)primTypeComboBox.SelectedItem;
             var info = new PrimitiveInitInfo() { Type = primitiveType };
+            var smoothingAngle = 0;
 
             switch (primitiveType)
             {
@@ -62,6 +63,7 @@ namespace MooncastleEditor.Content
                         info.Size.X = Value(xScalarBoxUvSphere, 0.001f);
                         info.Size.Y = Value(xScalarBoxUvSphere, 0.001f);
                         info.Size.Z = Value(xScalarBoxUvSphere, 0.001f);
+                        smoothingAngle = (int)angleSliderUvSphere.Value;
                     }
                     break;
                 case PrimitiveMeshType.IcoSphere:
@@ -75,6 +77,7 @@ namespace MooncastleEditor.Content
             }
 
             var geometry = new Geometry();
+            geometry.ImportSettings.SmootingAngle = smoothingAngle;
             ContentToolsAPI.CreatePrimitiveMesh(geometry, info);
             (DataContext as GeometryEditor).SetAsset(geometry);
             OnTexture_CheckBox_Click(textureCheckBox, null);
@@ -86,7 +89,7 @@ namespace MooncastleEditor.Content
             {
                 new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
                 new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
-                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png")
+                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/chess.png")
             };
 
             _textures.Clear();

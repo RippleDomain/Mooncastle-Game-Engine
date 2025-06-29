@@ -226,7 +226,7 @@
                                     Minimum="2"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
-                                    Value="1" />
+                                    Value="24" />
                             </DockPanel>
                             <DockPanel Margin="5">
                                 <TextBlock
@@ -247,7 +247,7 @@
                                     Minimum="3"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
-                                    Value="1" />
+                                    Value="12" />
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -308,6 +308,43 @@
                         Content="Size"
                         Foreground="{DynamicResource Editor.FontBrush}" />
                 </Grid>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        Background="{DynamicResource Editor.Window.GrayBrush4}"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush3}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="40"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Angle" />
+                                <TextBox
+                                    Width="30"
+                                    DockPanel.Dock="Right"
+                                    Text="{Binding Path=Value, ElementName=angleSliderUvSphere}" />
+                                <Slider
+                                    x:Name="angleSliderUvSphere"
+                                    HorizontalAlignment="Stretch"
+                                    Interval="1"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="180"
+                                    Minimum="0"
+                                    ValueChanged="OnSlider_ValueChanged"
+                                    Value="1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="Segments"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
                 <Button
                     Width="96"
                     Margin="5,0"
@@ -322,11 +359,22 @@
                 Margin="5"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
-                IsHitTestVisible="False"
-                Orientation="Horizontal">
-                <TextBlock Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}" />
-                <TextBlock Margin="10,0" Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" />
-                <TextBlock Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}" />
+                IsHitTestVisible="False">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Foreground="{DynamicResource Editor.RedBrush}" Text="{Binding MeshRenderer.CameraPosition.X, StringFormat=G5}" />
+                    <TextBlock
+                        Margin="10,0"
+                        Foreground="{DynamicResource Editor.BlueBrush}"
+                        Text="{Binding MeshRenderer.CameraPosition.Y, StringFormat=G5}" />
+                    <TextBlock Foreground="{DynamicResource Editor.GreenBrush}" Text="{Binding MeshRenderer.CameraPosition.Z, StringFormat=G5}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Foreground="{DynamicResource Editor.OrangeBrush}" Text="{Binding MeshRenderer.Meshes[0].Positions.Count}" />
+                    <TextBlock
+                        Margin="10,0"
+                        Foreground="{DynamicResource Editor.OrangeBrush}"
+                        Text="{Binding MeshRenderer.Meshes[0].Indices.Count}" />
+                </StackPanel>
             </StackPanel>
         </Grid>
     </DockPanel>

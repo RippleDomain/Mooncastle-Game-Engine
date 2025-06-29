@@ -153,20 +153,29 @@ namespace mooncastle::tools
 
 			c = 0;
 			m.rawIndices.resize(numIndices);
+			utl::vector<v2> uvs(numIndices);
+			const f32 invThetaCount{ 1.f / thetaCount };
+			const f32 invPhiCount{ 1.f / phiCount };
 
 			//Indices for the top cap, connecting the north pole of the mesh to the first ring in the middle.
 			for (u32 i{ 0 }; i < phiCount - 1; ++i)
 			{
+				uvs[c] = { (2 * i + 1) * 0.5f * invPhiCount, 1.f };
 				m.rawIndices[c++] = 0;
+				uvs[c] = { i * invPhiCount, 1.f - invThetaCount };
 				m.rawIndices[c++] = i + 1;
+				uvs[c] = { (i + 1) * invPhiCount, 1.f - invThetaCount };
 				m.rawIndices[c++] = i + 2;
 			}
 
+			uvs[c] = { 1.f - 0.5f * invPhiCount, 1.f };
 			m.rawIndices[c++] = 0;
+			uvs[c] = { 1.f - invPhiCount, 1.f - invThetaCount };
 			m.rawIndices[c++] = phiCount;
+			uvs[c] = { 1.f, 1.f - invThetaCount };
 			m.rawIndices[c++] = 1;
 
-			//Indices for the section between the top and bottom rings (the middle ring).
+			//Indices for the section between the top and bottom rings.
 			for (u32 j{ 0 }; j < (thetaCount - 2); ++j)
 			{
 				for (u32 i{ 0 }; i < (phiCount - 1); ++i)
@@ -178,12 +187,18 @@ namespace mooncastle::tools
 						1 + (i + 1) + j * phiCount
 					};
 
+					uvs[c] = { i * invPhiCount, 1.f - (j + 1) * invThetaCount };
 					m.rawIndices[c++] = index[0];
+					uvs[c] = { i * invPhiCount, 1.f - (j + 2) * invThetaCount };
 					m.rawIndices[c++] = index[1];
+					uvs[c] = { (i + 1) * invPhiCount, 1.f - (j + 2) * invThetaCount };
 					m.rawIndices[c++] = index[2];
 
+					uvs[c] = { i * invPhiCount, 1.f - (j + 1) * invThetaCount };
 					m.rawIndices[c++] = index[0];
+					uvs[c] = { (i + 1) * invPhiCount, 1.f - (j + 2) * invThetaCount };
 					m.rawIndices[c++] = index[2];
+					uvs[c] = { (i + 1) * invPhiCount, 1.f - (j + 1) * invThetaCount };
 					m.rawIndices[c++] = index[3];
 				}
 
@@ -194,12 +209,18 @@ namespace mooncastle::tools
 					1 + j * phiCount
 				};
 
+				uvs[c] = { 1.f - invPhiCount, 1.f - (j + 1) * invThetaCount };
 				m.rawIndices[c++] = index[0];
+				uvs[c] = { 1.f - invPhiCount, 1.f - (j + 2) * invThetaCount };
 				m.rawIndices[c++] = index[1];
+				uvs[c] = { 1.f, 1.f - (j + 2) * invThetaCount };
 				m.rawIndices[c++] = index[2];
 
+				uvs[c] = { 1.f - invPhiCount, 1.f - (j + 1) * invThetaCount };
 				m.rawIndices[c++] = index[0];
+				uvs[c] = { 1.f, 1.f - (j + 2) * invThetaCount };
 				m.rawIndices[c++] = index[2];
+				uvs[c] = { 1.f, 1.f - (j + 1) * invThetaCount };
 				m.rawIndices[c++] = index[3];
 			}
 
@@ -208,17 +229,24 @@ namespace mooncastle::tools
 
 			for (u32 i{ 0 }; i < (phiCount - 1); ++i)
 			{
+				uvs[c] = { (2 * i + 1) * 0.5f * invPhiCount, 0.f };
 				m.rawIndices[c++] = southPoleIndex;
+				uvs[c] = { (i + 1) * invPhiCount, invThetaCount };
 				m.rawIndices[c++] = southPoleIndex - phiCount + i + 1;
+				uvs[c] = { i * invPhiCount, invThetaCount };
 				m.rawIndices[c++] = southPoleIndex - phiCount + i;
 			}
 
+			uvs[c] = { 1.f - 0.5f * invPhiCount, 0.f };
 			m.rawIndices[c++] = southPoleIndex;
+			uvs[c] = { 1.f, invThetaCount };
 			m.rawIndices[c++] = southPoleIndex - phiCount;
+			uvs[c] = { 1.f - invPhiCount, invThetaCount };
 			m.rawIndices[c++] = southPoleIndex - 1;
 
-			m.uvSets.resize(1);
-			m.uvSets[0].resize(m.rawIndices.size());
+			assert(c == numIndices);
+
+			m.uvSets.emplace_back(uvs);
 
 			return m;
 		}
