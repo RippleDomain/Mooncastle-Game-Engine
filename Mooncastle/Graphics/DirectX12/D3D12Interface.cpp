@@ -9,5 +9,6 @@ namespace mooncastle::graphics::d3D12
     {
         pi.initialize = core::initialize;
         pi.shutdown = core::shutdown;
+        pi.render = core::render;
     }
 }

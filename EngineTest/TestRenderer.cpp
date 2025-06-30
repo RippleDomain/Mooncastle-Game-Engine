@@ -3,6 +3,8 @@
 #include "..\Platform\Platform.h"
 #include "..\Graphics\Renderer.h"
 
+#if TEST_RENDERER
+
 using namespace mooncastle;
 
 graphics::renderSurface surfaces[4];
@@ -79,6 +81,7 @@ bool engineTest::initialize()
 void engineTest::run()
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	graphics::render();
 }
 
 void engineTest::shutdown()
@@ -90,3 +93,5 @@ void engineTest::shutdown()
 
 	graphics::shutdown();
 }
+
+#endif

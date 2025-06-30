@@ -22,4 +22,5 @@ namespace mooncastle::graphics {
 
     bool initialize(graphicsPlatform platform);
     void shutdown();
+    void render();
 }

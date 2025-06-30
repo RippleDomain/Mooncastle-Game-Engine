@@ -1,8 +1,6 @@
-#pragma comment(lib, "mooncastle.lib")
+#include "Test.h"
 
-#define TEST_ENTITY_COMPONENTS 0
-#define TEST_WINDOW 0
-#define TEST_RENDERER 1
+#pragma comment(lib, "mooncastle.lib")
 
 #if TEST_ENTITY_COMPONENTS
 #include "TestEntityComponents.h"

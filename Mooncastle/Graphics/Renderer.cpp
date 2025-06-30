@@ -31,4 +31,9 @@ namespace mooncastle::graphics
     {
         gfx.shutdown();
     }
+
+    void render()
+    {
+        gfx.render();
+    }
 }

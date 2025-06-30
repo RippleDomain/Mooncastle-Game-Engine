@@ -4,6 +4,8 @@
 #include "..\Mooncastle\Components\Entity.h"
 #include "..\Mooncastle\Components\Transform.h"
 
+#if TEST_COMPONENTS
+
 #include <iostream>
 #include <ctime>
 
@@ -90,3 +92,5 @@ private:
 	u32 _removed{ 0 };
 	u32 _numEntities{ 0 };
 };
+
+#endif

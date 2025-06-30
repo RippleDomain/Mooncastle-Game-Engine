@@ -6,8 +6,170 @@ namespace mooncastle::graphics::d3D12::core
 {
     namespace 
     {
+        class d3D12Command
+        {
+        public:
+            d3D12Command() = default;
+
+            DISABLE_COPY_AND_MOVE(d3D12Command);
+
+            explicit d3D12Command(ID3D12Device8 *const device, D3D12_COMMAND_LIST_TYPE type)
+            {
+                HRESULT hr{ S_OK };
+                D3D12_COMMAND_QUEUE_DESC desc{};
+
+                desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+                desc.NodeMask = 0;
+                desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+                desc.Type = type;
+
+                DXCall(hr = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&commandQueue)));
+                if (FAILED(hr)) goto error;
+
+                NAME_D3D12_OBJECT(commandQueue,
+                    type == D3D12_COMMAND_LIST_TYPE_DIRECT ?
+                    L"GFX Command Queue" :
+                    type == D3D12_COMMAND_LIST_TYPE_COMPUTE ?
+                    L"Compute Command Queue" : L"Command Queue");
+
+                for (u32 i{ 0 }; i < frameBufferCount; ++i)
+                {
+                    commandFrame& frame{ commandFrames[i] };
+                    DXCall(hr = device->CreateCommandAllocator(type, IID_PPV_ARGS(&frame.commandAllocator)));
+                    if (FAILED(hr)) goto error;
+
+                    NAME_D3D12_OBJECT_INDEXED(frame.commandAllocator, i,
+                        type == D3D12_COMMAND_LIST_TYPE_DIRECT ?
+                        L"GFX Command Allocator" :
+                        type == D3D12_COMMAND_LIST_TYPE_COMPUTE ?
+                        L"Compute Command Allocator" : L"Command Allocator");
+                }
+
+                DXCall(hr = device->CreateCommandList(0, type, commandFrames[0].commandAllocator, nullptr, IID_PPV_ARGS(&commandList)));
+                if (FAILED(hr)) goto error;
+
+                DXCall(commandList->Close());
+                NAME_D3D12_OBJECT(commandList,
+                    type == D3D12_COMMAND_LIST_TYPE_DIRECT ?
+                    L"GFX Command List" :
+                    type == D3D12_COMMAND_LIST_TYPE_COMPUTE ?
+                    L"Compute Command List" : L"Command List");
+
+                DXCall(hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+                if (FAILED(hr)) goto error;
+
+                NAME_D3D12_OBJECT(fence, L"D3D12 Fence");
+                fenceEvent = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
+                assert(fenceEvent);
+
+                return;
+
+            error:
+                release();
+            }
+
+            ~d3D12Command()
+            {
+                assert(!commandQueue && !commandList && !fence);
+            }
+
+            //Waits for the current frame to be signalled and resets the command list and the allocator.
+            void beginFrame()
+            {
+                commandFrame& frame{ commandFrames[frameIndex] };
+                frame.wait(fenceEvent, fence);
+
+                DXCall(frame.commandAllocator->Reset());
+                DXCall(commandList->Reset(frame.commandAllocator, nullptr));
+            }
+
+            //Signals the frame with the new fence value.
+            void endFrame()
+            {
+                DXCall(commandList->Close());
+                ID3D12CommandList *const cmdLists[]{ commandList };
+                commandQueue->ExecuteCommandLists(_countof(cmdLists), &cmdLists[0]);
+
+                u64& fenceValue{ fenceValue };
+                ++fenceValue;
+                commandFrame& frame{ commandFrames[frameIndex] };
+                frame.fenceValue = fenceValue;
+
+                commandQueue->Signal(fence, fenceValue);
+
+                frameIndex = (frameIndex + 1) % frameBufferCount;
+            }
+
+            void flush()
+            {
+                for (u32 i{ 0 }; i < frameBufferCount; ++i)
+                {
+                    commandFrames[i].wait(fenceEvent, fence);
+                }
+
+                frameIndex = 0;
+            }
+
+            void release()
+            {
+                flush();
+                core::release(fence);
+                fenceValue = 0;
+
+                CloseHandle(fenceEvent);
+                fenceEvent = nullptr;
+                core::release(commandQueue);
+                core::release(commandList);
+
+                for (u32 i{ 0 }; i < frameBufferCount; ++i)
+                {
+                    commandFrames[i].release();
+                }
+            }
+
+            constexpr ID3D12CommandQueue *const getCommandQueue() const { return commandQueue; }
+            constexpr ID3D12GraphicsCommandList6 *const getCommandList() const { return commandList; }
+            constexpr u32 getFrameIndex() const { return frameIndex; }
+
+        private:
+            struct commandFrame
+            {
+                ID3D12CommandAllocator* commandAllocator{ nullptr };
+                u64                     fenceValue{ 0 };
+
+                void wait(HANDLE fenceEvent, ID3D12Fence1* fence)
+                {
+                    assert(fence && fenceEvent);
+
+                    //If the current fence value is still less than "fenceValue" the GPU has not finished executing the command lists.
+                    if (fence->GetCompletedValue() < fenceValue)
+                    {
+                        //Make the fence create an event which is signaled once the fence's current value equals "fenceValue"
+                        DXCall(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+
+                        //Wait until the fence has triggered the event, which means the command has finished executing.
+                        WaitForSingleObject(fenceEvent, INFINITE);
+                    }
+                }
+
+                void release()
+                {
+                    core::release(commandAllocator);
+                }
+            };
+
+            ID3D12CommandQueue*         commandQueue{ nullptr };
+            ID3D12GraphicsCommandList6* commandList{ nullptr };
+            ID3D12Fence1*               fence{ nullptr };
+            u32                         fenceValue{ 0 };
+            HANDLE                      fenceEvent{ nullptr };
+            commandFrame                commandFrames[frameBufferCount]{};
+            u32                         frameIndex{ 0 };
+        };
+
         ID3D12Device8* mainDevice{ nullptr };
         IDXGIFactory7* dxgiFactory{ nullptr };
+        d3D12Command   gfxCommand;
 
         constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
@@ -96,6 +258,9 @@ namespace mooncastle::graphics::d3D12::core
         DXCall(hr = D3D12CreateDevice(mainAdapter.Get(), maxFeatureLevel, IID_PPV_ARGS(&mainDevice)));
         if (FAILED(hr)) return failedInit();
 
+        new (&gfxCommand)d3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
+        if (!gfxCommand.getCommandQueue()) return failedInit();
+
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
 
 #ifdef _DEBUG
@@ -113,6 +278,7 @@ namespace mooncastle::graphics::d3D12::core
 
     void shutdown()
     {
+        gfxCommand.release();
         release(dxgiFactory);
 
 #ifdef _DEBUG
@@ -133,5 +299,18 @@ namespace mooncastle::graphics::d3D12::core
 #endif
 
         release(mainDevice);
+    }
+
+    void render()
+    {
+        /*Wait for the GPU to finish with the command allocator and
+        reset the allocator once it is done.
+        This frees the memory that was used to store commands.*/
+        gfxCommand.beginFrame();
+        ID3D12GraphicsCommandList6* commandList{ gfxCommand.getCommandList() };
+
+        /*Record commands and finish. Once it is done, execute commands,
+        signal and increment the fence value for next frame.*/
+        gfxCommand.endFrame();
     }
 }

@@ -1,7 +1,10 @@
 #pragma once
+
 #include "Test.h"
 #include "..\Platform\PlatformTypes.h"
 #include "..\Platform\Platform.h"
+
+#if TEST_WINDOW
 
 using namespace mooncastle;
 
@@ -78,3 +81,5 @@ public:
         }
     }
 };
+
+#endif
