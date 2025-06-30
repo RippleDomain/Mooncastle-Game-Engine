@@ -1,4 +1,5 @@
 #include "D3D12Core.h"
+#include "D3D12Resources.h"
 
 using namespace Microsoft::WRL;
 
@@ -90,12 +91,12 @@ namespace mooncastle::graphics::d3D12::core
                 ID3D12CommandList *const cmdLists[]{ commandList };
                 commandQueue->ExecuteCommandLists(_countof(cmdLists), &cmdLists[0]);
 
-                u64& fenceValue{ fenceValue };
-                ++fenceValue;
+                u64& fenceValueRef{ fenceValue };
+                ++fenceValueRef;
                 commandFrame& frame{ commandFrames[frameIndex] };
-                frame.fenceValue = fenceValue;
+                frame.fenceValue = fenceValueRef;
 
-                commandQueue->Signal(fence, fenceValue);
+                commandQueue->Signal(fence, fenceValueRef);
 
                 frameIndex = (frameIndex + 1) % frameBufferCount;
             }
@@ -155,21 +156,29 @@ namespace mooncastle::graphics::d3D12::core
                 void release()
                 {
                     core::release(commandAllocator);
+                    fenceValue = 0;
                 }
             };
 
             ID3D12CommandQueue*         commandQueue{ nullptr };
             ID3D12GraphicsCommandList6* commandList{ nullptr };
             ID3D12Fence1*               fence{ nullptr };
-            u32                         fenceValue{ 0 };
+            u64                         fenceValue{ 0 };
             HANDLE                      fenceEvent{ nullptr };
             commandFrame                commandFrames[frameBufferCount]{};
             u32                         frameIndex{ 0 };
         };
 
-        ID3D12Device8* mainDevice{ nullptr };
-        IDXGIFactory7* dxgiFactory{ nullptr };
-        d3D12Command   gfxCommand;
+        ID3D12Device8*            mainDevice{ nullptr };
+        IDXGIFactory7*            dxgiFactory{ nullptr };
+        d3D12Command              gfxCommand;
+        descriptorHeap            rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
+        descriptorHeap            dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
+        descriptorHeap            srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+        descriptorHeap            uavDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+        utl::vector<IUnknown*>    deferredReleases[frameBufferCount]{};
+        u32                       deferredReleaseFlag[frameBufferCount]{};
+        std::mutex                deferredReleasesMutex{};
 
         constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
@@ -219,6 +228,37 @@ namespace mooncastle::graphics::d3D12::core
 
             return featureLevelInfo.MaxSupportedFeatureLevel;
         }
+
+        void __declspec(noinline) processDeferredReleases(u32 frameIndex)
+        {
+            std::lock_guard lock{ deferredReleasesMutex };
+            deferredReleaseFlag[frameIndex] = 0;
+
+            rtvDescriptorHeap.processDeferredFree(frameIndex);
+            dsvDescriptorHeap.processDeferredFree(frameIndex);
+            srvDescriptorHeap.processDeferredFree(frameIndex);
+            uavDescriptorHeap.processDeferredFree(frameIndex);
+            
+            utl::vector<IUnknown*>& resources{ deferredReleases[frameIndex] };
+
+            if (!resources.empty())
+            {
+                for (auto& resource : resources) release(resource);
+                resources.clear();
+            }
+        }
+    }
+
+    namespace detail 
+    {
+        void deferredRelease(IUnknown* resource)
+        {
+            const u32 frameIndex{ currentFrameIndex() };
+            std::lock_guard lock{ deferredReleasesMutex };
+            deferredReleases[frameIndex].push_back(resource);
+
+            setDeferredReleasesFlag();
+        }
     }
 
     bool initialize()
@@ -233,8 +273,16 @@ namespace mooncastle::graphics::d3D12::core
         //Requires "Graphics Tools" optional feature.
         {
             ComPtr<ID3D12Debug3> debugInterface;
-            DXCall(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
-            debugInterface->EnableDebugLayer();
+
+            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)))) 
+            {
+                debugInterface->EnableDebugLayer();
+            }
+            else
+            {
+                OutputDebugStringA("Warning: D3D12 Debug interface is not available.");
+            }
+
             dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
         }
 #endif
@@ -258,11 +306,6 @@ namespace mooncastle::graphics::d3D12::core
         DXCall(hr = D3D12CreateDevice(mainAdapter.Get(), maxFeatureLevel, IID_PPV_ARGS(&mainDevice)));
         if (FAILED(hr)) return failedInit();
 
-        new (&gfxCommand)d3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
-        if (!gfxCommand.getCommandQueue()) return failedInit();
-
-        NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
-
 #ifdef _DEBUG
         {
             ComPtr<ID3D12InfoQueue> infoQueue;
@@ -273,13 +316,43 @@ namespace mooncastle::graphics::d3D12::core
         }
 #endif
 
+        bool result{ true };
+        result &= rtvDescriptorHeap.initialize(512, false);
+        result &= dsvDescriptorHeap.initialize(512, false);
+        result &= srvDescriptorHeap.initialize(4096, true);
+        result &= uavDescriptorHeap.initialize(512, false);
+        if (!result) return failedInit();
+
+        new (&gfxCommand)d3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
+        if (!gfxCommand.getCommandQueue()) return failedInit();
+
+        NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
+        NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
+        NAME_D3D12_OBJECT(dsvDescriptorHeap.getHeap(), L"DSV Descriptor Heap");
+        NAME_D3D12_OBJECT(srvDescriptorHeap.getHeap(), L"SRV Descriptor Heap");
+        NAME_D3D12_OBJECT(uavDescriptorHeap.getHeap(), L"UAV Descriptor Heap");
+
         return true;
     }
 
     void shutdown()
     {
         gfxCommand.release();
+
+        //We don't call processDeferredReleases at the end because some resources (such as swap chains) can't be released before their depending resources are released.
+        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        {
+            processDeferredReleases(i);
+        }
+
         release(dxgiFactory);
+
+        rtvDescriptorHeap.release();
+        dsvDescriptorHeap.release();
+        srvDescriptorHeap.release();
+        uavDescriptorHeap.release();
+
+        processDeferredReleases(0);
 
 #ifdef _DEBUG
         {
@@ -309,8 +382,29 @@ namespace mooncastle::graphics::d3D12::core
         gfxCommand.beginFrame();
         ID3D12GraphicsCommandList6* commandList{ gfxCommand.getCommandList() };
 
+        const u32 frame_idx{ currentFrameIndex() };
+        if (deferredReleaseFlag[frame_idx])
+        {
+            processDeferredReleases(frame_idx);
+        }
+
         /*Record commands and finish. Once it is done, execute commands,
         signal and increment the fence value for next frame.*/
         gfxCommand.endFrame();
+    }
+
+    ID3D12Device *const device()
+    {
+        return mainDevice;
+    }
+
+    u32 currentFrameIndex()
+    {
+        return gfxCommand.getFrameIndex();
+    }
+
+    void setDeferredReleasesFlag()
+    {
+        deferredReleaseFlag[currentFrameIndex()] = 1;
     }
 }
