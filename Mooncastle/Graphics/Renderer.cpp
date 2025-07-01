@@ -36,4 +36,39 @@ namespace mooncastle::graphics
     {
         gfx.render();
     }
+
+    surface createSurface(platform::window window)
+    {
+        return gfx.surface.create(window);
+    }
+
+    void removeSurface(surfaceId id)
+    {
+        assert(id::isValid(id));
+        gfx.surface.remove(id);
+    }
+
+    void surface::resize(u32 width, u32 height) const
+    {
+        assert(isValid());
+        gfx.surface.resize(id, width, height);
+    }
+
+    u32 surface::width() const
+    {
+        assert(isValid());
+        return gfx.surface.getWidth(id);
+    }
+
+    u32 surface::height() const
+    {
+        assert(isValid());
+        return gfx.surface.getHeight(id);
+    }
+
+    void surface::render() const
+    {
+        assert(isValid());
+        gfx.surface.render(id);
+    }
 }

@@ -10,7 +10,7 @@ namespace mooncastle::platform
 	{
 	public:
 		constexpr explicit window(windowId id) : id{ id } {}
-		constexpr window() : id{ id::invalidId } {}
+		constexpr window() = default;
 		constexpr windowId getId() const { return id; }
 		constexpr bool isValid() const { return id::isValid(id); }
 

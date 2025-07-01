@@ -180,6 +180,7 @@ namespace mooncastle::graphics::d3D12::core
         u32                       deferredReleaseFlag[frameBufferCount]{};
         std::mutex                deferredReleasesMutex{};
 
+        constexpr DXGI_FORMAT renderTargetFormat{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
         constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
         bool failedInit()
@@ -396,6 +397,31 @@ namespace mooncastle::graphics::d3D12::core
     ID3D12Device *const device()
     {
         return mainDevice;
+    }
+
+    descriptorHeap& getRTVHeap()
+    {
+        return rtvDescriptorHeap;
+    }
+
+    descriptorHeap& getDSVHeap()
+    {
+        return dsvDescriptorHeap;
+    }
+
+    descriptorHeap& getSRVHeap() 
+    {
+        return srvDescriptorHeap;
+    }
+
+    descriptorHeap& getUAVHeap()
+    {
+        return uavDescriptorHeap;
+    }
+
+    DXGI_FORMAT defaultRenderTargetFormat()
+    {
+        return renderTargetFormat;
     }
 
     u32 currentFrameIndex()

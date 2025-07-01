@@ -88,7 +88,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        private Point3D _cameraTarget = new Point3D(0, 0, 10);
+        private Point3D _cameraTarget = new Point3D(0, 0, 0);
         public Point3D CameraTarget
         {
             get => _cameraTarget;
@@ -164,7 +164,7 @@ namespace MooncastleEditor.Editors
 
         public MeshRenderer(MeshLOD lod, MeshRenderer old)
         {
-            Debug.Assert(lod.Meshes.Any() == true);
+            Debug.Assert(lod?.Meshes.Any() == true);
 
             //Calculate vertex size minus the position and normal vectors.
             var offset = lod.Meshes[0].VertexSize - 3 * sizeof(float) - sizeof(int) - 2 * sizeof(short);

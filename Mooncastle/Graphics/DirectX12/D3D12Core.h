@@ -1,6 +1,7 @@
 #pragma once
 
 #include "D3D12CommonHeaders.h"
+#include "D3D12Resources.h"
 
 namespace mooncastle::graphics::d3D12::core 
 {
@@ -34,6 +35,14 @@ namespace mooncastle::graphics::d3D12::core
     }
 
     ID3D12Device *const device();
+
+    descriptorHeap& getRTVHeap();
+    descriptorHeap& getDSVHeap();
+    descriptorHeap& getSRVHeap();
+    descriptorHeap& getUAVHeap();
+
+    DXGI_FORMAT defaultRenderTargetFormat();
+
     u32 currentFrameIndex();
     void setDeferredReleasesFlag();
 }
