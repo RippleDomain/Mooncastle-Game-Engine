@@ -19,11 +19,18 @@ namespace mooncastle::graphics::d3D12
 
         release();
 
+        if (SUCCEEDED(factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(u32))) && allowTearing)
+        {
+            presentFlags = DXGI_PRESENT_ALLOW_TEARING;
+        }
+
+        //allowTearing = presentFlags = 0;
+
         DXGI_SWAP_CHAIN_DESC1 desc{};
         desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         desc.BufferCount = frameBufferCount;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        desc.Flags = 0;
+        desc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         desc.Format = toNonSrgb(format);
         desc.Height = window.height();
         desc.Width = window.width();
@@ -53,7 +60,7 @@ namespace mooncastle::graphics::d3D12
     void D3D12Surface::present() const
     {
         assert(swapChain);
-        DXCall(swapChain->Present(0, 0));
+        DXCall(swapChain->Present(0, presentFlags));
         currentBBIndex = swapChain->GetCurrentBackBufferIndex();
     }
 
@@ -68,7 +75,7 @@ namespace mooncastle::graphics::d3D12
         for (u32 i{ 0 }; i < frameBufferCount; ++i)
         {
             renderTargetData& data{ targetData[i] };
-            assert(data.resource);
+            assert(!data.resource);
             DXCall(swapChain->GetBuffer(i, IID_PPV_ARGS(&data.resource)));
             D3D12_RENDER_TARGET_VIEW_DESC desc{};
             desc.Format = core::defaultRenderTargetFormat();
@@ -103,5 +110,4 @@ namespace mooncastle::graphics::d3D12
 
         core::release(swapChain);
     }
-
 }

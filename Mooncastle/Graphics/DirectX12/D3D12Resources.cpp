@@ -35,7 +35,7 @@ namespace mooncastle::graphics::d3D12
         if (FAILED(hr)) return false;
 
         freeHandles = std::move(std::make_unique<u32[]>(capacity));
-        capacity = capacity;
+        this->capacity = capacity;
         size = 0;
 
         for (u32 i{ 0 }; i < capacity; ++i) 

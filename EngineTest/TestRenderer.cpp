@@ -9,6 +9,10 @@ using namespace mooncastle;
 
 graphics::renderSurface surfaces[4];
 
+timeIt timer{};
+
+void removeRenderSurface(graphics::renderSurface& surface);
+
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch (msg)
@@ -16,12 +20,19 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	case WM_DESTROY:
 	{
 		bool allClosed{ true };
-
+		
 		for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 		{
-			if (!surfaces[i].window.isClosed())
+			if (surfaces[i].window.isValid()) 
 			{
-				allClosed = false;
+				if (surfaces[i].window.isClosed())
+				{
+					removeRenderSurface(surfaces[i]);
+				}
+				else
+				{
+					allClosed = false;
+				}
 			}
 		}
 		if (allClosed)
@@ -40,6 +51,12 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			return 0;
 		}
 		break;
+	case WM_KEYDOWN:
+		if (wparam == VK_ESCAPE)
+		{
+			PostMessage(hwnd, WM_CLOSE, 0, 0);
+			return 0;
+		}
 	}
 
 	return DefWindowProc(hwnd, msg, wparam, lparam);
@@ -48,11 +65,23 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 void createRenderSurface(graphics::renderSurface& surface, platform::windowInitInfo info)
 {
 	surface.window = platform::createWindow(&info);
+	surface.surface = graphics::createSurface(surface.window);
 }
 
 void removeRenderSurface(graphics::renderSurface& surface)
 {
-	platform::removeWindow(surface.window.getId());
+	graphics::renderSurface temp{ surface };
+	surface = {};
+
+	if (temp.surface.isValid())
+	{
+		graphics::removeSurface(temp.surface.getId());
+	}
+
+	if (temp.window.isValid())
+	{
+		platform::removeWindow(temp.window.getId());
+	}
 }
 
 bool engineTest::initialize()
@@ -80,8 +109,19 @@ bool engineTest::initialize()
 
 void engineTest::run()
 {
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	graphics::render();
+	timer.begin();
+
+	//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
+	{
+		if (surfaces[i].surface.isValid())
+		{
+			surfaces[i].surface.render();
+		}
+	}
+
+	timer.end();
 }
 
 void engineTest::shutdown()

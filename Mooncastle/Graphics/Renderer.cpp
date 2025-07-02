@@ -32,11 +32,6 @@ namespace mooncastle::graphics
         gfx.shutdown();
     }
 
-    void render()
-    {
-        gfx.render();
-    }
-
     surface createSurface(platform::window window)
     {
         return gfx.surface.create(window);

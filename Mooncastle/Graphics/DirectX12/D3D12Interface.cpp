@@ -9,6 +9,12 @@ namespace mooncastle::graphics::d3D12
     {
         pi.initialize = core::initialize;
         pi.shutdown = core::shutdown;
-        pi.render = core::render;
+
+        pi.surface.create = core::createSurface;
+        pi.surface.remove = core::removeSurface;
+        pi.surface.resize = core::resizeSurface;
+        pi.surface.getWidth = core::surfaceWidth;
+        pi.surface.getHeight = core::surfaceHeight;
+        pi.surface.render = core::renderSurface;
     }
 }

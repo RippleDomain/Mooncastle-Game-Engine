@@ -7,7 +7,6 @@ namespace mooncastle::graphics::d3D12::core
 {
 	bool initialize();
 	void shutdown();
-	void render();
 
     template<typename T>
     constexpr void release(T*& resource)
@@ -45,4 +44,11 @@ namespace mooncastle::graphics::d3D12::core
 
     u32 currentFrameIndex();
     void setDeferredReleasesFlag();
+
+    surface createSurface(platform::window window);
+    void removeSurface(surfaceId id);
+    void resizeSurface(surfaceId id, u32, u32);
+    u32 surfaceWidth(surfaceId id);
+    u32 surfaceHeight(surfaceId id);
+    void renderSurface(surfaceId id);
 }

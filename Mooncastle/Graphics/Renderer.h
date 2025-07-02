@@ -35,7 +35,6 @@ namespace mooncastle::graphics
 
     bool initialize(graphicsPlatform platform);
     void shutdown();
-    void render();
 
     surface createSurface(platform::window window);
     void removeSurface(surfaceId id);

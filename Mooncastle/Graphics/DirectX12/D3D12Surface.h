@@ -13,6 +13,35 @@ namespace mooncastle::graphics::d3D12
             assert(window.handle());
         }
 
+#if USE_STL_VECTOR
+        DISABLE_COPY(D3D12Surface);
+        constexpr D3D12Surface(D3D12Surface&& o)
+            : swapChain{ o.swapChain }, window{ o.window }, currentBBIndex{ o.currentBBIndex }
+            , viewport{ o.viewport }, scissorRect{ o.scissorRect }, allowTearing{ o.allowTearing }, presentFlags{ o.presentFlags }
+        {
+            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            {
+                targetData[i].resource = o.targetData[i].resource;
+                targetData[i].rtv = o.targetData[i].rtv;
+            }
+
+            o.reset();
+        }
+
+        constexpr D3D12Surface& operator=(D3D12Surface&& o)
+        {
+            assert(this != &o);
+
+            if (this != &o)
+            {
+                release();
+                move(o);
+            }
+
+            return *this;
+        }
+#endif
+
         ~D3D12Surface() 
         { 
             release(); 
@@ -33,6 +62,44 @@ namespace mooncastle::graphics::d3D12
         void release();
         void finalize();
 
+#if USE_STL_VECTOR
+        constexpr void reset()
+        {
+            swapChain = nullptr;
+
+            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            {
+                targetData[i] = {};
+            }
+
+            window = {};
+            currentBBIndex = 0;
+            allowTearing = 0;
+            presentFlags = 0;
+            viewport = {};
+            scissorRect = {};
+        }
+
+        constexpr void move(D3D12Surface& o)
+        {
+            swapChain = o.swapChain;
+            
+            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            {
+                targetData[i] = o.targetData[i];
+            }
+
+            window = o.window;
+            currentBBIndex = o.currentBBIndex;
+            allowTearing = o.allowTearing;
+            presentFlags = o.presentFlags;
+            viewport = o.viewport;
+            scissorRect = o.scissorRect;
+
+            o.reset();
+        }
+#endif
+
         struct renderTargetData
         {
             ID3D12Resource* resource{ nullptr };
@@ -43,6 +110,8 @@ namespace mooncastle::graphics::d3D12
         renderTargetData targetData[frameBufferCount]{};
         platform::window window{};
         mutable u32      currentBBIndex{ 0 };
+        u32              allowTearing{ 0 };
+        u32              presentFlags{ 0 };
         D3D12_VIEWPORT   viewport{};
         D3D12_RECT       scissorRect{};
     };

@@ -1,5 +1,6 @@
 #include "D3D12Core.h"
 #include "D3D12Resources.h"
+#include "D3D12Surface.h"
 
 using namespace Microsoft::WRL;
 
@@ -172,6 +173,7 @@ namespace mooncastle::graphics::d3D12::core
         ID3D12Device8*            mainDevice{ nullptr };
         IDXGIFactory7*            dxgiFactory{ nullptr };
         d3D12Command              gfxCommand;
+        utl::vector<D3D12Surface> surfaces;
         descriptorHeap            rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
         descriptorHeap            dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
         descriptorHeap            srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
@@ -348,6 +350,11 @@ namespace mooncastle::graphics::d3D12::core
 
         release(dxgiFactory);
 
+        rtvDescriptorHeap.processDeferredFree(0);
+        dsvDescriptorHeap.processDeferredFree(0);
+        srvDescriptorHeap.processDeferredFree(0);
+        uavDescriptorHeap.processDeferredFree(0);
+
         rtvDescriptorHeap.release();
         dsvDescriptorHeap.release();
         srvDescriptorHeap.release();
@@ -373,25 +380,6 @@ namespace mooncastle::graphics::d3D12::core
 #endif
 
         release(mainDevice);
-    }
-
-    void render()
-    {
-        /*Wait for the GPU to finish with the command allocator and
-        reset the allocator once it is done.
-        This frees the memory that was used to store commands.*/
-        gfxCommand.beginFrame();
-        ID3D12GraphicsCommandList6* commandList{ gfxCommand.getCommandList() };
-
-        const u32 frame_idx{ currentFrameIndex() };
-        if (deferredReleaseFlag[frame_idx])
-        {
-            processDeferredReleases(frame_idx);
-        }
-
-        /*Record commands and finish. Once it is done, execute commands,
-        signal and increment the fence value for next frame.*/
-        gfxCommand.endFrame();
     }
 
     ID3D12Device *const device()
@@ -432,5 +420,61 @@ namespace mooncastle::graphics::d3D12::core
     void setDeferredReleasesFlag()
     {
         deferredReleaseFlag[currentFrameIndex()] = 1;
+    }
+
+    surface createSurface(platform::window window)
+    {
+        surfaces.emplace_back(window);
+        surfaceId id{ (u32)surfaces.size() - 1 };
+        surfaces[id].createSwapChain(dxgiFactory, gfxCommand.getCommandQueue(), renderTargetFormat);
+
+        return surface{ id };
+    }
+
+    void removeSurface(surfaceId id)
+    {
+        gfxCommand.flush();
+
+        //TODO: Properly remove surfaces.
+        surfaces[id].~D3D12Surface();
+    }
+
+    void resizeSurface(surfaceId id, u32, u32)
+    {
+        gfxCommand.flush();
+        surfaces[id].resize();
+    }
+
+    u32 surfaceWidth(surfaceId id)
+    {
+        return surfaces[id].getWidth();
+    }
+
+    u32 surfaceHeight(surfaceId id)
+    {
+        return surfaces[id].getHeight();
+    }
+
+    void renderSurface(surfaceId id)
+    {
+        /*Wait for the GPU to finish with the command allocator and
+        reset the allocator once it is done.
+        This frees the memory that was used to store commands.*/
+        gfxCommand.beginFrame();
+        ID3D12GraphicsCommandList6* commandList{ gfxCommand.getCommandList() };
+
+        const u32 frame_idx{ currentFrameIndex() };
+        if (deferredReleaseFlag[frame_idx])
+        {
+            processDeferredReleases(frame_idx);
+        }
+
+        const D3D12Surface& surface{ surfaces[id] };
+
+        surface.present();
+
+        /*Record commands and finish. Once it is done, execute commands,
+        signal and increment the fence value for next frame.*/
+        gfxCommand.endFrame();
     }
 }
