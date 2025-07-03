@@ -8,14 +8,14 @@ namespace mooncastle::graphics::d3D12::core
 {
     namespace 
     {
-        class d3D12Command
+        class D3D12Command
         {
         public:
-            d3D12Command() = default;
+            D3D12Command() = default;
 
-            DISABLE_COPY_AND_MOVE(d3D12Command);
+            DISABLE_COPY_AND_MOVE(D3D12Command);
 
-            explicit d3D12Command(ID3D12Device8 *const device, D3D12_COMMAND_LIST_TYPE type)
+            explicit D3D12Command(ID3D12Device8 *const device, D3D12_COMMAND_LIST_TYPE type)
             {
                 HRESULT hr{ S_OK };
                 D3D12_COMMAND_QUEUE_DESC desc{};
@@ -70,7 +70,7 @@ namespace mooncastle::graphics::d3D12::core
                 release();
             }
 
-            ~d3D12Command()
+            ~D3D12Command()
             {
                 assert(!commandQueue && !commandList && !fence);
             }
@@ -170,10 +170,12 @@ namespace mooncastle::graphics::d3D12::core
             u32                         frameIndex{ 0 };
         };
 
+        using surfaceCollection = utl::freeList<D3D12Surface>;
+
         ID3D12Device8*            mainDevice{ nullptr };
         IDXGIFactory7*            dxgiFactory{ nullptr };
-        d3D12Command              gfxCommand;
-        utl::vector<D3D12Surface> surfaces;
+        D3D12Command              gfxCommand;
+        surfaceCollection         surfaces;
         descriptorHeap            rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
         descriptorHeap            dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
         descriptorHeap            srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
@@ -326,7 +328,7 @@ namespace mooncastle::graphics::d3D12::core
         result &= uavDescriptorHeap.initialize(512, false);
         if (!result) return failedInit();
 
-        new (&gfxCommand)d3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
+        new (&gfxCommand)D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
@@ -424,8 +426,7 @@ namespace mooncastle::graphics::d3D12::core
 
     surface createSurface(platform::window window)
     {
-        surfaces.emplace_back(window);
-        surfaceId id{ (u32)surfaces.size() - 1 };
+        surfaceId id{ surfaces.add(window) };
         surfaces[id].createSwapChain(dxgiFactory, gfxCommand.getCommandQueue(), renderTargetFormat);
 
         return surface{ id };
@@ -434,9 +435,7 @@ namespace mooncastle::graphics::d3D12::core
     void removeSurface(surfaceId id)
     {
         gfxCommand.flush();
-
-        //TODO: Properly remove surfaces.
-        surfaces[id].~D3D12Surface();
+        surfaces.remove(id);
     }
 
     void resizeSurface(surfaceId id, u32, u32)

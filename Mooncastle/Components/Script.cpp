@@ -105,7 +105,7 @@ namespace mooncastle::script
 		const id::idType index{ idMapping[id::index(id)] };
 		const scriptId lastId{ entityScripts.back()->script().getId()};
 
-		utl::eraseUnordered(entityScripts, index);
+		utl::erase_unordered(entityScripts, index);
 		idMapping[id::index(lastId)] = index;
 		idMapping[id::index(id)] = id::invalidId;
 	}

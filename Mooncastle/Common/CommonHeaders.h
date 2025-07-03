@@ -14,6 +14,13 @@
 #include <DirectXMath.h>
 #endif
 
+//DEBUG OP macro
+#ifdef _DEBUG
+#define DEBUG_OP(x) x
+#else 
+#define DEBUG_OP(x)
+#endif
+
 //Common
 #include "PrimitiveTypes.h"
 #include "..\Utilities\Math.h"
@@ -36,10 +43,4 @@
 
 #ifndef DISABLE_COPY_AND_MOVE
 #define DISABLE_COPY_AND_MOVE(T) DISABLE_COPY(T) DISABLE_MOVE(T)
-#endif
-
-#ifdef _DEBUG
-#define DEBUG_OP(x) x
-#else 
-#define DEBUG_OP(x) (void(0))
 #endif

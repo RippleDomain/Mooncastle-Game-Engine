@@ -40,6 +40,8 @@ namespace mooncastle::graphics::d3D12
 
             return *this;
         }
+#else
+        DISABLE_COPY_AND_MOVE(D3D12Surface);
 #endif
 
         ~D3D12Surface() 
@@ -98,7 +100,7 @@ namespace mooncastle::graphics::d3D12
 
             o.reset();
         }
-#endif
+#endif USE_STL_VECTOR
 
         struct renderTargetData
         {

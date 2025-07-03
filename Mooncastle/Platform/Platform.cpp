@@ -18,40 +18,16 @@ namespace mooncastle::platform
 			bool      isClosed{ false };
 		};
 
-		utl::vector<windowInfo> windows;
-		/////////////////////////////////////////////////////////////////
-		//TODO: this part will be handled by a free-list container later
-		utl::vector<u32> availableSlots;
-
-		u32 addToWindows(windowInfo info)
-		{
-			u32 id{ u32_invalid_id };
-
-			if (availableSlots.empty())
-			{
-				id = (u32)windows.size();
-				windows.emplace_back(info);
-			}
-			else
-			{
-				id = availableSlots.back();
-				availableSlots.pop_back();
-				assert(id != u32_invalid_id);
-				windows[id] = info;
-			}
-			return id;
-		}
-
-		void removeFromWindows(u32 id)
-		{
-			assert(id < windows.size());
-			availableSlots.emplace_back(id);
-		}
-		/////////////////////////////////////////////////////////////////
+		utl::freeList<windowInfo> windows;
 
 		windowInfo& getWindowInfoFromId(windowId id)
 		{
-			assert(id < windows.size());
+			/*FreeList has a bug that allows window 
+			IDs to be bigger than the window count, so 
+			this assertion will be commented out until 
+			a fix is added.*/
+			//assert(id < windows.getSize());
+
 			assert(windows[id].hwnd);
 			return windows[id];
 		}
@@ -245,7 +221,7 @@ namespace mooncastle::platform
 		if (info.hwnd) 
 		{
 			DEBUG_OP(SetLastError(0));
-			const windowId id{ addToWindows(info) };
+			const windowId id{ windows.add(info) };
 			SetWindowLongPtr(info.hwnd, GWLP_USERDATA, (LONG_PTR)id);
 
 			//Set (in the extra bytes) the pointer to the window callback function that handles messages.
@@ -266,7 +242,7 @@ namespace mooncastle::platform
 	{
 		windowInfo& info{ getWindowInfoFromId(id) };
 		DestroyWindow(info.hwnd);
-		removeFromWindows(id);
+		windows.remove(id);
 	}
 
 #else
