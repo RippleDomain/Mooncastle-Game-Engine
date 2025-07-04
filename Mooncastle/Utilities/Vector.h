@@ -112,10 +112,10 @@ namespace mooncastle::utl
 
             assert(currentSize < currentCapacity);
 
-            new (std::addressof(currentData[currentSize])) T(std::forward<params>(p)...);
+            T *const item{ new (std::addressof(currentData[currentSize])) T(std::forward<params>(p)...) };
             ++currentSize;
 
-            return currentData[currentSize - 1];
+            return *item;
         }
 
         //Resizes the vector and initializes new items with their default value.
@@ -138,6 +138,8 @@ namespace mooncastle::utl
                 {
                     destroyRange(newSize, currentSize);
                 }
+
+                currentSize = newSize;
             }
 
             //Do nothing if newSize == size.
@@ -164,6 +166,8 @@ namespace mooncastle::utl
                 {
                     destroyRange(newSize, currentSize);
                 }
+
+                currentSize = newSize;
             }
 
             //Do nothing if newSize == size.

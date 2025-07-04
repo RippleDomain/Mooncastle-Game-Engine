@@ -1,5 +1,6 @@
 #include "D3D12Resources.h"
 #include "D3D12Core.h"
+#include "D3D12Helpers.h"
 
 namespace mooncastle::graphics::d3D12
 {
@@ -121,5 +122,47 @@ namespace mooncastle::graphics::d3D12
         core::setDeferredReleasesFlag();
 
         handle = {};
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// D3D12 TEXTURE
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    D3D12Texture::D3D12Texture(d3D12TextureInitInfo info)
+    {
+        auto* const device{ core::device() };
+        assert(device);
+
+        D3D12_CLEAR_VALUE *const clearValue
+        {
+            (info.desc &&
+            (info.desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET || info.desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
+            ? &info.clearValue : nullptr
+        };
+
+        if (info.resource)
+        {
+            assert(!info.heap);
+            resource = info.resource;
+        }
+        else if (info.heap && info.desc)
+        {
+            assert(!info.resource);
+            DXCall(device->CreatePlacedResource(info.heap, info.allocationInfo.Offset, info.desc, info.initialState, clearValue, IID_PPV_ARGS(&resource)));
+        }
+        else if (info.desc)
+        {
+            assert(!info.heap && !info.resource);
+            DXCall(device->CreateCommittedResource(&d3DX::heapProperties.defaultHeap, D3D12_HEAP_FLAG_NONE, info.desc, info.initialState, clearValue, IID_PPV_ARGS(&resource)));
+        }
+
+        assert(resource);
+        srv = core::getSRVHeap().allocate();
+        device->CreateShaderResourceView(resource, info.srvDesc, srv.cpu);
+    }
+
+    void D3D12Texture::release()
+    {
+        core::getSRVHeap().free(srv);
+        core::deferredRelease(resource);
     }
 }

@@ -8,6 +8,8 @@ namespace mooncastle::graphics::d3D12
     class D3D12Surface
     {
     public:
+        constexpr static u32 bufferCount{ 3 };
+
         explicit D3D12Surface(platform::window window) : window(window)
         {
             assert(window.handle());
@@ -19,7 +21,7 @@ namespace mooncastle::graphics::d3D12
             : swapChain{ o.swapChain }, window{ o.window }, currentBBIndex{ o.currentBBIndex }
             , viewport{ o.viewport }, scissorRect{ o.scissorRect }, allowTearing{ o.allowTearing }, presentFlags{ o.presentFlags }
         {
-            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            for (u32 i{ 0 }; i < bufferCount; ++i)
             {
                 targetData[i].resource = o.targetData[i].resource;
                 targetData[i].rtv = o.targetData[i].rtv;
@@ -69,7 +71,7 @@ namespace mooncastle::graphics::d3D12
         {
             swapChain = nullptr;
 
-            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            for (u32 i{ 0 }; i < bufferCount; ++i)
             {
                 targetData[i] = {};
             }
@@ -86,7 +88,7 @@ namespace mooncastle::graphics::d3D12
         {
             swapChain = o.swapChain;
             
-            for (u32 i{ 0 }; i < frameBufferCount; ++i)
+            for (u32 i{ 0 }; i < bufferCount; ++i)
             {
                 targetData[i] = o.targetData[i];
             }
@@ -109,7 +111,7 @@ namespace mooncastle::graphics::d3D12
         };
 
         IDXGISwapChain4* swapChain{ nullptr };
-        renderTargetData targetData[frameBufferCount]{};
+        renderTargetData targetData[bufferCount]{};
         platform::window window{};
         mutable u32      currentBBIndex{ 0 };
         u32              allowTearing{ 0 };

@@ -73,7 +73,7 @@ namespace mooncastle::utl
 			return array.size();
 		}
 
-		constexpr u32 isEmpty() const
+		constexpr bool isEmpty() const
 		{
 			return size == 0;
 		}

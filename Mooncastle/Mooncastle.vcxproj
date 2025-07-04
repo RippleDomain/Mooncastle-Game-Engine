@@ -32,6 +32,7 @@
     <ClInclude Include="EngineAPI\GameEntity.h" />
     <ClInclude Include="EngineAPI\ScriptComponent.h" />
     <ClInclude Include="EngineAPI\TransformComponent.h" />
+    <ClInclude Include="Graphics\DirectX12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12Interface.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12Resources.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12Surface.h" />

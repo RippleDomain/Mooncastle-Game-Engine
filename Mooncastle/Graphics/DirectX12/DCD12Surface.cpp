@@ -28,7 +28,7 @@ namespace mooncastle::graphics::d3D12
 
         DXGI_SWAP_CHAIN_DESC1 desc{};
         desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-        desc.BufferCount = frameBufferCount;
+        desc.BufferCount = bufferCount;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         desc.Format = toNonSrgb(format);
@@ -49,7 +49,7 @@ namespace mooncastle::graphics::d3D12
         core::release(newSwapChain);
         currentBBIndex = swapChain->GetCurrentBackBufferIndex();
 
-        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        for (u32 i{ 0 }; i < bufferCount; ++i)
         {
             targetData[i].rtv = core::getRTVHeap().allocate();
         }
@@ -72,7 +72,7 @@ namespace mooncastle::graphics::d3D12
     void D3D12Surface::finalize()
     {
         //Create RTVs for back-buffers.
-        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        for (u32 i{ 0 }; i < bufferCount; ++i)
         {
             renderTargetData& data{ targetData[i] };
             assert(!data.resource);
@@ -101,7 +101,7 @@ namespace mooncastle::graphics::d3D12
 
     void D3D12Surface::release()
     {
-        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        for (u32 i{ 0 }; i < bufferCount; ++i)
         {
             renderTargetData& data{ targetData[i] };
             core::release(data.resource);

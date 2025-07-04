@@ -12,7 +12,7 @@ namespace mooncastle::utl
 	using vector = std::vector<T>;
 
 	template<typename T>
-	void erase_unordered(std::vector<T>& v, size_t index)
+	void erase_unordered(T& v, size_t index)
 	{
 		if (v.size() > 1)
 		{
@@ -32,7 +32,7 @@ namespace mooncastle::utl
 namespace mooncastle::utl 
 {
 	template<typename T>
-	void erase_unordered(vector<T>& v, size_t index)
+	void erase_unordered(T& v, size_t index)
 	{
 		v.erase_unordered(index);
 	}
