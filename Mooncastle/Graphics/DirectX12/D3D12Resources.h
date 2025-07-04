@@ -70,6 +70,8 @@ namespace mooncastle::graphics::d3D12 {
 	class D3D12Texture
 	{
 	public:
+		constexpr static u32 maxMIPLevel{ 14 }; //Supports up to 16k resolutions.
+
 		D3D12Texture() = default;
 		explicit D3D12Texture(d3D12TextureInitInfo info);
 
@@ -113,5 +115,116 @@ namespace mooncastle::graphics::d3D12 {
 
 		ID3D12Resource* resource{ nullptr };
 		descriptorHandle srv;
+	};
+
+	class D3D12RenderTexture
+	{
+	public:
+		D3D12RenderTexture() = default;
+		explicit D3D12RenderTexture(d3D12TextureInitInfo info);
+
+		DISABLE_COPY(D3D12RenderTexture);
+
+		constexpr D3D12RenderTexture(D3D12RenderTexture&& o) : texture{ std::move(o.texture) }, mipCount{ o.mipCount }
+		{
+			for (u32 i{ 0 }; i < mipCount; ++i)
+			{
+				rtv[i] = o.rtv[i];
+			}
+
+			o.reset();
+		}
+
+		constexpr D3D12RenderTexture& operator=(D3D12RenderTexture&& o)
+		{
+			assert(this != &o);
+
+			if (this != &o)
+			{
+				release();
+				move(o);
+			}
+
+			return *this;
+		}
+
+		~D3D12RenderTexture() 
+		{ 
+			release(); 
+		}
+
+		void release();
+
+		[[nodiscard]] constexpr u32 getMIPCount()const { return mipCount; }
+		[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE getRTV(u32 mipIndex)const { assert(mipIndex < mipCount); return rtv[mipIndex].cpu; }
+		[[nodiscard]] constexpr descriptorHandle getSRV()const { return texture.getSRV(); }
+		[[nodiscard]] constexpr ID3D12Resource *const getResource()const { return texture.getResource(); }
+
+	private:
+		constexpr void move(D3D12RenderTexture &o)
+		{
+			texture = std::move(o.texture);
+			mipCount = o.mipCount;
+
+			for (u32 i{ 0 }; i < mipCount; ++i) 
+			{
+				rtv[i] = o.rtv[i];
+			}
+
+			o.reset();
+		}
+		constexpr void reset()
+		{
+			for (u32 i{ 0 }; i < mipCount; ++i)
+			{
+				rtv[i] = {};
+			}
+			mipCount = 0;
+		}
+
+		D3D12Texture			texture{};
+		descriptorHandle		rtv[D3D12Texture::maxMIPLevel]{};
+		u32						mipCount{ 0 };
+	};
+
+	class D3D12DepthBuffer
+	{
+	public:
+		D3D12DepthBuffer() = default;
+		explicit D3D12DepthBuffer(d3D12TextureInitInfo info);
+
+		DISABLE_COPY(D3D12DepthBuffer);
+
+		constexpr D3D12DepthBuffer(D3D12DepthBuffer&& o) : texture{ std::move(o.texture) }, dsv{ o.dsv }
+		{
+			o.dsv = {};
+		}
+
+		constexpr D3D12DepthBuffer& operator=(D3D12DepthBuffer&& o)
+		{
+			assert(this != &o);
+			if (this != &o)
+			{
+				texture = std::move(o.texture);
+				dsv = o.dsv;
+				o.dsv = {};
+			}
+			return *this;
+		}
+
+		~D3D12DepthBuffer() 
+		{
+			release(); 
+		}
+
+		void release();
+
+		[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE getDSV()const { return dsv.cpu; }
+		[[nodiscard]] constexpr descriptorHandle getSRV()const { return texture.getSRV(); }
+		[[nodiscard]] constexpr ID3D12Resource *const getResource()const { return texture.getResource(); }
+
+	private:
+		D3D12Texture			texture{};
+		descriptorHandle		dsv{};
 	};
 }

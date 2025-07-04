@@ -21,7 +21,7 @@ namespace mooncastle::graphics::d3D12
 
         release();
 
-        ID3D12Device* const device{ core::device() };
+        auto* const device{ core::device() };
         assert(device);
 
         D3D12_DESCRIPTOR_HEAP_DESC desc{};
@@ -164,5 +164,89 @@ namespace mooncastle::graphics::d3D12
     {
         core::getSRVHeap().free(srv);
         core::deferredRelease(resource);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// RENDER TEXTURE
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    D3D12RenderTexture::D3D12RenderTexture(d3D12TextureInitInfo info) : texture{ info }
+    {
+        assert(info.desc);
+
+        mipCount = getResource()->GetDesc().MipLevels;
+        assert(mipCount && mipCount <= D3D12Texture::maxMIPLevel);
+
+        descriptorHeap& rtvHeap{ core::getRTVHeap() };
+        D3D12_RENDER_TARGET_VIEW_DESC desc{};
+        desc.Format = info.desc->Format;
+        desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+        desc.Texture2D.MipSlice = 0;
+
+        auto* const device{ core::device() };
+        assert(device);
+
+        for (u32 i{ 0 }; i < mipCount; ++i)
+        {
+            rtv[i] = rtvHeap.allocate();
+            device->CreateRenderTargetView(getResource(), &desc, rtv[i].cpu);
+            ++desc.Texture2D.MipSlice;
+        }
+    }
+
+    void D3D12RenderTexture::release()
+    {
+        for (u32 i{ 0 }; i < mipCount; ++i) 
+        {
+            core::getRTVHeap().free(rtv[i]);
+        }
+
+        texture.release();
+        mipCount = 0;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// DEPTH BUFFER
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    D3D12DepthBuffer::D3D12DepthBuffer(d3D12TextureInitInfo info)
+    {
+        assert(info.desc);
+        const DXGI_FORMAT dsvFormat{ info.desc->Format };
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+
+        if (info.desc->Format == DXGI_FORMAT_D32_FLOAT)
+        {
+            info.desc->Format = DXGI_FORMAT_R32_TYPELESS;
+            srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+        }
+
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 1;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.PlaneSlice = 0;
+        srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+
+        assert(!info.srvDesc && !info.resource);
+
+        info.srvDesc = &srvDesc;
+        texture = D3D12Texture(info);
+
+        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+        dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+        dsvDesc.Format = dsvFormat;
+        dsvDesc.Texture2D.MipSlice = 0;
+
+        dsv = core::getDSVHeap().allocate();
+        auto* const device{ core::device() };
+
+        assert(device);
+        device->CreateDepthStencilView(getResource(), &dsvDesc, dsv.cpu);
+    }
+    void D3D12DepthBuffer::release()
+    {
+        core::getDSVHeap().free(dsv);
+        texture.release();
     }
 }
