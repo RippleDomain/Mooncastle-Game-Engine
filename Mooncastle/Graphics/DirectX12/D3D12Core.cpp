@@ -7,10 +7,6 @@ using namespace Microsoft::WRL;
 
 namespace mooncastle::graphics::d3D12::core 
 {
-    //TODO: Remove when the test work is done.
-    void createARootSignature();
-    void createARootSignature2();
-
     namespace 
     {
         class D3D12Command
@@ -20,7 +16,7 @@ namespace mooncastle::graphics::d3D12::core
 
             DISABLE_COPY_AND_MOVE(D3D12Command);
 
-            explicit D3D12Command(ID3D12Device8 *const device, D3D12_COMMAND_LIST_TYPE type)
+            explicit D3D12Command(ID3D12Device *const device, D3D12_COMMAND_LIST_TYPE type)
             {
                 HRESULT hr{ S_OK };
                 D3D12_COMMAND_QUEUE_DESC desc{};
@@ -135,7 +131,7 @@ namespace mooncastle::graphics::d3D12::core
             }
 
             constexpr ID3D12CommandQueue *const getCommandQueue() const { return commandQueue; }
-            constexpr ID3D12GraphicsCommandList6 *const getCommandList() const { return commandList; }
+            constexpr ID3D12GraphicsCommandList *const getCommandList() const { return commandList; }
             constexpr u32 getFrameIndex() const { return frameIndex; }
 
         private:
@@ -177,7 +173,7 @@ namespace mooncastle::graphics::d3D12::core
 
         using surfaceCollection = utl::freeList<D3D12Surface>;
 
-        ID3D12Device8*            mainDevice{ nullptr };
+        ID3D12Device*             mainDevice{ nullptr };
         IDXGIFactory7*            dxgiFactory{ nullptr };
         D3D12Command              gfxCommand;
         surfaceCollection         surfaces;
@@ -342,10 +338,6 @@ namespace mooncastle::graphics::d3D12::core
         NAME_D3D12_OBJECT(srvDescriptorHeap.getHeap(), L"SRV Descriptor Heap");
         NAME_D3D12_OBJECT(uavDescriptorHeap.getHeap(), L"UAV Descriptor Heap");
 
-        //TODO: Remove when the test work is done.
-        createARootSignature();
-        createARootSignature2();
-
         return true;
     }
 
@@ -393,7 +385,7 @@ namespace mooncastle::graphics::d3D12::core
         release(mainDevice);
     }
 
-    ID3D12Device8 *const device()
+    ID3D12Device *const device()
     {
         return mainDevice;
     }
@@ -416,11 +408,6 @@ namespace mooncastle::graphics::d3D12::core
     descriptorHeap& getUAVHeap()
     {
         return uavDescriptorHeap;
-    }
-
-    DXGI_FORMAT defaultRenderTargetFormat()
-    {
-        return renderTargetFormat;
     }
 
     u32 currentFrameIndex()
@@ -469,7 +456,7 @@ namespace mooncastle::graphics::d3D12::core
         reset the allocator once it is done.
         This frees the memory that was used to store commands.*/
         gfxCommand.beginFrame();
-        ID3D12GraphicsCommandList6* commandList{ gfxCommand.getCommandList() };
+        ID3D12GraphicsCommandList* commandList{ gfxCommand.getCommandList() };
 
         const u32 frame_idx{ currentFrameIndex() };
         if (deferredReleaseFlag[frame_idx])
@@ -484,172 +471,5 @@ namespace mooncastle::graphics::d3D12::core
         /*Record commands and finish. Once it is done, execute commands,
         signal and increment the fence value for next frame.*/
         gfxCommand.endFrame();
-    }
-
-    //Temporary function to test creating root signatures.
-    void createARootSignature()
-    {
-        D3D12_ROOT_PARAMETER1 params[3];
-        {
-            auto& param = params[0];
-            param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-            D3D12_ROOT_CONSTANTS consts{};
-            consts.Num32BitValues = 2;
-            consts.ShaderRegister = 0;
-            consts.RegisterSpace = 0;
-            param.Constants = consts;
-            param.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-        }
-        {
-            auto& param = params[1];
-            param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-            D3D12_ROOT_DESCRIPTOR1 rootDescription{};
-            rootDescription.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE;
-            rootDescription.ShaderRegister = 1;
-            rootDescription.RegisterSpace = 0;
-            param.Descriptor = rootDescription;
-            param.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-        }
-        {
-            auto& param = params[2];
-            param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-            D3D12_ROOT_DESCRIPTOR_TABLE1 table{};
-            table.NumDescriptorRanges = 1;
-            D3D12_DESCRIPTOR_RANGE1 range{};
-            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-            range.NumDescriptors = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
-            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            range.BaseShaderRegister = 0;
-            range.RegisterSpace = 0;
-            table.pDescriptorRanges = &range;
-            param.DescriptorTable = table;
-            param.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-        }
-
-        D3D12_STATIC_SAMPLER_DESC samplerDescription{};
-        samplerDescription.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        samplerDescription.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        samplerDescription.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        samplerDescription.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-        D3D12_ROOT_SIGNATURE_DESC1 desc{};
-        desc.Flags =
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-        desc.NumParameters = _countof(params);
-        desc.pParameters = &params[0];
-        desc.NumParameters = 1;
-        desc.pStaticSamplers = &samplerDescription;
-
-        D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDescription{};
-        rootSigDescription.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-        rootSigDescription.Desc_1_1 = desc;
-
-
-        HRESULT hr{ S_OK };
-        ID3DBlob* rootSigBlob{ nullptr };
-        ID3DBlob* errorBlob{ nullptr };
-
-        if (FAILED(hr = D3D12SerializeVersionedRootSignature(&rootSigDescription, &rootSigBlob, &errorBlob)))
-        {
-            DEBUG_OP(const char* errorMsg{ errorBlob ? (const char*)errorBlob->GetBufferPointer() : "" });
-            DEBUG_OP(OutputDebugStringA(errorMsg));
-
-            return;
-        }
-
-        assert(rootSigBlob);
-        ID3D12RootSignature* rootSig{ nullptr };
-        DXCall(hr = device()->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSig)));
-
-        release(rootSigBlob);
-        release(errorBlob);
-        release(rootSig);
-    }
-
-    void createARootSignature2()
-    {
-        d3DX::D3D12DescriptorRange range{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND, 0 };
-        d3DX::D3D12RootParameter params[3];
-
-        params[0].asConstants(2, D3D12_SHADER_VISIBILITY_PIXEL, 0);
-        params[1].asCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
-        params[2].asDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
-
-        d3DX::D3D12RootSignatureDescription rootSignatureDescription{ &params[0], _countof(params) };
-        ID3D12RootSignature* rootSignature{ rootSignatureDescription.create() };
-
-        release(rootSignature);
-    }
-
-    ID3D12RootSignature* rootSignature;
-    D3D12_SHADER_BYTECODE vertexShader{};
-
-    template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type, typename T>
-    class alignas(void*) D3D12PipelineStateSubobject
-    {
-    public:
-        D3D12PipelineStateSubobject() = default;
-        constexpr explicit D3D12PipelineStateSubobject(T subobject) : type{ type }, subobject{ subobject } {}
-        D3D12PipelineStateSubobject& operator=(const T& subobject) { subobject = subobject; return *this; }
-
-    private:
-        const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type{ type };
-        T subobject{};
-    };
-
-    using D3D12PipelineStateSubobjectRootSignature = D3D12PipelineStateSubobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE, ID3D12RootSignature*>;
-    using D3D12PipelineStateSubobjectVertexShader = D3D12PipelineStateSubobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS, D3D12_SHADER_BYTECODE>;
-
-    void createAPipelineStateObject()
-    {
-        struct
-        {
-            struct alignas(void*) 
-            {
-                const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type{ D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE 
-            }; ID3D12RootSignature* rootSignature;
-            } rootSig;
-
-            struct alignas(void*) 
-            {
-                const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type{ D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS 
-            }; D3D12_SHADER_BYTECODE vsCode{};
-            } vertexShader;
-        } stream;
-
-        stream.rootSig.rootSignature = rootSignature;
-        stream.vertexShader.vsCode = vertexShader;
-
-        D3D12_PIPELINE_STATE_STREAM_DESC desc{};
-        desc.pPipelineStateSubobjectStream = &stream;
-        desc.SizeInBytes = sizeof(stream);
-
-        ID3D12PipelineState* pso{ nullptr };
-        device()->CreatePipelineState(&desc, IID_PPV_ARGS(&pso));
-
-        //Use PSO during rendering.
-
-        //When renderer shuts down.
-        release(pso);
-    }
-
-    void createAPipelineStateObject2()
-    {
-        struct 
-        {
-            d3DX::D3D12PipelineStateSubobject_rootSignature rootSig{ rootSignature };
-            d3DX::D3D12PipelineStateSubobject_vs vs{ vertexShader };
-        } stream;
-
-        auto pso = d3DX::createPipelineState(&stream, sizeof(stream));
-
-        //Use PSO during rendering.
-
-        //When renderer shuts down.
-        release(pso);
     }
 }

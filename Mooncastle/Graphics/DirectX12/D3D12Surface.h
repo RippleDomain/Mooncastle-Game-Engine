@@ -8,6 +8,7 @@ namespace mooncastle::graphics::d3D12
     class D3D12Surface
     {
     public:
+        constexpr static DXGI_FORMAT defaultBackBufferFormat{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
         constexpr static u32 bufferCount{ 3 };
 
         explicit D3D12Surface(platform::window window) : window(window)
@@ -51,7 +52,7 @@ namespace mooncastle::graphics::d3D12
             release(); 
         }
 
-        void createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format);
+        void createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format = defaultBackBufferFormat);
         void present() const;
         void resize();
 
@@ -113,6 +114,7 @@ namespace mooncastle::graphics::d3D12
         IDXGISwapChain4* swapChain{ nullptr };
         renderTargetData targetData[bufferCount]{};
         platform::window window{};
+        DXGI_FORMAT      format{ defaultBackBufferFormat };
         mutable u32      currentBBIndex{ 0 };
         u32              allowTearing{ 0 };
         u32              presentFlags{ 0 };

@@ -14,6 +14,9 @@
 namespace mooncastle::graphics::d3D12 
 {
     constexpr u32 frameBufferCount{ 3 };
+
+    using ID3D12Device = ID3D12Device8;
+    using ID3D12GraphicsCommandList = ID3D12GraphicsCommandList6;
 }
 
 //Assert that COM call to D3D API succeeded

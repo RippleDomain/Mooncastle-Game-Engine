@@ -14,12 +14,28 @@
 
 #ifdef _WIN64
 #include <Windows.h>
+#include "filesystem"
+
+std::filesystem::path setCurrentDirToExecutablePath()
+{
+    wchar_t path[MAX_PATH];
+    const uint32_t pathLength{ GetModuleFileName(0, &path[0], MAX_PATH) };
+
+    if (!pathLength || GetLastError() == ERROR_INSUFFICIENT_BUFFER) return {};
+
+    std::filesystem::path p{ path };
+    std::filesystem::current_path(p.parent_path());
+
+    return std::filesystem::current_path();
+}
 
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
 #if _DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
+    setCurrentDirToExecutablePath();
 
     engineTest test{ };
 

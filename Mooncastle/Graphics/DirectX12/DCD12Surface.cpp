@@ -13,7 +13,7 @@ namespace mooncastle::graphics::d3D12
         }
     }
 
-    void D3D12Surface::createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format)
+    void D3D12Surface::createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format /*= defaultBackBufferFormat*/)
     {
         assert(factory && cmdQueue);
 
@@ -23,6 +23,8 @@ namespace mooncastle::graphics::d3D12
         {
             presentFlags = DXGI_PRESENT_ALLOW_TEARING;
         }
+
+        this->format = format;
 
         //allowTearing = presentFlags = 0;
 
@@ -78,7 +80,7 @@ namespace mooncastle::graphics::d3D12
             assert(!data.resource);
             DXCall(swapChain->GetBuffer(i, IID_PPV_ARGS(&data.resource)));
             D3D12_RENDER_TARGET_VIEW_DESC desc{};
-            desc.Format = core::defaultRenderTargetFormat();
+            desc.Format = format;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
             core::device()->CreateRenderTargetView(data.resource, &desc, data.rtv.cpu);
         }

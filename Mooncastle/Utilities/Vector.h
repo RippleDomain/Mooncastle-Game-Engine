@@ -27,15 +27,6 @@ namespace mooncastle::utl
             resize(count, value);
         }
 
-        template<typename it, typename = std::enable_if_t<std::_Is_iterator_v<it>>>
-        constexpr explicit vector(it first, it last)
-        {
-            for (; first != last; ++first)
-            {
-                emplace_back(*first);
-            }
-        }
-
         //Copy-constructor. Constructs by copying another vector. The items in the copied vector must be copyable.
         constexpr vector(const vector& o)
         {
@@ -121,7 +112,7 @@ namespace mooncastle::utl
         //Resizes the vector and initializes new items with their default value.
         constexpr void resize(u64 newSize)
         {
-            static_assert(std::is_default_constructible_v<T>, "Type must be default-constructible.");
+            static_assert(std::is_default_constructible<T>::value, "Type must be default-constructible.");
 
             if (newSize > currentSize)
             {
@@ -149,7 +140,7 @@ namespace mooncastle::utl
         //Resizes the vector and initializes new items by copying "value".
         constexpr void resize(u64 newSize, const T& value)
         {
-            static_assert(std::is_copy_constructible_v<T>, "Type must be copy-constructible.");
+            static_assert(std::is_copy_constructible<T>::value, "Type must be copy-constructible.");
 
             if (newSize > currentSize)
             {

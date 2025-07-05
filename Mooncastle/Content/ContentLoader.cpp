@@ -73,23 +73,40 @@ namespace mooncastle::content
             readScript
 		};
         static_assert(_countof(componentReaders) == ComponentType::count);
+
+        bool readFile(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size)
+        {
+            if (!std::filesystem::exists(path)) return false;
+
+            size = std::filesystem::file_size(path);
+            assert(size);
+            if (!size) return false;
+
+            data = std::make_unique<u8[]>(size);
+
+            std::ifstream file{ path, std::ios::in | std::ios::binary };
+
+            if (!file || !file.read((char*)data.get(), size))
+            {
+                file.close();
+                return false;
+            }
+            file.close();
+
+            return true;
+        }
     }
 
     bool loadGame()
     {
-		wchar_t path[MAX_PATH];
-        const u32 pathLength{ GetModuleFileName(0, &path[0], MAX_PATH) };
-        
-        if (!pathLength || GetLastError() == ERROR_INSUFFICIENT_BUFFER) return false;
+        //Read the game binary.
+        std::unique_ptr<u8[]> gameData{};
+        u64 size{ 0 };
 
-		std::filesystem::path p{ path };
-        SetCurrentDirectory(p.parent_path().wstring().c_str());
+        if (!readFile("game.bin", gameData, size)) return false;
+        assert(gameData.get());
 
-        std::ifstream game("game.bin", std::ios::in | std::ios::binary);
-        utl::vector<u8> buffer(std::istreambuf_iterator<char>(game), {});
-        assert(buffer.size());
-
-        const u8* at{ buffer.data() };
+        const u8* at{ gameData.get() };
         constexpr u32 su32{ sizeof(u32) };
         const u32 numEntities{ *at }; at += su32;
         if (!numEntities) return false;
@@ -114,7 +131,7 @@ namespace mooncastle::content
             if (!entity.isValid()) return false;
 			entities.emplace_back(entity);
         }
-        assert(at == buffer.data() + buffer.size());
+        assert(at == gameData.get() + size);
         return true;
     }
 
