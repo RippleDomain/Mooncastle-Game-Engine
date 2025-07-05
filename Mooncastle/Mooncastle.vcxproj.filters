@@ -42,5 +42,6 @@
     <ClCompile Include="Graphics\DirectX12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\DirectX12\DCD12Surface.cpp" />
+    <ClCompile Include="Graphics\DirectX12\D3D12Helpers.cpp" />
   </ItemGroup>
 </Project>

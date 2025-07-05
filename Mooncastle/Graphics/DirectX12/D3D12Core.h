@@ -33,7 +33,7 @@ namespace mooncastle::graphics::d3D12::core
         }
     }
 
-    ID3D12Device *const device();
+    ID3D12Device8 *const device();
 
     descriptorHeap& getRTVHeap();
     descriptorHeap& getDSVHeap();
