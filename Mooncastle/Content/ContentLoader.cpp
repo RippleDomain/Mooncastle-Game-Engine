@@ -3,6 +3,7 @@
 #include "..\Components\Entity.h"
 #include "..\Components\Transform.h"
 #include "..\Components\Script.h"
+#include "Graphics\Renderer.h"
 
 #if !defined(SHIPPING)
 
@@ -142,6 +143,12 @@ namespace mooncastle::content
 			gameEntity::remove(entity.getId());
 		}
 	}
+
+    bool loadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
+    {
+        auto path = graphics::getEngineShadersPath();
+        return readFile(path, shaders, size);
+    }
 }
 
 #endif

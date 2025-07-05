@@ -20,5 +20,7 @@ namespace mooncastle::graphics
             u32(*getHeight)(surfaceId id);
             void (*render)(surfaceId id);
         } surface;
+
+        graphicsPlatform platform = (graphicsPlatform)-1;
     };
 }

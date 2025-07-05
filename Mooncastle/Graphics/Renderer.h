@@ -36,6 +36,12 @@ namespace mooncastle::graphics
     bool initialize(graphicsPlatform platform);
     void shutdown();
 
+    //Get the location of compiled engine shaders relative to the executable's path for the graphics API thatis currently in use.
+    const char* getEngineShadersPath();
+
+    //Get the location of compiled engine shaders, for the specified platform, relative to the executable's path for the graphics API that is currently in use.
+    const char* getEngineShadersPath(graphicsPlatform platform);
+
     surface createSurface(platform::window window);
     void removeSurface(surfaceId id);
 }

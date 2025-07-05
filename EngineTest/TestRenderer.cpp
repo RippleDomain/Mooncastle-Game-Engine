@@ -1,4 +1,5 @@
 #include "TestRenderer.h"
+#include "ShaderCompilation.h"
 #include "..\Platform\PlatformTypes.h"
 #include "..\Platform\Platform.h"
 #include "..\Graphics\Renderer.h"
@@ -86,8 +87,16 @@ void removeRenderSurface(graphics::renderSurface& surface)
 
 bool engineTest::initialize()
 {
-	bool result{ graphics::initialize(graphics::graphicsPlatform::direct3D12) };
-	if (!result) return result;
+	while (!compileShaders())
+	{
+		//Pop up a message box allowing the user to retry compilation.
+		if (MessageBox(nullptr, L"Failed to compile engine shaders.", L"Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
+		{
+			return false;
+		}
+	}
+
+	if (!graphics::initialize(graphics::graphicsPlatform::direct3D12)) return false;
 
 	platform::windowInitInfo info[]
 	{
@@ -104,7 +113,7 @@ bool engineTest::initialize()
 		createRenderSurface(surfaces[i], info[i]);
 	}
 
-	return result;
+	return true;
 }
 
 void engineTest::run()

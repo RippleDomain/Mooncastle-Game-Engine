@@ -6,6 +6,12 @@ namespace mooncastle::graphics
 {
     namespace
     {
+        //Defines where the compiled engine shaders file is located for each one of the supported APIs.
+        constexpr const char* engineShaderPaths[]
+        {
+            ".\\Shaders\\D3D12\\shaders.bin"
+        };
+
         platformInterface gfx{};
 
         bool setPlatformInterface(graphicsPlatform platform)
@@ -18,6 +24,9 @@ namespace mooncastle::graphics
             default:
                 return false;
             }
+
+            assert(gfx.platform == platform);
+
             return true;
         }
     }
@@ -30,6 +39,16 @@ namespace mooncastle::graphics
     void shutdown()
     {
         gfx.shutdown();
+    }
+
+    const char* getEngineShadersPath()
+    {
+        return engineShaderPaths[(u32)gfx.platform];
+    }
+
+    const char* getEngineShadersPath(graphicsPlatform platform)
+    {
+        return engineShaderPaths[(u32)platform];
     }
 
     surface createSurface(platform::window window)

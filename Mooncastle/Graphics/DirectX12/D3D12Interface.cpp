@@ -16,5 +16,7 @@ namespace mooncastle::graphics::d3D12
         pi.surface.getWidth = core::surfaceWidth;
         pi.surface.getHeight = core::surfaceHeight;
         pi.surface.render = core::renderSurface;
+
+        pi.platform = graphicsPlatform::direct3D12;
     }
 }
