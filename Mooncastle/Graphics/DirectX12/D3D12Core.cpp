@@ -1,7 +1,6 @@
 #include "D3D12Core.h"
-#include "D3D12Resources.h"
 #include "D3D12Surface.h"
-#include "D3D12Helpers.h"
+#include "D3D12Shaders.h"
 
 using namespace Microsoft::WRL;
 
@@ -185,7 +184,6 @@ namespace mooncastle::graphics::d3D12::core
         u32                       deferredReleaseFlag[frameBufferCount]{};
         std::mutex                deferredReleasesMutex{};
 
-        constexpr DXGI_FORMAT renderTargetFormat{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
         constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
         bool failedInit()
@@ -275,6 +273,7 @@ namespace mooncastle::graphics::d3D12::core
         if (mainDevice) shutdown();
 
         u32 dxgiFactoryFlags{ 0 };
+
 #ifdef _DEBUG
         //Requires "Graphics Tools" optional feature.
         {
@@ -332,6 +331,9 @@ namespace mooncastle::graphics::d3D12::core
         new (&gfxCommand)D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
+        //Initialize modules.
+        if (!shaders::initialize()) return failedInit();
+
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
         NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
         NAME_D3D12_OBJECT(dsvDescriptorHeap.getHeap(), L"DSV Descriptor Heap");
@@ -350,6 +352,9 @@ namespace mooncastle::graphics::d3D12::core
         {
             processDeferredReleases(i);
         }
+
+        //Shutdown modules.
+        shaders::shutdown();
 
         release(dxgiFactory);
 
@@ -423,7 +428,7 @@ namespace mooncastle::graphics::d3D12::core
     surface createSurface(platform::window window)
     {
         surfaceId id{ surfaces.add(window) };
-        surfaces[id].createSwapChain(dxgiFactory, gfxCommand.getCommandQueue(), renderTargetFormat);
+        surfaces[id].createSwapChain(dxgiFactory, gfxCommand.getCommandQueue());
 
         return surface{ id };
     }

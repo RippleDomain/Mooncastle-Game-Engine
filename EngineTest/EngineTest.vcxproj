@@ -138,6 +138,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|Win32'">
     <ClCompile>
@@ -153,6 +158,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -170,6 +180,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|Win32'">
     <ClCompile>
@@ -187,6 +202,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -202,6 +222,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
     <ClCompile>
@@ -217,6 +242,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -234,6 +264,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
     <ClCompile>
@@ -251,6 +286,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
+"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

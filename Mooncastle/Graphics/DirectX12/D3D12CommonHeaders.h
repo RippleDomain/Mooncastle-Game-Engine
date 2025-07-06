@@ -62,3 +62,6 @@ if(FAILED(x))                                                  \
 #define NAME_D3D12_OBJECT(x, name)
 #define NAME_D3D12_OBJECT_INDEXED(obj, x, name)
 #endif
+
+#include "D3D12Resources.h"
+#include "D3D12Helpers.h"

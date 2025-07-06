@@ -25,6 +25,7 @@ namespace mooncastle::graphics::d3D12::shaders
 		enum id : u32
 		{
 			fullscreenTriangleVS = 0,
+			fillColorPS = 1,
 			count
 		};
 	};

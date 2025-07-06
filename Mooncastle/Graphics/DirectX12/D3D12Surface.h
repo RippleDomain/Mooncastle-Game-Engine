@@ -1,7 +1,6 @@
 #pragma once
 
 #include "D3D12CommonHeaders.h"
-#include "D3D12Resources.h"
 
 namespace mooncastle::graphics::d3D12 
 {
