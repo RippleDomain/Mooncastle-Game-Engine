@@ -1,6 +1,7 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "D3D12Shaders.h"
+#include "D3D12GPass.h"
 
 using namespace Microsoft::WRL;
 
@@ -332,7 +333,7 @@ namespace mooncastle::graphics::d3D12::core
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
         //Initialize modules.
-        if (!shaders::initialize()) return failedInit();
+        if (!(shaders::initialize() && gPass::initialize())) return failedInit();
 
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
         NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
@@ -354,6 +355,7 @@ namespace mooncastle::graphics::d3D12::core
         }
 
         //Shutdown modules.
+        gPass::shutdown();
         shaders::shutdown();
 
         release(dxgiFactory);
