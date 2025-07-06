@@ -29,10 +29,10 @@ namespace mooncastle::transform
 			positions.emplace_back(info.position);
 			scales.emplace_back(info.scale);
 		}
-		return component(transformId{ (id::idType)positions.size() - 1 });
+		return component(transformId{ entity.getId() });
 	}
 
-	void remove(component c)
+	void remove([[maybe_unused]]component c)
 	{
 		assert(c.isValid());
 	}

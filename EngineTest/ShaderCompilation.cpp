@@ -135,7 +135,7 @@ namespace
 		}
 
 	private:
-		const char* profileStrings[shaderType::count]{ "vs_6_5", "hs_6_5", "ds_6_5", "gs_6_5", "ps_6_5", "cs_6_5", "as_6_5", "ms_6_5" };
+		constexpr static const char* profileStrings[]{ "vs_6_5", "hs_6_5", "ds_6_5", "gs_6_5", "ps_6_5", "cs_6_5", "as_6_5", "ms_6_5" };
 		static_assert(_countof(profileStrings) == shaderType::count);
 
 		ComPtr<IDxcCompiler3>       compiler{ nullptr };
@@ -145,7 +145,7 @@ namespace
 
 	decltype(auto) getEngineShadersPath()
 	{
-		return std::filesystem::absolute(graphics::getEngineShadersPath(graphics::graphicsPlatform::direct3D12));
+		return std::filesystem::path{ graphics::getEngineShadersPath(graphics::graphicsPlatform::direct3D12) };
 	}
 
 	bool compiledShadersAreUpToDate()
@@ -164,7 +164,7 @@ namespace
 			path = shadersSourcePath;
 			path += info.file;
 
-			fullPath = std::filesystem::absolute(path);
+			fullPath = path;
 			if (!std::filesystem::exists(fullPath)) return false;
 
 			auto shaderFileTime = std::filesystem::last_write_time(fullPath);
@@ -221,12 +221,12 @@ bool compileShaders()
 
         path = shadersSourcePath;
         path += info.file;
-        fullPath = std::filesystem::absolute(path);
+        fullPath = path;
         if (!std::filesystem::exists(fullPath)) return false;
 
         ComPtr<IDxcBlob> compiledShader{ compiler.compile(info, fullPath) };
 
-        if (compiledShader != nullptr && compiledShader->GetBufferPointer() && compiledShader->GetBufferSize())
+        if (compiledShader && compiledShader->GetBufferPointer() && compiledShader->GetBufferSize())
         {
             shaders.emplace_back(std::move(compiledShader));
         }

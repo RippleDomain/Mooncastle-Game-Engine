@@ -22,12 +22,6 @@ namespace mooncastle::platform
 
 		windowInfo& getWindowInfoFromId(windowId id)
 		{
-			/*FreeList has a bug that allows window 
-			IDs to be bigger than the window count, so 
-			this assertion will be commented out until 
-			a fix is added.*/
-			//assert(id < windows.getSize());
-
 			assert(windows[id].hwnd);
 			return windows[id];
 		}
