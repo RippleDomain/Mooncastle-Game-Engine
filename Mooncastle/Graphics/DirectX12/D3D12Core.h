@@ -3,6 +3,15 @@
 #include "D3D12CommonHeaders.h"
 #include "D3D12Resources.h"
 
+namespace mooncastle::graphics::d3D12
+{
+    struct D3D12FrameInfo
+    {
+        u32 surfaceWidth{};
+        u32 surfaceHeight{};
+    };
+}
+
 namespace mooncastle::graphics::d3D12::core 
 {
 	bool initialize();

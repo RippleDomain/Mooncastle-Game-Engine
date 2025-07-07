@@ -87,11 +87,13 @@ namespace mooncastle::graphics::d3D12::core
             }
 
             //Signals the frame with the new fence value.
-            void endFrame()
+            void endFrame(const D3D12Surface& surface)
             {
                 DXCall(commandList->Close());
                 ID3D12CommandList *const cmdLists[]{ commandList };
                 commandQueue->ExecuteCommandLists(_countof(cmdLists), &cmdLists[0]);
+
+                surface.present();
 
                 u64& fenceValueRef{ fenceValue };
                 ++fenceValueRef;
@@ -173,17 +175,18 @@ namespace mooncastle::graphics::d3D12::core
 
         using surfaceCollection = utl::freeList<D3D12Surface>;
 
-        ID3D12Device*             mainDevice{ nullptr };
-        IDXGIFactory7*            dxgiFactory{ nullptr };
-        D3D12Command              gfxCommand;
-        surfaceCollection         surfaces;
-        descriptorHeap            rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
-        descriptorHeap            dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
-        descriptorHeap            srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
-        descriptorHeap            uavDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
-        utl::vector<IUnknown*>    deferredReleases[frameBufferCount]{};
-        u32                       deferredReleaseFlag[frameBufferCount]{};
-        std::mutex                deferredReleasesMutex{};
+        ID3D12Device*              mainDevice{ nullptr };
+        IDXGIFactory7*             dxgiFactory{ nullptr };
+        D3D12Command               gfxCommand;
+        surfaceCollection          surfaces;
+        d3DX::D3D12ResourceBarrier resourceBarriers{};
+        descriptorHeap             rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
+        descriptorHeap             dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
+        descriptorHeap             srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+        descriptorHeap             uavDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
+        utl::vector<IUnknown*>     deferredReleases[frameBufferCount]{};
+        u32                        deferredReleaseFlag[frameBufferCount]{};
+        std::mutex                 deferredReleasesMutex{};
 
         constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
@@ -473,10 +476,44 @@ namespace mooncastle::graphics::d3D12::core
 
         const D3D12Surface& surface{ surfaces[id] };
 
-        surface.present();
+        ID3D12Resource* const currentBackBuffer{ surface.getBackBuffer() };
 
-        /*Record commands and finish. Once it is done, execute commands,
-        signal and increment the fence value for next frame.*/
-        gfxCommand.endFrame();
+        D3D12FrameInfo frameInfo
+        {
+            surface.getWidth(),
+            surface.getHeight()
+        };
+
+        gPass::setSize({ frameInfo.surfaceWidth, frameInfo.surfaceHeight });
+
+        d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
+
+        //Records commands.
+        commandList->RSSetViewports(1, &surface.getViewport());
+        commandList->RSSetScissorRects(1, &surface.getScissorRect());
+
+        //Depth prepass.
+        gPass::addTransitionsForDepthPrepass(barriers);
+        barriers.apply(commandList);
+        gPass::setRenderTargetsForDepthPrepass(commandList);
+        gPass::depthPrepass(commandList, frameInfo);
+
+        //Geometry and lighting pass.
+        gPass::addTransitionsForDepthGPass(barriers);
+        barriers.apply(commandList);
+        gPass::setRenderTargetsForGPass(commandList);
+        gPass::render(commandList, frameInfo);
+
+        d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+        //Post-processing. Will write to the current back buffer.
+        gPass::addTransitionsForPostProcess(barriers);
+        barriers.apply(commandList);
+
+        //After post-processing.
+        d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+        //Done recording commands. Now execute commands, signal and increment the fence value for the next frame.
+        gfxCommand.endFrame(surface);
     }
 }

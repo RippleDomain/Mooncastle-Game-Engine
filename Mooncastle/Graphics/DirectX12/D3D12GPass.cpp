@@ -74,13 +74,13 @@ namespace mooncastle::graphics::d3D12::gPass
 			return gPassMainBuffer.getResource() && gPassDepthBuffer.getResource();
 		}
 
-		bool createGPassPSOandRootSignature()
+		bool createGPassPSOAndRootSignature()
 		{
 			assert(!gPassRootSignature && !gPassPSO);
 
 			//Creates GPass root signature.
 			d3DX::D3D12RootParameter parameters[1]{};
-			parameters[0].asConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+			parameters[0].asConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 			const d3DX::D3D12RootSignatureDescription root_signature{ &parameters[0], _countof(parameters) };
 			gPassRootSignature = root_signature.create();
 			assert(gPassRootSignature);
@@ -88,7 +88,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			NAME_D3D12_OBJECT(gPassRootSignature, L"GPass Root Signature");
 
 			//Creates GPass PSO.
-			struct D3DX 
+			struct D3DXStream 
 			{
 				d3DX::D3D12PipelineStateSubobject_rootSignature       rootSignature{ gPassRootSignature };
 				d3DX::D3D12PipelineStateSubobject_vs                  vs{ shaders::getEngineShader(shaders::engineShader::fullscreenTriangleVS) };
@@ -115,7 +115,7 @@ namespace mooncastle::graphics::d3D12::gPass
 
 	bool initialize()
 	{
-		return createBuffers(initialDimensions) && createGPassPSOandRootSignature();
+		return createBuffers(initialDimensions) && createGPassPSOAndRootSignature();
 	}
 
 	void shutdown()
@@ -147,5 +147,49 @@ namespace mooncastle::graphics::d3D12::gPass
 	{
 		commandList->SetGraphicsRootSignature(gPassRootSignature);
 		commandList->SetPipelineState(gPassPSO);
+
+		static u32 frame{ 0 };
+		++frame;
+
+		commandList->SetGraphicsRoot32BitConstant(0, frame, 0);
+
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		commandList->DrawInstanced(3, 1, 0, 0);
+	}
+
+	void addTransitionsForDepthPrepass(d3DX::D3D12ResourceBarrier& barriers)
+	{
+		barriers.add(gPassDepthBuffer.getResource(),
+			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	}
+
+	void addTransitionsForDepthGPass(d3DX::D3D12ResourceBarrier& barriers)
+	{
+		barriers.add(gPassMainBuffer.getResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		barriers.add(gPassDepthBuffer.getResource(),
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	}
+
+	void addTransitionsForPostProcess(d3DX::D3D12ResourceBarrier& barriers)
+	{
+		barriers.add(gPassMainBuffer.getResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	}
+
+	void setRenderTargetsForDepthPrepass(ID3D12GraphicsCommandList* commandList)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gPassDepthBuffer.getDSV() };
+		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0.f, 0, 0, nullptr);
+		commandList->OMSetRenderTargets(0, nullptr, 0, &dsv);
+	}
+
+	void setRenderTargetsForGPass(ID3D12GraphicsCommandList* commandList)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE rtv{ gPassMainBuffer.getRTV(0) };
+		const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gPassDepthBuffer.getDSV() };
+
+		commandList->ClearRenderTargetView(rtv, clearValue, 0, nullptr);
+		commandList->OMSetRenderTargets(1, &rtv, 0, &dsv);
 	}
 }

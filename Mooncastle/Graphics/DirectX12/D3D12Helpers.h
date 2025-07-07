@@ -95,6 +95,80 @@ namespace mooncastle::graphics::d3D12::d3DX
 		};
 	} depthState;
 
+	class D3D12ResourceBarrier
+	{
+	public:
+		constexpr static u32 maxResourceBarriers{ 32 };
+
+		//Adds a transition barrier to the list of barriers.
+		constexpr void add(ID3D12Resource* resource,
+			D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after,
+			D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+			u32 subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+		{
+			assert(resource);
+			assert(offset < maxResourceBarriers);
+
+			D3D12_RESOURCE_BARRIER& barrier{ barriers[offset] };
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Flags = flags;
+			barrier.Transition.pResource = resource;
+			barrier.Transition.StateBefore = before;
+			barrier.Transition.StateAfter = after;
+			barrier.Transition.Subresource = subresource;
+
+			++offset;
+		}
+
+		//Adds a UAV barrier to the list of barriers.
+		constexpr void add(ID3D12Resource* resource, D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE)
+		{
+			assert(resource);
+			assert(offset < maxResourceBarriers);
+
+			D3D12_RESOURCE_BARRIER& barrier{ barriers[offset] };
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+			barrier.Flags = flags;
+			barrier.UAV.pResource = resource;
+
+			++offset;
+		}
+
+		//Adds an aliasing barrier to the list of barriers.
+		constexpr void add(ID3D12Resource* resourceBefore, ID3D12Resource* resourceAfter, D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE)
+		{
+			assert(resourceBefore && resourceAfter);
+			assert(offset < maxResourceBarriers);
+
+			D3D12_RESOURCE_BARRIER& barrier{ barriers[offset] };
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+			barrier.Flags = flags;
+			barrier.Aliasing.pResourceBefore = resourceBefore;
+			barrier.Aliasing.pResourceAfter = resourceAfter;
+
+			++offset;
+		}
+
+		void apply(ID3D12GraphicsCommandList* commandList)
+		{
+			assert(offset);
+
+			commandList->ResourceBarrier(offset, barriers);
+			offset = 0;
+		}
+
+	private:
+		D3D12_RESOURCE_BARRIER barriers[maxResourceBarriers]{};
+		u32 offset{ 0 };
+	};
+
+	void transitionResource(
+		ID3D12GraphicsCommandList* commandList,
+		ID3D12Resource* resource,
+		D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after,
+		D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+		u32 subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+
 	ID3D12RootSignature* createRootSignature(const D3D12_ROOT_SIGNATURE_DESC1& desc);
 
 	struct D3D12DescriptorRange : public D3D12_DESCRIPTOR_RANGE1
@@ -173,21 +247,21 @@ namespace mooncastle::graphics::d3D12::d3DX
 #pragma warning(push)
 #pragma warning(disable : 4324) //Disables padding warning.
 
-	template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type, typename T>
+	template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE subobjectType, typename T>
 	class alignas(void*) D3D12PipelineStateSubobject
 	{
 	public:
 		D3D12PipelineStateSubobject() = default;
-		constexpr explicit D3D12PipelineStateSubobject(T subobject) : type{ type }, subobject{ subobject } {}
+		constexpr explicit D3D12PipelineStateSubobject(T newSubobject) : type{ subobjectType }, subobject{ newSubobject } {}
 
-		D3D12PipelineStateSubobject& operator=(const T& subobject) 
+		D3D12PipelineStateSubobject& operator=(const T& newSubobject)
 		{ 
-			this->subobject = subobject;
+			subobject = newSubobject;
 			return *this;
 		}
 
 	private:
-		const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type{ type };
+		const D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type{ subobjectType };
 		T subobject{};
 	};
 
