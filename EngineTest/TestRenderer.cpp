@@ -12,7 +12,11 @@ graphics::renderSurface surfaces[4];
 
 timeIt timer{};
 
+bool isRestarting{ false };
+
 void removeRenderSurface(graphics::renderSurface& surface);
+bool testInitialize();
+void testShutdown();
 
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -36,7 +40,7 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				}
 			}
 		}
-		if (allClosed)
+		if (allClosed && !isRestarting)
 		{
 			PostQuitMessage(0);
 			return 0;
@@ -58,6 +62,13 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
 			return 0;
 		}
+		else if (wparam == VK_F11)
+		{
+			isRestarting = true;
+			testShutdown();
+			testInitialize();
+		}
+
 	}
 
 	return DefWindowProc(hwnd, msg, wparam, lparam);
@@ -85,7 +96,7 @@ void removeRenderSurface(graphics::renderSurface& surface)
 	}
 }
 
-bool engineTest::initialize()
+bool testInitialize()
 {
 	while (!compileShaders())
 	{
@@ -100,10 +111,10 @@ bool engineTest::initialize()
 
 	platform::windowInitInfo info[]
 	{
-		{&winProc, nullptr, L"Render Window 1", 100, 100, 400, 800},
-		{&winProc, nullptr, L"Render Window 2", 150, 150, 800, 400},
-		{&winProc, nullptr, L"Render Window 3", 200, 200, 400, 400},
-		{&winProc, nullptr, L"Render Window 4", 250, 250, 800, 600},
+		{&winProc, nullptr, L"Render Window 1", 500, 100, 400, 800},
+		{&winProc, nullptr, L"Render Window 2", 550, 150, 800, 400},
+		{&winProc, nullptr, L"Render Window 3", 600, 200, 400, 400},
+		{&winProc, nullptr, L"Render Window 4", 650, 250, 800, 600},
 	};
 
 	static_assert(_countof(info) == _countof(surfaces));
@@ -113,7 +124,24 @@ bool engineTest::initialize()
 		createRenderSurface(surfaces[i], info[i]);
 	}
 
+	isRestarting = false;
+
 	return true;
+}
+
+void testShutdown()
+{
+	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
+	{
+		removeRenderSurface(surfaces[i]);
+	}
+
+	graphics::shutdown();
+}
+
+bool engineTest::initialize()
+{
+	return testInitialize();
 }
 
 void engineTest::run()
@@ -135,12 +163,7 @@ void engineTest::run()
 
 void engineTest::shutdown()
 {
-	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
-	{
-		removeRenderSurface(surfaces[i]);
-	}
-
-	graphics::shutdown();
+	return testShutdown();
 }
 
 #endif

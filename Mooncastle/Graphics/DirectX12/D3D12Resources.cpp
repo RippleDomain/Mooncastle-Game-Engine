@@ -95,8 +95,8 @@ namespace mooncastle::graphics::d3D12
             handle.gpu.ptr = gpuStart.ptr + offset;
         }
 
+        handle.index = index;
         DEBUG_OP(handle.container = this);
-        DEBUG_OP(handle.index = index);
 
         return handle;
     }
@@ -243,6 +243,7 @@ namespace mooncastle::graphics::d3D12
         assert(device);
         device->CreateDepthStencilView(getResource(), &dsvDesc, dsv.cpu);
     }
+
     void D3D12DepthBuffer::release()
     {
         core::getDSVHeap().free(dsv);

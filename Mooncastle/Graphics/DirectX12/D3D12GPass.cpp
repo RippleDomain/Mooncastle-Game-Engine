@@ -6,6 +6,15 @@ namespace mooncastle::graphics::d3D12::gPass
 {
 	namespace
 	{
+		struct gPassRootParamIndices 
+		{
+			enum : u32 
+			{
+				rootConstants,
+				count
+			};
+		};
+
 		constexpr DXGI_FORMAT mainBufferFormat{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 		constexpr DXGI_FORMAT depthBufferFormat{ DXGI_FORMAT_D32_FLOAT };
 		constexpr math::u32v2 initialDimensions{ 100, 100 };
@@ -79,16 +88,17 @@ namespace mooncastle::graphics::d3D12::gPass
 			assert(!gPassRootSignature && !gPassPSO);
 
 			//Creates GPass root signature.
-			d3DX::D3D12RootParameter parameters[1]{};
+			using index = gPassRootParamIndices;
+			d3DX::D3D12RootParameter parameters[index::count]{};
 			parameters[0].asConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-			const d3DX::D3D12RootSignatureDescription root_signature{ &parameters[0], _countof(parameters) };
-			gPassRootSignature = root_signature.create();
+			const d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], index::count };
+			gPassRootSignature = rootSignature.create();
 			assert(gPassRootSignature);
 
 			NAME_D3D12_OBJECT(gPassRootSignature, L"GPass Root Signature");
 
 			//Creates GPass PSO.
-			struct D3DXStream 
+			struct gPassStream 
 			{
 				d3DX::D3D12PipelineStateSubobject_rootSignature       rootSignature{ gPassRootSignature };
 				d3DX::D3D12PipelineStateSubobject_vs                  vs{ shaders::getEngineShader(shaders::engineShader::fullscreenTriangleVS) };
@@ -127,6 +137,16 @@ namespace mooncastle::graphics::d3D12::gPass
 		core::release(gPassPSO);
 	}
 
+	const D3D12RenderTexture& getMainBuffer()
+	{
+		return gPassMainBuffer;
+	}
+
+	const D3D12DepthBuffer& getDepthBuffer()
+	{
+		return gPassDepthBuffer;
+	}
+
 	void setSize(math::u32v2 size) 
 	{
 		math::u32v2& d{ dimensions };
@@ -149,9 +169,17 @@ namespace mooncastle::graphics::d3D12::gPass
 		commandList->SetPipelineState(gPassPSO);
 
 		static u32 frame{ 0 };
-		++frame;
 
-		commandList->SetGraphicsRoot32BitConstant(0, frame, 0);
+		struct 
+		{
+			f32 width;
+			f32 height;
+			u32 frame;
+		} constants{ (f32)info.surfaceWidth, (f32)info.surfaceHeight, ++frame };
+
+		using index = gPassRootParamIndices;
+
+		commandList->SetGraphicsRoot32BitConstants(index::rootConstants, 3, &constants, 0);
 
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		commandList->DrawInstanced(3, 1, 0, 0);

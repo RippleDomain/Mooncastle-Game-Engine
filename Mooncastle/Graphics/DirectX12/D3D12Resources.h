@@ -8,15 +8,15 @@ namespace mooncastle::graphics::d3D12 {
 	struct descriptorHandle {
 		D3D12_CPU_DESCRIPTOR_HANDLE cpu{};
 		D3D12_GPU_DESCRIPTOR_HANDLE gpu{};
+		u32							index{ u32_invalid_id };
 
-		constexpr bool isValid() const { return cpu.ptr != 0; }
-		constexpr bool isShaderVisible() const { return gpu.ptr != 0; }
+		[[nodiscard]] constexpr bool isValid() const { return cpu.ptr != 0; }
+		[[nodiscard]] constexpr bool isShaderVisible() const { return gpu.ptr != 0; }
 
 #ifdef _DEBUG
 	private:
 		friend class descriptorHeap;
 		descriptorHeap* container{ nullptr };
-		u32 index{ u32_invalid_id };
 #endif
 	};
 
@@ -34,14 +34,14 @@ namespace mooncastle::graphics::d3D12 {
 		[[nodiscard]] descriptorHandle allocate();
 		void free(descriptorHandle& handle);
 
-		constexpr D3D12_DESCRIPTOR_HEAP_TYPE getType() const { return type; }
-		constexpr D3D12_CPU_DESCRIPTOR_HANDLE getCpuStart() const { return cpuStart; }
-		constexpr D3D12_GPU_DESCRIPTOR_HANDLE getGpuStart() const { return gpuStart; }
-		constexpr ID3D12DescriptorHeap *const getHeap() const { return heap; }
-		constexpr u32 getCapacity() const { return capacity; }
-		constexpr u32 getSize() const { return size; }
-		constexpr u32 getDescriptorSize() const { return descriptorSize; }
-		constexpr bool isShaderVisible() const { return gpuStart.ptr != 0; }
+		[[nodiscard]] constexpr D3D12_DESCRIPTOR_HEAP_TYPE getType() const { return type; }
+		[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE getCPUStart() const { return cpuStart; }
+		[[nodiscard]] constexpr D3D12_GPU_DESCRIPTOR_HANDLE getGPUStart() const { return gpuStart; }
+		[[nodiscard]] constexpr ID3D12DescriptorHeap *const getHeap() const { return heap; }
+		[[nodiscard]] constexpr u32 getCapacity() const { return capacity; }
+		[[nodiscard]] constexpr u32 getSize() const { return size; }
+		[[nodiscard]] constexpr u32 getDescriptorSize() const { return descriptorSize; }
+		[[nodiscard]] constexpr bool isShaderVisible() const { return gpuStart.ptr != 0; }
 
 	private:
 		ID3D12DescriptorHeap*        heap;
@@ -96,8 +96,8 @@ namespace mooncastle::graphics::d3D12 {
 		}
 
 		void release();
-		constexpr ID3D12Resource *const getResource() const { return resource; }
-		constexpr descriptorHandle getSRV() const { return srv; }
+		[[nodiscard]] constexpr ID3D12Resource *const getResource() const { return resource; }
+		[[nodiscard]] constexpr descriptorHandle getSRV() const { return srv; }
 
 	private:
 		constexpr void move(D3D12Texture& o)

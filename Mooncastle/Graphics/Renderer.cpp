@@ -38,7 +38,7 @@ namespace mooncastle::graphics
 
     void shutdown()
     {
-        gfx.shutdown();
+        if (gfx.platform != (graphicsPlatform)-1) gfx.shutdown();
     }
 
     const char* getEngineShadersPath()

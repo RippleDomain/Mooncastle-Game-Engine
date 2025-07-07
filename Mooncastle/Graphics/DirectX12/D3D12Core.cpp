@@ -2,6 +2,7 @@
 #include "D3D12Surface.h"
 #include "D3D12Shaders.h"
 #include "D3D12GPass.h"
+#include "D3D12PostProcess.h"
 
 using namespace Microsoft::WRL;
 
@@ -336,7 +337,7 @@ namespace mooncastle::graphics::d3D12::core
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
         //Initialize modules.
-        if (!(shaders::initialize() && gPass::initialize())) return failedInit();
+        if (!(shaders::initialize() && gPass::initialize() && ppfx::initialize())) return failedInit();
 
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
         NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
@@ -358,6 +359,7 @@ namespace mooncastle::graphics::d3D12::core
         }
 
         //Shutdown modules.
+        ppfx::shutdown();
         gPass::shutdown();
         shaders::shutdown();
 
@@ -489,6 +491,9 @@ namespace mooncastle::graphics::d3D12::core
         d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
 
         //Records commands.
+        ID3D12DescriptorHeap* const heaps[]{ srvDescriptorHeap.getHeap() };
+
+        commandList->SetDescriptorHeaps(1, &heaps[0]);
         commandList->RSSetViewports(1, &surface.getViewport());
         commandList->RSSetScissorRects(1, &surface.getScissorRect());
 
@@ -509,6 +514,7 @@ namespace mooncastle::graphics::d3D12::core
         //Post-processing. Will write to the current back buffer.
         gPass::addTransitionsForPostProcess(barriers);
         barriers.apply(commandList);
+        ppfx::postProcess(commandList, surface.getRTV());
 
         //After post-processing.
         d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
