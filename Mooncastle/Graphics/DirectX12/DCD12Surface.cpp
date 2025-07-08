@@ -68,7 +68,21 @@ namespace mooncastle::graphics::d3D12
 
     void D3D12Surface::resize()
     {
+        assert(swapChain);
 
+        for (u32 i{ 0 }; i < bufferCount; ++i)
+        {
+			core::release(targetData[i].resource);
+        }
+
+        const u32 flags{ allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0uL };
+
+        DXCall(swapChain->ResizeBuffers(bufferCount, 0, 0, DXGI_FORMAT_UNKNOWN, flags));
+        currentBBIndex = swapChain->GetCurrentBackBufferIndex();
+
+        finalize();
+
+        DEBUG_OP(OutputDebugString(L"::D3D12 Surface Resized.\n"));
     }
 
     void D3D12Surface::finalize()

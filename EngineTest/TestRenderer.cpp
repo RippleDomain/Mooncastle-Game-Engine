@@ -12,6 +12,7 @@ graphics::renderSurface surfaces[4];
 
 timeIt timer{};
 
+bool resized{ false };
 bool isRestarting{ false };
 
 void removeRenderSurface(graphics::renderSurface& surface);
@@ -20,6 +21,8 @@ void testShutdown();
 
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	bool toggleFullscreen{ false };
+
 	switch (msg)
 	{
 	case WM_DESTROY:
@@ -47,14 +50,11 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		}
 	}
 	break;
-
+	case WM_SIZE:
+		resized = (wparam != SIZE_MINIMIZED);
+		break;
 	case WM_SYSCHAR:
-		if (wparam == VK_RETURN && (HIWORD(lparam) & KF_ALTDOWN))
-		{
-			platform::window win{ platform::windowId{(id::idType)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
-			win.setFullScreen(!win.isFullScreen());
-			return 0;
-		}
+		toggleFullscreen = (wparam == VK_RETURN && (HIWORD(lparam) & KF_ALTDOWN));
 		break;
 	case WM_KEYDOWN:
 		if (wparam == VK_ESCAPE)
@@ -69,6 +69,34 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			testInitialize();
 		}
 
+	}
+
+	if ((resized && GetAsyncKeyState(VK_LBUTTON) >= 0) || toggleFullscreen)
+	{
+		platform::window win{ platform::windowId{(id::idType)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
+
+		for (u32 i{ 0 }; i < _countof(surfaces); ++i)
+		{
+			if (win.getId() == surfaces[i].window.getId())
+			{
+				if (toggleFullscreen)
+				{
+					win.setFullScreen(!win.isFullScreen());
+
+					/*The default window procedure will play a system notification sound
+					when pressing the Alt + Enter keyboard combination if WM_SYSCHAR is
+					not handled.*/
+					return 0;
+				}
+				else
+				{
+					surfaces[i].surface.resize(win.width(), win.height());
+					resized = false;
+				}
+
+				break;
+			}
+		}
 	}
 
 	return DefWindowProc(hwnd, msg, wparam, lparam);

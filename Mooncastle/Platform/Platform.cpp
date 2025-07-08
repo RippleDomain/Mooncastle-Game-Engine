@@ -32,38 +32,37 @@ namespace mooncastle::platform
 			return getWindowInfoFromId(id);
 		}
 
+		bool resized{ false };
+
 		LRESULT CALLBACK internalWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
-			windowInfo* info{ nullptr };
-			
 			switch (msg) 
 			{
+			case WM_NCCREATE:
+			{
+				DEBUG_OP(SetLastError(0));
+				const windowId id{ windows.add() };
+				windows[id].hwnd = hwnd;
+				SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)id);
+				assert(GetLastError() == 0);
+				break;
+			}
 			case WM_DESTROY:
 				getWindowInfoFromHandle(hwnd).isClosed = true;
 				break;
-			case WM_EXITSIZEMOVE:
-				info = &getWindowInfoFromHandle(hwnd);
-				break;
 			case WM_SIZE:
-				if (wparam == SIZE_MAXIMIZED) 
-				{
-					info = &getWindowInfoFromHandle(hwnd);
-				}
-				break;
-			case WM_SYSCOMMAND:
-				if (wparam == SC_RESTORE)
-				{
-					info = &getWindowInfoFromHandle(hwnd);
-				}
+				resized = (wparam != SIZE_MINIMIZED);
 				break;
 			default:
 				break;
 			}
 
-			if (info)
+			if (resized && GetAsyncKeyState(VK_LBUTTON) >= 0)
 			{
-				assert(info->hwnd);
-				GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
+				windowInfo& info{ getWindowInfoFromHandle(hwnd) };
+				assert(info.hwnd);
+				GetClientRect(info.hwnd, info.isFullScreen ? &info.fullScreenArea : &info.clientArea);
+				resized = false;
 			}
 
 			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, 0) };
@@ -214,11 +213,9 @@ namespace mooncastle::platform
 
 		if (info.hwnd) 
 		{
-			DEBUG_OP(SetLastError(0));
-			const windowId id{ windows.add(info) };
-			SetWindowLongPtr(info.hwnd, GWLP_USERDATA, (LONG_PTR)id);
-
 			//Set (in the extra bytes) the pointer to the window callback function that handles messages.
+			DEBUG_OP(SetLastError(0));
+
 			if (callback) 
 			{
 				SetWindowLongPtr(info.hwnd, 0, (LONG_PTR)callback);
@@ -227,9 +224,14 @@ namespace mooncastle::platform
 
 			ShowWindow(info.hwnd, SW_SHOWNORMAL);
 			UpdateWindow(info.hwnd);
+
+			windowId id{ (id::idType)GetWindowLongPtr(info.hwnd, GWLP_USERDATA) };
+			windows[id] = info;
+
 			return window{ id };
 		}
-		return { };
+
+		return {};
 	}
 
 	void removeWindow(windowId id) 
