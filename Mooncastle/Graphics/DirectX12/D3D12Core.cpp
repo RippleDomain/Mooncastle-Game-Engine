@@ -133,9 +133,9 @@ namespace mooncastle::graphics::d3D12::core
                 }
             }
 
-            constexpr ID3D12CommandQueue *const getCommandQueue() const { return commandQueue; }
-            constexpr ID3D12GraphicsCommandList *const getCommandList() const { return commandList; }
-            constexpr u32 getFrameIndex() const { return frameIndex; }
+            [[nodiscard]] constexpr ID3D12CommandQueue *const getCommandQueue() const { return commandQueue; }
+            [[nodiscard]] constexpr ID3D12GraphicsCommandList *const getCommandList() const { return commandList; }
+            [[nodiscard]] constexpr u32 getFrameIndex() const { return frameIndex; }
 
         private:
             struct commandFrame
@@ -287,6 +287,10 @@ namespace mooncastle::graphics::d3D12::core
             if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)))) 
             {
                 debugInterface->EnableDebugLayer();
+#if 0
+#pragma message("WARNING: If enabled, GPU based validation will considerably slow down the renderer!")
+                debugInterface->SetEnableGPUBasedValidation(1);
+#endif
             }
             else
             {
@@ -490,6 +494,9 @@ namespace mooncastle::graphics::d3D12::core
 
         d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
 
+        //TODO: Implement split barriers sometime (if necessary under realistic workload).
+        //Testing was done on fractal rendering and plain colors but no valuable difference was observed.
+        
         //Records commands.
         ID3D12DescriptorHeap* const heaps[]{ srvDescriptorHeap.getHeap() };
 
