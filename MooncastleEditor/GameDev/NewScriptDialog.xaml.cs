@@ -63,7 +63,6 @@ namespace {1}
         {
             var projectName = Project.Current.Name.Trim();
             if (string.IsNullOrEmpty(projectName)) return string.Empty;
-            projectName = Regex.Replace(projectName, @"[^A-Za-z0-9_]", "");
 
             return projectName;
         }
@@ -181,14 +180,7 @@ namespace {1}
 
             string[] files = new string[] { cpp, h };
 
-            for (int i = 0; i < 3; ++i)
-            {
-                if (!VisualStudio.AddFilesToSolution(solution, projectName, files))
-                {
-                    Thread.Sleep(1000);
-                }
-                else break;
-            }
+            VisualStudio.AddFilesToSolution(solution, projectName, files);
         }
 
         public NewScriptDialog()

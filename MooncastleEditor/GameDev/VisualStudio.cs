@@ -265,12 +265,16 @@ namespace MooncastleEditor.GameDev
             CallOnSTAThread(() =>
             {
                 if (!_vsInstance.Solution.IsOpen)
+                {
                     _vsInstance.Solution.Open(project.Solution);
+                }
+
+                _vsInstance.MainWindow.Visible = showWindow;
+                _vsInstance.Events.BuildEvents.OnBuildProjConfigBegin += OnBuildSolutionBegin;
+                _vsInstance.Events.BuildEvents.OnBuildProjConfigDone += OnBuildSolutionDone;
             });
 
-            _vsInstance.MainWindow.Visible = showWindow;
-            _vsInstance.Events.BuildEvents.OnBuildProjConfigBegin += OnBuildSolutionBegin;
-            _vsInstance.Events.BuildEvents.OnBuildProjConfigDone += OnBuildSolutionDone;
+            
 
             var configName = GetBuildConfigName(buildConfig);
 

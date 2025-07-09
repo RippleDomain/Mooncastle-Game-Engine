@@ -310,7 +310,7 @@ namespace MooncastleEditor.Content
 
         private static void ReadMeshes(BinaryReader reader, List<int> lodIds, List<MeshLOD> lodList)
         {
-            // get mesh's name
+            //Gets mesh's name.
             var s = reader.ReadInt32();
             string meshName;
             if (s > 0)

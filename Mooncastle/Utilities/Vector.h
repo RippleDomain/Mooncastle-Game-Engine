@@ -326,14 +326,12 @@ namespace mooncastle::utl
         //Returns a pointer to the first item. Returns null when the vector is empty.
         [[nodiscard]] constexpr T* begin()
         {
-            assert(currentData);
             return std::addressof(currentData[0]);
         }
 
         //Returns a constant pointer to the first item. Returns null when the vector is empty.
         [[nodiscard]] constexpr const T* begin()const
         {
-            assert(currentData);
             return std::addressof(currentData[0]);
         }
 

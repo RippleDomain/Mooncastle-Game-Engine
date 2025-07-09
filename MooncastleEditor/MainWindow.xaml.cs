@@ -1,5 +1,7 @@
-﻿using MooncastleEditor.GameProject;
+﻿using MooncastleEditor.Content;
+using MooncastleEditor.GameProject;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -90,7 +92,10 @@ namespace MooncastleEditor
             {
                 Project.Current?.Unload();
 
-                DataContext = projectBrowser.DataContext;
+                var project = projectBrowser.DataContext as Project;
+                Debug.Assert(project != null);
+                AssetRegistry.Reset(project.ContentPath);
+                DataContext = project;
             }
         }
     }

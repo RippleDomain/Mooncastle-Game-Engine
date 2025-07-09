@@ -55,8 +55,8 @@ namespace MooncastleEditor.Content
                         info.SegmentZ = Math.Max(1, (int)zSliderPlane.Value);
                         info.Size.X = Math.Max(Value(widthScalarBoxPlane, 0.001f), 0.001f);
                         info.Size.Z = Math.Max(Value(lengthScalarBoxPlane, 0.001f), 0.001f);
-                        break;
                     }
+                    break;
                 case PrimitiveMeshType.Cube:
                     return;
                 case PrimitiveMeshType.UvSphere:
