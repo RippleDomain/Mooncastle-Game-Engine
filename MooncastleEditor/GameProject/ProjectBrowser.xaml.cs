@@ -22,6 +22,8 @@ namespace MooncastleEditor.GameProject
     {
         private readonly CubicEase _easing = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
+        public static bool GotoNewProjectTab { get; set; }
+
         public ProjectBrowser()
         {
             InitializeComponent();
@@ -32,13 +34,18 @@ namespace MooncastleEditor.GameProject
         {
             Loaded -= OnProjectBrowserLoaded;
 
-            if (!OpenProject.Projects.Any())
+            if (!OpenProject.Projects.Any() || GotoNewProjectTab)
             {
-                openProjectButton.IsEnabled = false;
-                openProjectView.Visibility = Visibility.Hidden;
-                
+                if (!GotoNewProjectTab)
+                {
+                    openProjectButton.IsEnabled = false;
+                    openProjectView.Visibility = Visibility.Hidden;
+                }
+
                 onToggleButton_Clicked(createProjectButton, new RoutedEventArgs());
             }
+
+            GotoNewProjectTab = false;
         }
 
         private void onToggleButton_Clicked(object sender, RoutedEventArgs e)

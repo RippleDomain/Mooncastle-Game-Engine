@@ -17,18 +17,10 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace MooncastleEditor.GameProject
 {
-    enum BuildConfiguration
-    {
-        Debug,
-        DebugEditor,
-        Release,
-        ReleaseEditor
-    }
-
     [DataContract(Name = "Game")]
     class Project : ViewModelBase
     {
-        public static string Extension = ".mooncastle";
+        public static string Extension => ".mooncastle";
 
         [DataMember]
         public string Name { get; private set; } = "NewProject";
@@ -37,8 +29,6 @@ namespace MooncastleEditor.GameProject
         public string FullPath => $@"{Path}{Name}{Extension}";
         public string Solution => $@"{Path}{Name}.sln";
         public string ContentPath => $@"{Path}Content\";
-
-        private static readonly string[] _buildConfigNames = new string[] { "Debug", "DebugEditor", "Release", "ReleaseEditor" };
 
         private int _buildConfig;
         [DataMember]
@@ -62,7 +52,7 @@ namespace MooncastleEditor.GameProject
         public string[] AvailableScripts
         {
             get => _availabeScripts;
-            set
+            private set
             {
                 if (_availabeScripts != value)
                 {
@@ -72,8 +62,8 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        [DataMember(Name = "Scenes")]
-        private ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
+        [DataMember(Name = nameof(Scenes))]
+        private readonly ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
         public ReadOnlyObservableCollection<Scene> Scenes { get; private set; }
 
         private Scene _sceneOnScreen;
@@ -93,7 +83,7 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        public static Project Current => Application.Current.MainWindow.DataContext as Project;
+        public static Project Current => Application.Current.MainWindow?.DataContext as Project;
 
         public static UndoRedo UndoRedo { get; } = new UndoRedo();
 
@@ -154,8 +144,6 @@ namespace MooncastleEditor.GameProject
             OnPropertyChanged(nameof(BuildCommand));
         }
 
-        private static string GetBuildConfigName(BuildConfiguration config) => _buildConfigNames[(int)config];
-
         private void AddScene(string sceneName)
         {
             Debug.Assert(!string.IsNullOrEmpty(sceneName.Trim()));
@@ -182,9 +170,10 @@ namespace MooncastleEditor.GameProject
             UnloadGameCodeDll();
             VisualStudio.CloseVisualStudio();
             UndoRedo.Reset();
+            Logger.Clear();
         }
 
-        public static void Save(Project project)
+        private static void Save(Project project)
         {
             Serializer.ToFile(project, project.FullPath);
             Logger.Log(MessageType.Info, $"Saved project to {project.FullPath}");
@@ -192,7 +181,7 @@ namespace MooncastleEditor.GameProject
 
         private void SaveToBinary()
         {
-            var configName = GetBuildConfigName(StandaloneBuildConfig);
+            var configName = VisualStudio.GetBuildConfigName(StandaloneBuildConfig);
             var bin = $@"{Path}\x64\{configName}\game.bin";
 
             using (var bw = new BinaryWriter(File.Open(bin, FileMode.Create, FileAccess.Write)))
@@ -215,13 +204,12 @@ namespace MooncastleEditor.GameProject
 
         private async Task RunGame(bool debug)
         {
-            var configName = GetBuildConfigName(StandaloneBuildConfig);
-            await Task.Run(() => VisualStudio.BuildSolution(this, configName, debug));
+            await Task.Run(() => VisualStudio.BuildSolution(this, StandaloneBuildConfig, debug));
 
             if (VisualStudio.BuildSucceeded)
             {
                 SaveToBinary();
-                await Task.Run(() => VisualStudio.Run(this, configName, debug));
+                await Task.Run(() => VisualStudio.Run(this, StandaloneBuildConfig, debug));
             }
         }
 
@@ -233,7 +221,7 @@ namespace MooncastleEditor.GameProject
             {
                 UnloadGameCodeDll();
 
-                await Task.Run(() => VisualStudio.BuildSolution(this, GetBuildConfigName(DllBuildConfig), showWindow));
+                await Task.Run(() => VisualStudio.BuildSolution(this, DllBuildConfig, showWindow));
 
                 if (VisualStudio.BuildSucceeded)
                 {
@@ -249,7 +237,7 @@ namespace MooncastleEditor.GameProject
 
         private void LoadGameCodeDll()
         {
-            var configName = GetBuildConfigName(DllBuildConfig);
+            var configName = VisualStudio.GetBuildConfigName(DllBuildConfig);
 
             var dllPath = System.IO.Path.Combine(Path, "x64", configName, $"{Name}.dll");
 
@@ -289,7 +277,7 @@ namespace MooncastleEditor.GameProject
                 OnPropertyChanged(nameof(Scenes));
             }
 
-            SceneOnScreen = Scenes.FirstOrDefault(x => x.IsOnScreen);
+            SceneOnScreen = _scenes.FirstOrDefault(x => x.IsOnScreen);
             Debug.Assert(SceneOnScreen != null);
 
             await BuildGameCodeDll(false);
@@ -301,6 +289,8 @@ namespace MooncastleEditor.GameProject
         {
             Name = name;
             Path = path;
+
+            Debug.Assert(File.Exists((Path + Name + Extension).ToLower()));
 
             OnDeserialized(new StreamingContext());
         }

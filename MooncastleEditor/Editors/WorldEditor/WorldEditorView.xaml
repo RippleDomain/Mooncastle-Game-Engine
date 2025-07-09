@@ -18,6 +18,11 @@
         <sys:Boolean x:Key="True">True</sys:Boolean>
         <sys:Boolean x:Key="False">False</sys:Boolean>
     </UserControl.Resources>
+    <UserControl.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.New" Executed="OnNewProject" />
+        <CommandBinding Command="ApplicationCommands.Open" Executed="OnOpenProject" />
+        <CommandBinding Command="ApplicationCommands.Close" Executed="OnEditorClose" />
+    </UserControl.CommandBindings>
     <UserControl.InputBindings>
         <KeyBinding
             Key="Z"
@@ -44,10 +49,28 @@
     </UserControl.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="32" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
+        <Menu Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Command="ApplicationCommands.New" Header="New Project..." />
+                <MenuItem Command="ApplicationCommands.Open" Header="Open Project..." />
+                <Separator />
+                <MenuItem Command="{Binding SaveCommand}" Header="Save Project" />
+                <Separator />
+                <MenuItem Command="ApplicationCommands.Close" Header="Exit" />
+            </MenuItem>
+            <MenuItem Header="Settings" />
+            <MenuItem Header="View" />
+            <MenuItem Header="Create" IsEnabled="False" />
+            <MenuItem Header="Window" />
+        </Menu>
+        <StackPanel
+            Grid.Row="1"
+            Margin="20,10"
+            Orientation="Horizontal">
             <Button Command="{Binding UndoCommand}" Content="Undo" />
             <Button
                 Margin="5,0"
@@ -77,7 +100,7 @@
                 Click="OnCreatePrimitiveMesh_Button_Click"
                 Content="Primitive Mesh" />
         </StackPanel>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />

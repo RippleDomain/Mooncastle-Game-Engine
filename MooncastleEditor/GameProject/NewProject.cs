@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -151,7 +152,7 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        private ObservableCollection<ProjectTemplate> _projectTemplates = new ObservableCollection<ProjectTemplate>();
+        private readonly ObservableCollection<ProjectTemplate> _projectTemplates = new ObservableCollection<ProjectTemplate>();
         public ReadOnlyObservableCollection<ProjectTemplate> ProjectTemplates {get;}
 
         private bool IsProjectPathValid()
@@ -164,6 +165,7 @@ namespace MooncastleEditor.GameProject
             }
 
             path += $@"{ProjectName}\";
+            var nameRegex = new Regex(@"^[A-Za-z_][A-Za-z0-9_]*$");
 
             IsValid = false;
 
@@ -171,7 +173,7 @@ namespace MooncastleEditor.GameProject
             {
                 ErrorMessage = "Project name cannot be empty.";
             }
-            else if (ProjectName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+            else if (!nameRegex.IsMatch(ProjectName))
             {
                 ErrorMessage = "Project name should not include invalid characters.";
             }
@@ -254,7 +256,7 @@ namespace MooncastleEditor.GameProject
             Debug.Assert(Path.Exists(Path.Combine(template.TemplatePath, "MSVCSolution")));
             Debug.Assert(Path.Exists(Path.Combine(template.TemplatePath, "MSVCProject")));
 
-            var engineAPIPath = Path.Combine(MainWindow.MooncastlePath, @"Mooncastle\EngineAPI");
+            var engineAPIPath = @"$(MOONCASTLE_PATH)Mooncastle\EngineAPI\";
 
             Debug.WriteLine($"[CreateMSVCSolution] engineAPIPath = '{engineAPIPath}'");
             Debug.Assert(Directory.Exists(engineAPIPath));
@@ -262,7 +264,7 @@ namespace MooncastleEditor.GameProject
             var _0 = ProjectName;
             var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
             var _2 = engineAPIPath;
-            var _3 = MainWindow.MooncastlePath;
+            var _3 = "$(MOONCASTLE_PATH)";
 
             var solution = File.ReadAllText((Path.Combine(template.TemplatePath, "MSVCSolution")));
             solution = string.Format(solution, _0, _1, "{" + Guid.NewGuid().ToString().ToUpper() + "}");

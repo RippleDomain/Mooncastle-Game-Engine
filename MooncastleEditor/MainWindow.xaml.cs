@@ -24,7 +24,7 @@ namespace MooncastleEditor
         {
             InitializeComponent();
             Loaded += MainWindowLoaded;
-            Closing += MainWindowClosing;
+            Closing += OnMainWindowClosing;
         }
         private void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
@@ -57,10 +57,25 @@ namespace MooncastleEditor
             }
         }
 
-        private void MainWindowClosing(object sender, CancelEventArgs e)
+        private void OnMainWindowClosing(object sender, CancelEventArgs e)
         {
-            Closing -= MainWindowClosing;
-            Project.Current?.Unload();
+            if (DataContext == null)
+            {
+                e.Cancel = true;
+                Application.Current.MainWindow.Hide();
+                openProjectBrowser();
+
+                if (DataContext != null)
+                {
+                    Application.Current.MainWindow.Show();
+                }
+            }
+            else
+            {
+                Closing -= OnMainWindowClosing;
+                Project.Current?.Unload();
+                DataContext = null;
+            }
         }
 
         private void openProjectBrowser()
