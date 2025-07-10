@@ -40,6 +40,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\ContentBrowser\largeFolder.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\ContentBrowser\folder.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\PrimitiveMeshView\chess.png" />
   </ItemGroup>
 
