@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows.Threading;
 
 namespace MooncastleEditor.Utilities
@@ -91,6 +93,37 @@ namespace MooncastleEditor.Utilities
                 Interval = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 0.5)
             };
             _timer.Tick += OnTimerTick;
+        }
+    }
+
+    class DataSizeToStringConverter : IValueConverter
+    {
+        static readonly string[] _sizeSuffixes = { "B", "KB", "MB", "TB", "PB", "ZB", "YB" };
+
+        static string SizeSuffix(long value, int decimalPlaces = 1)
+        {
+            if (value <= 0 || decimalPlaces < 0) { return string.Empty; }
+
+            int mag = (int)Math.Log(value, 1024);
+            decimal adjustedSize = (decimal)value / (1L << (mag * 10));
+
+            if (Math.Round(adjustedSize, decimalPlaces) >= 1000)
+            {
+                mag += 1;
+                adjustedSize /= 1024;
+            }
+
+            return string.Format("{0:n" + decimalPlaces + "}{1}", adjustedSize, _sizeSuffixes[mag]);
+        }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (value is long size) ? SizeSuffix(size, 0) : null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
 }

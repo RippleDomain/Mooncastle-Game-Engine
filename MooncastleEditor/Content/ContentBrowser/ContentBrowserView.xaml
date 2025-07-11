@@ -5,10 +5,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Content"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:utl="clr-namespace:MooncastleEditor.Utilities"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
     <UserControl.Resources>
+        <utl:DataSizeToStringConverter x:Key="dataSizeToStringConverter" />
         <Style x:Key="SmallIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding IconSmall}" />
             <Style.Triggers>
@@ -224,12 +226,74 @@
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
-            <GridViewColumn DisplayMemberBinding="{Binding Size}">
+            <GridViewColumn DisplayMemberBinding="{Binding Size, Converter={StaticResource dataSizeToStringConverter}}">
                 <GridViewColumn.Header>
                     <GridViewColumnHeader Content="Size" Tag="Size" />
                 </GridViewColumn.Header>
             </GridViewColumn>
         </GridView>
+        <DataTemplate x:Key="tileTemplate">
+            <StackPanel
+                Width="96"
+                Margin="-4,0,0,0"
+                HorizontalAlignment="Center">
+                <Image
+                    Width="90"
+                    HorizontalAlignment="Center"
+                    Style="{StaticResource LargeIconStyle}" />
+                <TextBlock
+                    MaxHeight="60"
+                    Margin="2,0"
+                    HorizontalAlignment="Center"
+                    Foreground="{StaticResource Editor.FontBrush}"
+                    Text="{Binding FileName}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+        <local:PlainView x:Key="tileView" ItemTemplate="{StaticResource tileTemplate}">
+            <local:PlainView.ItemContainerStyle>
+                <Style BasedOn="{StaticResource ListBoxItemStyle}" TargetType="{x:Type ListBoxItem}">
+                    <EventSetter Event="MouseDoubleClick" Handler="OnContent_Item_MouseDoubleClick" />
+                    <EventSetter Event="KeyDown" Handler="OnContent_Item_KeyDown" />
+                </Style>
+            </local:PlainView.ItemContainerStyle>
+        </local:PlainView>
+        <Style x:Key="ListViewToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Editor.Window.GrayBrush4}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="Margin" Value="5,0" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border
+                            x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                            <Image
+                                x:Name="image"
+                                Width="16"
+                                Opacity="0.8"
+                                Source="pack://application:,,,/Resources/ContentBrowser/listView.png" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="image" Property="Source" Value="pack://application:,,,/Resources/ContentBrowser/tileView.png" />
+                                <Setter TargetName="border" Property="ToolTip" Value="Tile view" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Editor.MouseOver.BorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid Background="{DynamicResource Editor.Window.GrayBrush2}">
         <Grid.RowDefinitions>
@@ -239,14 +303,23 @@
         <ListView
             x:Name="folderListView"
             Grid.Row="1"
+            Drop="OnFolderContent_ListView_Drop"
             IsTextSearchEnabled="True"
             ItemsSource="{Binding FolderContent}"
+            SelectionChanged="OnFolderContent_ListView_SelectionChanged"
             TextSearch.TextPath="FileName">
             <ListView.Style>
                 <Style TargetType="{x:Type ListView}">
-                    <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush2}" />
+                    <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}" />
                     <Setter Property="ListBox.BorderThickness" Value="0" />
+                    <Setter Property="AllowDrop" Value="{Binding Path=AllowDrop, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
                     <Setter Property="View" Value="{StaticResource gridView}" />
+                    <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
+                            <Setter Property="View" Value="{StaticResource tileView}" />
+                        </DataTrigger>
+                    </Style.Triggers>
                 </Style>
             </ListView.Style>
         </ListView>
@@ -258,11 +331,13 @@
                     ShadowDepth="0" />
             </Border.Effect>
             <DockPanel>
-                <TextBlock
-                    Height="32"
-                    Margin="5"
-                    DockPanel.Dock="Top"
-                    Text="PLACEHOLDER" />
+                <DockPanel Margin="5" DockPanel.Dock="Top">
+                    <ToggleButton
+                        x:Name="listViewToggle"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource ListViewToggleButtonStyle}" />
+                    <TextBox />
+                </DockPanel>
                 <StackPanel
                     x:Name="pathStack"
                     Margin="0,0,0,5"

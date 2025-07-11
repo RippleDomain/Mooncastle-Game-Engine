@@ -5,15 +5,54 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.DirectoryServices;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace MooncastleEditor.Content
 {
+    class PlainView : ViewBase
+    {
+        public static readonly DependencyProperty ItemContainerStyleProperty = ItemsControl.ItemContainerStyleProperty.AddOwner(typeof(PlainView));
+
+        public Style ItemContainerStyle
+        {
+            get { return (Style)GetValue(ItemContainerStyleProperty); }
+            set { SetValue(ItemContainerStyleProperty, value); }
+        }
+
+        public static readonly DependencyProperty ItemTemplateProperty = ItemsControl.ItemTemplateProperty.AddOwner(typeof(PlainView));
+
+        public DataTemplate ItemTemplate
+        {
+            get { return (DataTemplate)GetValue(ItemTemplateProperty); }
+            set { SetValue(ItemTemplateProperty, value); }
+        }
+
+        public static readonly DependencyProperty ItemWidthProperty = WrapPanel.ItemWidthProperty.AddOwner(typeof(PlainView));
+
+        public double ItemWidth
+        {
+            get { return (double)GetValue(ItemWidthProperty); }
+            set { SetValue(ItemWidthProperty, value); }
+        }
+
+        public static readonly DependencyProperty ItemHeightProperty = WrapPanel.ItemHeightProperty.AddOwner(typeof(PlainView));
+
+        public double ItemHeight
+        {
+            get { return (double)GetValue(ItemHeightProperty); }
+            set { SetValue(ItemHeightProperty, value); }
+        }
+
+        protected override object DefaultStyleKey => new ComponentResourceKey(GetType(), "PlainViewResourceId");
+    }
+
     public partial class ContentBrowserView : UserControl
     {
         private string _sortedProperty = nameof(ContentInfo.FileName);
@@ -168,6 +207,16 @@ namespace MooncastleEditor.Content
                 var info = (sender as FrameworkElement).DataContext as ContentInfo;
                 ExecutreSelection(info);
             }
+        }
+
+        private void OnFolderContent_ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void OnFolderContent_ListView_Drop(object sender, DragEventArgs e)
+        {
+
         }
     }
 }

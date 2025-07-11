@@ -40,6 +40,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\ContentBrowser\listView.png" />
+    <Resource Include="Resources\ContentBrowser\tileView.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\ContentBrowser\largeFolder.png" />
   </ItemGroup>
 
@@ -53,6 +58,10 @@
 
   <ItemGroup>
     <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Themes\" />
   </ItemGroup>
 
 </Project>
