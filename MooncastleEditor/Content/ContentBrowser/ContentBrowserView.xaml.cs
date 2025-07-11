@@ -186,10 +186,10 @@ namespace MooncastleEditor.Content
         private void OnContent_Item_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var info = (sender as FrameworkElement).DataContext as ContentInfo;
-            ExecutreSelection(info);
+            ExecuteSelection(info);
         }
 
-        private void ExecutreSelection(ContentInfo info)
+        private void ExecuteSelection(ContentInfo info)
         {
             if (info == null) return;
 
@@ -205,7 +205,7 @@ namespace MooncastleEditor.Content
             if (e.Key == Key.Enter)
             {
                 var info = (sender as FrameworkElement).DataContext as ContentInfo;
-                ExecutreSelection(info);
+                ExecuteSelection(info);
             }
         }
 
