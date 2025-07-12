@@ -11,11 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FBXImporter.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="PrimitiveMesh.h" />
     <ClInclude Include="ToolsCommon.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FBXImporter.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="PrimitiveMesh.cpp" />
   </ItemGroup>
@@ -62,12 +64,13 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Mooncastle\Common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Mooncastle\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
@@ -82,12 +85,13 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Mooncastle\Common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Mooncastle\Common;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
