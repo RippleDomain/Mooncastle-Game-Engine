@@ -53,10 +53,37 @@ namespace MooncastleEditor.Content
         protected override object DefaultStyleKey => new ComponentResourceKey(GetType(), "PlainViewResourceId");
     }
 
-    public partial class ContentBrowserView : UserControl
+    public partial class ContentBrowserView : UserControl, IDisposable
     {
         private string _sortedProperty = nameof(ContentInfo.FileName);
         private ListSortDirection _sortDirection;
+
+        public SelectionMode SelectionMode
+        {
+            get => (SelectionMode)GetValue(SelectionModeProperty);
+            set => SetValue(SelectionModeProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectionModeProperty =
+            DependencyProperty.Register(nameof(SelectionMode), typeof(SelectionMode), typeof(ContentBrowserView), new PropertyMetadata(SelectionMode.Extended));
+
+        public FileAccess FileAccess
+        {
+            get => (FileAccess)GetValue(FileAccessProperty);
+            set => SetValue(FileAccessProperty, value);
+        }
+
+        public static readonly DependencyProperty FileAccessProperty =
+            DependencyProperty.Register(nameof(FileAccess), typeof(FileAccess), typeof(ContentBrowserView), new PropertyMetadata(FileAccess.ReadWrite));
+
+        internal ContentInfo SelectedItem
+        {
+            get => (ContentInfo)GetValue(SelectedItemProperty);
+            set => SetValue(SelectedItemProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedItemProperty =
+            DependencyProperty.Register(nameof(SelectedItem), typeof(ContentInfo), typeof(ContentBrowserView), new PropertyMetadata(null));
 
         public ContentBrowserView()
         {
@@ -211,12 +238,24 @@ namespace MooncastleEditor.Content
 
         private void OnFolderContent_ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            var item = folderListView.SelectedItem as ContentInfo;
+            SelectedItem = item?.IsDirectory == true ? null : item;
         }
 
         private void OnFolderContent_ListView_Drop(object sender, DragEventArgs e)
         {
 
+        }
+
+        public void Dispose()
+        {
+            if (Application.Current?.MainWindow != null)
+            {
+                Application.Current.MainWindow.DataContextChanged -= OnProjectChanged;
+            }
+
+            (DataContext as ContentBrowser)?.Dispose();
+            DataContext = null;
         }
     }
 }

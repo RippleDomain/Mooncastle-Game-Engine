@@ -371,7 +371,9 @@ namespace MooncastleEditor.Content
                     Debug.Assert(lodGroup.LODs.Any());
 
                     //Use the name of most detailed LOD for file name.
-                    var meshFileName = ContentHelper.CorrectFileName(path + fileName + "_" + lodGroup.LODs[0].Name + AssetFileExtension);
+                    var meshFileName = ContentHelper.CorrectFileName(_lodGroups.Count > 1 ?
+                        path + fileName + "_" + lodGroup.LODs[0].Name + AssetFileExtension :
+                        path + fileName + AssetFileExtension);
 
                     //We have to make a different ID for each new asset file.
                     Guid = Guid.NewGuid();

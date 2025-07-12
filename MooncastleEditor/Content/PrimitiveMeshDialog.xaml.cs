@@ -145,18 +145,17 @@ namespace MooncastleEditor.Content
 
         private void OnSave_Button_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new SaveFileDialog()
-            {
-                InitialDirectory = Project.Current.ContentPath,
-                Filter = "Asset file (*.mcasset)|*.mcasset"
-            };
+            var saveDialog = new SaveDialog();
 
-            if (dlg.ShowDialog() == true)
+            if (saveDialog.ShowDialog() == true)
             {
-                Debug.Assert(!string.IsNullOrEmpty(dlg.FileName));
+                Debug.Assert(!string.IsNullOrEmpty(saveDialog.SaveFilePath));
+
                 var asset = (DataContext as IAssetEditor).Asset;
                 Debug.Assert(asset != null);
-                asset.Save(dlg.FileName);
+                asset.Save(saveDialog.SaveFilePath);
+
+                saveDialog.Close();
             }
         }
     }

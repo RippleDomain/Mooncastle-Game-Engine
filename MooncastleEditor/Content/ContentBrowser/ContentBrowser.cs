@@ -40,7 +40,7 @@ namespace MooncastleEditor.Content
 
     class ContentBrowser : ViewModelBase, IDisposable
     {
-        private static readonly DelayEventTimer _refreshTimer = new DelayEventTimer(TimeSpan.FromMilliseconds(250));
+        private readonly DelayEventTimer _refreshTimer = new DelayEventTimer(TimeSpan.FromMilliseconds(250));
         public string ContentFolder { get; }
         private readonly ObservableCollection<ContentInfo> _folderContent = new ObservableCollection<ContentInfo>();
         public ReadOnlyObservableCollection<ContentInfo> FolderContent { get; }
