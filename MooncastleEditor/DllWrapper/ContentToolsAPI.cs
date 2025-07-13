@@ -73,10 +73,7 @@ namespace MooncastleEditor.DllWrappers
     {
         private const string _toolsDLL = "ContentTools.dll";
 
-        [DllImport(_toolsDLL)]
-        private static extern void CreatePrimitiveMesh([In, Out] SceneData data, PrimitiveInitInfo info);
-
-        public static void CreatePrimitiveMesh(Content.Geometry geometry, PrimitiveInitInfo info)
+        private static void GeometryFromSceneData(Content.Geometry geometry, Action<SceneData> sceneDataGenerator, string failureMessage)
         {
             Debug.Assert(geometry != null);
             using var sceneData = new SceneData();
@@ -84,7 +81,7 @@ namespace MooncastleEditor.DllWrappers
             try
             {
                 sceneData.ImportSettings.FromContentSettings(geometry);
-                CreatePrimitiveMesh(sceneData, info);
+                sceneDataGenerator(sceneData);
                 Debug.Assert(sceneData.Data != IntPtr.Zero && sceneData.DataSize > 0);
 
                 var data = new byte[sceneData.DataSize];
@@ -93,9 +90,25 @@ namespace MooncastleEditor.DllWrappers
             }
             catch (Exception ex)
             {
-                Logger.Log(MessageType.Error, $"Failed to create {info.Type} primitive mesh.");
+                Logger.Log(MessageType.Error, failureMessage);
                 Debug.WriteLine(ex.Message);
             }
+        }
+
+        [DllImport(_toolsDLL)]
+        private static extern void CreatePrimitiveMesh([In, Out] SceneData data, PrimitiveInitInfo info);
+
+        public static void CreatePrimitiveMesh(Content.Geometry geometry, PrimitiveInitInfo info)
+        {
+            GeometryFromSceneData(geometry, (sceneData) => CreatePrimitiveMesh(sceneData, info), $"Failed to create {info.Type} primitive mesh.");
+        }
+
+        [DllImport(_toolsDLL)]
+        private static extern void ImportFbx(string file, [In, Out] SceneData data);
+
+        public static void ImportFbx(string file, Content.Geometry geometry)
+        {
+            GeometryFromSceneData(geometry, sceneData => ImportFbx(file, sceneData), $"Failed to import from FBX file: {file}");
         }
     }
 }

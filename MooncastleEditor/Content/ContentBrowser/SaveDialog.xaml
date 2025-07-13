@@ -22,6 +22,7 @@
         </Grid.RowDefinitions>
         <local:ContentBrowserView
             x:Name="contentBrowserView"
+            AllowDrop="False"
             FileAccess="Write"
             MouseDoubleClick="OnContentBrowser_Mouse_DoubleClick"
             SelectionMode="Single" />

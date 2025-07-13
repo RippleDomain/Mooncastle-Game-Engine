@@ -29,6 +29,7 @@ namespace MooncastleEditor.GameProject
         public string FullPath => $@"{Path}{Name}{Extension}";
         public string Solution => $@"{Path}{Name}.sln";
         public string ContentPath => $@"{Path}Content\";
+        public string TempFolder => $@"{Path}\Mooncastle\Temp\";
 
         private int _buildConfig;
         [DataMember]
@@ -171,6 +172,15 @@ namespace MooncastleEditor.GameProject
             VisualStudio.CloseVisualStudio();
             UndoRedo.Reset();
             Logger.Clear();
+            DeleteTempFolder();
+        }
+
+        private void DeleteTempFolder()
+        {
+            if (Directory.Exists(TempFolder))
+            {
+                Directory.Delete(TempFolder, true);
+            }
         }
 
         private static void Save(Project project)

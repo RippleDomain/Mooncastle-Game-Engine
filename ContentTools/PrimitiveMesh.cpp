@@ -259,7 +259,7 @@ namespace mooncastle::tools
 			scene.lodGroups.emplace_back(lod);
 		}
 
-		void createCube(scene& scene, const primitiveInitInfo& info)
+		void createCube(scene&, const primitiveInitInfo&)
 		{
 
 		}
@@ -272,17 +272,17 @@ namespace mooncastle::tools
 			scene.lodGroups.emplace_back(lod);
 		}
 
-		void createIcoSphere(scene& scene, const primitiveInitInfo& info)
+		void createIcoSphere(scene&, const primitiveInitInfo&)
 		{
 
 		}
 
-		void createCylinder(scene& scene, const primitiveInitInfo& info)
+		void createCylinder(scene&, const primitiveInitInfo&)
 		{
 
 		}
 
-		void createCapsule(scene& scene, const primitiveInitInfo& info)
+		void createCapsule(scene&, const primitiveInitInfo&)
 		{
 
 		}

@@ -1,4 +1,6 @@
-﻿using MooncastleEditor.Utilities;
+﻿using MooncastleEditor.DllWrappers;
+using MooncastleEditor.GameProject;
+using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -242,6 +244,8 @@ namespace MooncastleEditor.Content
 
     class Geometry : Asset
     {
+        private readonly object _lock = new object();
+
         private readonly List<LODGroup> _lodGroups = new List<LODGroup>();
 
         public GeometryImportSettings ImportSettings { get; } = new GeometryImportSettings();
@@ -354,6 +358,47 @@ namespace MooncastleEditor.Content
             lod.Meshes.Add(mesh);
         }
 
+        public override void Import(string file)
+        {
+            Debug.Assert(File.Exists(file));
+            Debug.Assert(!string.IsNullOrEmpty(FullPath));
+
+            var ext = Path.GetExtension(file).ToLower();
+            SourcePath = file;
+
+            try
+            {
+                if (ext == ".fbx")
+                {
+                    ImportFbx(file);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                var msg = $"Failed to read {file} for import.";
+                Debug.WriteLine(msg);
+                Logger.Log(MessageType.Error, msg);
+            }
+        }
+
+        private void ImportFbx(string file)
+        {
+            Logger.Log(MessageType.Info, $"Importing FBX file {file}");
+            var tempPath = Application.Current.Dispatcher.Invoke(() => Project.Current.TempFolder);
+
+            if (string.IsNullOrEmpty(tempPath)) return;
+
+            lock (_lock)
+            {
+                if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
+            }
+
+            var tempFile = $"{tempPath}{ContentHelper.GetRandomString()}.fbx";
+            File.Copy(file, tempFile, true);
+            ContentToolsAPI.ImportFbx(tempFile, this);
+        }
+
         public override IEnumerable<string> Save(string file)
         {
             Debug.Assert(_lodGroups.Any());
@@ -445,22 +490,22 @@ namespace MooncastleEditor.Content
 
         private byte[] GenerateIcon(MeshLOD meshLOD)
         {
-            var width = 90 * 4;
+            var width = ContentInfo.IconWidth * 4;
 
+            using var memStream = new MemoryStream();
             BitmapSource bmp = null;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
                 bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(meshLOD, null), width, width);
                 bmp = new TransformedBitmap(bmp, new ScaleTransform(0.25, 0.25, 0.5, 0.5));
-            });
 
-            using var memStream = new MemoryStream();
-            memStream.SetLength(0);
+                memStream.SetLength(0);
 
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(bmp));
-            encoder.Save(memStream);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bmp));
+                encoder.Save(memStream);
+            });           
 
             return memStream.ToArray();
         }

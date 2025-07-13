@@ -95,10 +95,14 @@ namespace mooncastle::tools
 					lod.name = lod.meshes[0].name;
 					scene->lodGroups.emplace_back(lod);
 				}
-				else if (node->GetLodGroup())
-				{
-					getLODGroup(node);
-				}
+			}
+			else if (node->GetLodGroup())
+			{
+				getLODGroup(node);
+			}
+			else 
+			{
+				getScene(node);
 			}
 		}
 	}
@@ -126,6 +130,8 @@ namespace mooncastle::tools
 				meshes.emplace_back(m);
 			}
 		}
+
+		getScene(node);
 	}
 
 	void FBXContext::getLODGroup(FbxNode* node)

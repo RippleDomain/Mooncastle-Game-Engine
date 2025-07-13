@@ -34,7 +34,7 @@ namespace MooncastleEditor.Content
         private static int _fileWatcherEnableCounter = 0;
         public static event EventHandler<ContentModifiedEventArgs> ContentModified;
 
-        public static void EnableFileWater(bool isEnable)
+        public static void EnableFileWatcher(bool isEnable)
         {
             if (_fileWatcherEnableCounter > 0 && isEnable)
             {
