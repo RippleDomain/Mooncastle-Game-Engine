@@ -285,10 +285,96 @@ namespace mooncastle::tools
             }
             memcpy(&buffer[at], data, s); at += s;
         }
+
+        bool splitMeshesByMaterial(u32 materialIndex, const mesh& m, mesh& submesh)
+        {
+            submesh.name = m.name;
+            submesh.lodThreshold = m.lodThreshold;
+            submesh.lodId = m.lodId;
+            submesh.materialUsed.emplace_back(materialIndex);
+            submesh.uvSets.resize(m.uvSets.size());
+
+            const u32 numPolys{ (u32)m.rawIndices.size() / 3 };
+            utl::vector<u32> vertexRef(m.positions.size(), u32_invalid_id);
+
+            for (u32 i{ 0 }; i < numPolys; ++i)
+            {
+                const u32 mtl_idx{ m.materialIndices[i] };
+
+                if (mtl_idx != materialIndex) continue;
+
+                const u32 index{ i * 3 };
+
+                for (u32 j = index; j < index + 3; ++j)
+                {
+                    const u32 v_idx{ m.rawIndices[j] };
+
+                    if (vertexRef[v_idx] != u32_invalid_id)
+                    {
+                        submesh.rawIndices.emplace_back(vertexRef[v_idx]);
+                    }
+                    else
+                    {
+                        submesh.rawIndices.emplace_back((u32)submesh.positions.size());
+                        vertexRef[v_idx] = submesh.rawIndices.back();
+                        submesh.positions.emplace_back(m.positions[v_idx]);
+                    }
+                    
+                    if (m.normals.size()) submesh.normals.emplace_back(m.normals[j]); 
+                    if (m.tangents.size()) submesh.tangents.emplace_back(m.tangents[j]);
+
+                    for (u32 k{ 0 }; k < m.uvSets.size(); ++k)
+                    {
+                        if (m.uvSets[k].size())
+                        {
+                            submesh.uvSets[k].emplace_back(m.uvSets[k][j]);
+                        }
+                    }
+                }
+            }
+
+            assert((submesh.rawIndices.size() % 3) == 0);
+
+            return !submesh.rawIndices.empty();
+        }
+
+        void splitMeshesByMaterial(scene& scene)
+        {
+            for (auto& lod : scene.lodGroups)
+            {
+                utl::vector<mesh> newMeshes;
+
+                for (auto& m : lod.meshes)
+                {
+                    //If more than one material is used in this mesh, then split it into submeshes.
+                    const u32 numMaterials{ (u32)m.materialUsed.size() };
+
+                    if (numMaterials > 1)
+                    {
+                        for (u32 i{ 0 }; i < numMaterials; ++i)
+                        {
+                            mesh submesh{};
+                            if (splitMeshesByMaterial(m.materialUsed[i], m, submesh))
+                            {
+                                newMeshes.emplace_back(submesh);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        newMeshes.emplace_back(m);
+                    }
+                }
+
+                newMeshes.swap(lod.meshes);
+            }
+        }
 	}
 
 	void processScene(scene& scene, const geometryImportSettings& settings)
 	{
+		splitMeshesByMaterial(scene);
+
         for (auto& lod : scene.lodGroups) 
         {
             for (auto& m : lod.meshes)

@@ -40,6 +40,7 @@ namespace mooncastle::tools
 		void loadFBXFile(const char* file);
 		void getMesh(FbxNode* node, utl::vector<mesh>& meshes);
 		void getLODGroup(FbxNode* node);
+		bool getMeshData(FbxMesh* fbxMesh, mesh& m);
 
 		scene*				scene{ nullptr };
 		sceneData*			sceneData{ nullptr };

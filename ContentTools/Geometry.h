@@ -35,6 +35,8 @@ namespace mooncastle::tools
 		utl::vector<math::v4>                    tangents;
 		utl::vector<utl::vector<math::v2>>       uvSets;
 		utl::vector<u32>                         rawIndices;
+		utl::vector<u32>                         materialIndices;
+		utl::vector<u32>                         materialUsed;
 
 		//Intermediate mesh data
 		utl::vector<vertex>                      vertices;

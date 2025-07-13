@@ -148,7 +148,7 @@ namespace mooncastle::utl
 
                 while (currentSize < newSize)
                 {
-                    emplaceBack(value);
+                    emplace_back(value);
                 }
             }
             else if (newSize < currentSize)
