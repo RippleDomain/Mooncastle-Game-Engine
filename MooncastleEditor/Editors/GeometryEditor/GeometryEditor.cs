@@ -272,7 +272,7 @@ namespace MooncastleEditor.Editors
 
     class GeometryEditor : ViewModelBase, IAssetEditor
     {
-        public Content.Asset Asset => Geometry;
+        Asset IAssetEditor.Asset => Geometry;
 
         private Content.Geometry _geometry;
         public Content.Geometry Geometry
@@ -298,6 +298,70 @@ namespace MooncastleEditor.Editors
                 {
                     _meshRenderer = value;
                     OnPropertyChanged(nameof(MeshRenderer));
+                    var lods = Geometry.GetLODGroup().LODs;
+                    MaxLODIndex = (lods.Count > 0) ? lods.Count - 1 : 0;
+                    OnPropertyChanged(nameof(MaxLODIndex));
+
+                    if (lods.Count > 1)
+                    {
+                        MeshRenderer.PropertyChanged += (s, e) =>
+                        {
+                            if (e.PropertyName == nameof(MeshRenderer.OffsetCameraPosition) && AutoLOD) ComputeLOD(lods);
+                        };
+
+                        ComputeLOD(lods);
+                    }
+                }
+            }
+        }
+
+        private bool _autoLOD = true;
+        public bool AutoLOD
+        {
+            get => _autoLOD;
+            set
+            {
+                if (_autoLOD != value)
+                {
+                    _autoLOD = value;
+                    OnPropertyChanged(nameof(AutoLOD));
+                }
+            }
+        }
+
+        private void ComputeLOD(IList<MeshLOD> lods)
+        {
+            if (!AutoLOD) return;
+
+            var p = MeshRenderer.OffsetCameraPosition;
+            var distance = new Vector3D(p.X, p.Y, p.Z).Length;
+
+            for (int i = MaxLODIndex; i >= 0; --i)
+            {
+                if (lods[i].LodThreshold < distance)
+                {
+                    LodIndex = i;
+                    break;
+                }
+            }
+        }
+
+        public int MaxLODIndex { get; private set; }
+
+        private int _lodIndex;
+        public int LodIndex
+        {
+            get => _lodIndex;
+            set
+            {
+                var lods = Geometry.GetLODGroup().LODs;
+                value = Math.Clamp(value, 0, lods.Count - 1);
+
+                if (_lodIndex != value)
+                {
+                    _lodIndex = value;
+                    OnPropertyChanged(nameof(LodIndex));
+                    MeshRenderer = new MeshRenderer(lods[value], MeshRenderer);
                 }
             }
         }
@@ -308,7 +372,36 @@ namespace MooncastleEditor.Editors
             if (asset is Content.Geometry geometry)
             {
                 Geometry = geometry;
-                MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[0], MeshRenderer);
+                var numLods = geometry.GetLODGroup().LODs.Count;
+
+                if (LodIndex >= numLods)
+                {
+                    LodIndex = numLods - 1;
+                }
+                else
+                {
+                    MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[0], MeshRenderer);
+                }
+            }
+        }
+
+        public async void SetAsset(AssetInfo info)
+        {
+            try
+            {
+                Debug.Assert(info != null && File.Exists(info.FullPath));
+                var geometry = new Content.Geometry();
+
+                await Task.Run(() =>
+                {
+                    geometry.Load(info.FullPath);
+                });
+
+                SetAsset(geometry);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
             }
         }
     }

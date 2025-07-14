@@ -15,8 +15,8 @@ namespace mooncastle::tools
             for (u32 i{ 0 }; i < numIndices; ++i)
             {
                 const u32 i0{ m.rawIndices[i] };
-                const u32 i1{ m.rawIndices[i++] };
-                const u32 i2{ m.rawIndices[i++] };
+                const u32 i1{ m.rawIndices[++i] };
+                const u32 i2{ m.rawIndices[++i] };
 
                 XMVECTOR v0{ XMLoadFloat3(&m.positions[i0]) };
                 XMVECTOR v1{ XMLoadFloat3(&m.positions[i1]) };

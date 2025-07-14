@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.Content;
+using MooncastleEditor.Editors;
 using MooncastleEditor.GameProject;
 using System;
 using System.Collections.Generic;
@@ -226,6 +227,73 @@ namespace MooncastleEditor.Content
                 var vm = DataContext as ContentBrowser;
                 vm.SelectedFolder = info.FullPath;
             }
+            else if (FileAccess.HasFlag(FileAccess.Read))
+            {
+                var assetInfo = Asset.GetAssetInfo(info.FullPath);
+                if (assetInfo != null)
+                {
+                    OpenAssetEditor(assetInfo);
+                }
+            }
+        }
+
+        private IAssetEditor OpenAssetEditor(AssetInfo info)
+        {
+            IAssetEditor editor = null;
+
+            try
+            {
+                switch (info.Type)
+                {
+                    case AssetType.Animation: break;
+                    case AssetType.Audio: break;
+                    case AssetType.Material: break;
+                    case AssetType.Mesh:
+                        editor = OpenEditorPanel<GeometryEditorView>(info, info.Guid, "GeometryEditor");
+                        break;
+                    case AssetType.Skeleton: break;
+                    case AssetType.Texture: break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+
+            return editor;
+        }
+
+        private IAssetEditor OpenEditorPanel<T>(AssetInfo info, Guid guid, string title) where T : FrameworkElement, new()
+        {
+            //First look for a window that's alread open and is displaying the same asset.
+            foreach (Window window in Application.Current.Windows)
+            {
+                if (window.Content is FrameworkElement content && content.DataContext is IAssetEditor editor && editor.Asset.Guid == info.Guid)
+                {
+                    window.Activate();
+
+                    return editor;
+                }
+            }
+
+            //If not already open in an asset editor, we create a new window and load the asset.
+            var newEditor = new T();
+            Debug.Assert(newEditor.DataContext is IAssetEditor);
+
+            (newEditor.DataContext as IAssetEditor).SetAsset(info);
+
+            var win = new Window()
+            {
+                Content = newEditor,
+                Title = title,
+                Owner = Application.Current.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Style = Application.Current.FindResource("MooncastleWindowStyle") as Style
+            };
+
+            win.Show();
+
+            return newEditor.DataContext as IAssetEditor;
         }
 
         private void OnContent_Item_KeyDown(object sender, KeyEventArgs e)
