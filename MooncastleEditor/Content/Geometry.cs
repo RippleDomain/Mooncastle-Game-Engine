@@ -25,18 +25,29 @@ namespace MooncastleEditor.Content
         Capsule
     }
 
+    enum ElementsType
+    {
+        Position = 0x00,
+        Normals = 0x01,
+        TSpace = 0x03,
+        Joints = 0x04,
+        Colors = 0x08
+    }
+
     class Mesh : ViewModelBase
     {
-        private int _vertexSize;
-        public int  VertexSize
+        public static int PositionSize = sizeof(float) * 3;
+
+        private int _elementSize;
+        public int  ElementSize
         {
-            get => _vertexSize;
+            get => _elementSize;
             set
             {
-                if (_vertexSize != value)
+                if (_elementSize != value)
                 {
-                    _vertexSize = value;
-                    OnPropertyChanged(nameof(VertexSize));
+                    _elementSize = value;
+                    OnPropertyChanged(nameof(ElementSize));
                 }
             }
         }
@@ -93,7 +104,9 @@ namespace MooncastleEditor.Content
             }
         }
 
-        public byte[] Vertices { get; set; }
+        public ElementsType ElementType { get; set; }
+        public byte[] Positions { get; set; }
+        public byte[] Elements { get; set; }
         public byte[] Indices { get; set; }
     }
 
@@ -355,16 +368,18 @@ namespace MooncastleEditor.Content
             var mesh = new Mesh() { Name = meshName };
 
             var lodId = reader.ReadInt32();
-            mesh.VertexSize = reader.ReadInt32();
+            mesh.ElementSize = reader.ReadInt32();
+            mesh.ElementType = (ElementsType)reader.ReadInt32();
             mesh.VertexCount = reader.ReadInt32();
             mesh.IndexSize = reader.ReadInt32();
             mesh.IndexCount = reader.ReadInt32();
             var lodThreshold = reader.ReadSingle();
 
-            var vertexBufferSize = mesh.VertexSize * mesh.VertexCount;
+            var elementBufferSize = mesh.ElementSize * mesh.VertexCount;
             var indexBufferSize = mesh.IndexSize * mesh.IndexCount;
 
-            mesh.Vertices = reader.ReadBytes(vertexBufferSize);
+            mesh.Positions = reader.ReadBytes(Mesh.PositionSize * mesh.VertexCount);
+            mesh.Elements = reader.ReadBytes(elementBufferSize);
             mesh.Indices = reader.ReadBytes(indexBufferSize);
 
             MeshLOD lod;
@@ -544,11 +559,13 @@ namespace MooncastleEditor.Content
             foreach (var mesh in lod.Meshes)
             {
                 writer.Write(mesh.Name);
-                writer.Write(mesh.VertexSize);
+                writer.Write(mesh.ElementSize);
+                writer.Write((int)mesh.ElementType);
                 writer.Write(mesh.VertexCount);
                 writer.Write(mesh.IndexSize);
                 writer.Write(mesh.IndexCount);
-                writer.Write(mesh.Vertices);
+                writer.Write(mesh.Positions);
+                writer.Write(mesh.Elements);
                 writer.Write(mesh.Indices);
             }
 
@@ -571,13 +588,15 @@ namespace MooncastleEditor.Content
                 var mesh = new Mesh
                 {
                     Name = reader.ReadString(),
-                    VertexSize = reader.ReadInt32(),
+                    ElementSize = reader.ReadInt32(),
+                    ElementType = (ElementsType)reader.ReadInt32(),
                     VertexCount = reader.ReadInt32(),
                     IndexSize = reader.ReadInt32(),
                     IndexCount = reader.ReadInt32()
                 };
 
-                mesh.Vertices = reader.ReadBytes(mesh.VertexSize * mesh.VertexCount);
+                mesh.Positions = reader.ReadBytes(Mesh.PositionSize * mesh.VertexCount);
+                mesh.Elements = reader.ReadBytes(mesh.ElementSize * mesh.VertexCount);
                 mesh.Indices = reader.ReadBytes(mesh.IndexSize * mesh.IndexCount);
 
                 lod.Meshes.Add(mesh);

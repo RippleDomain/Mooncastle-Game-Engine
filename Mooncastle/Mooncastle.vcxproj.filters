@@ -31,6 +31,7 @@
     <ClInclude Include="Graphics\DirectX12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12GPass.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12PostProcess.h" />
+    <ClInclude Include="Utilities\IOStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

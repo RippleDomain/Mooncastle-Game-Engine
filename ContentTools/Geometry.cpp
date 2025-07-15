@@ -1,4 +1,5 @@
 #include "Geometry.h"
+#include "..\Utilities\IOStream.h"
 
 namespace mooncastle::tools
 {
@@ -141,25 +142,239 @@ namespace mooncastle::tools
             }
         }
 
-        void packVerticesStatic(mesh& m)
+        u64 getVertexElementSize(elements::elementTypes::type elementType)
+        {
+            using namespace elements;
+
+            switch (elementType)
+            {
+            case elementTypes::staticNormal: return sizeof(staticNormal);
+            case elementTypes::staticNormalTexture: return sizeof(staticNormalTexture);
+            case elementTypes::staticColor: return sizeof(staticColor);
+            case elementTypes::skeletal: return sizeof(skeletal);
+            case elementTypes::skeletalColor: return sizeof(skeletalColor);
+            case elementTypes::skeletalNormal: return sizeof(skeletalNormal);
+            case elementTypes::skeletalNormalColor: return sizeof(skeletalNormalColor);
+            case elementTypes::skeletalNormalTexture: return sizeof(skeletalNormalTexture);
+            case elementTypes::skeletalNormalTextureColor: return sizeof(skeletalNormalTextureColor);
+            }
+
+            return 0;
+        }
+
+        void packVertices(mesh& m)
         {
             const u32 numVertices{ (u32)m.vertices.size() };
+
             assert(numVertices);
-            m.packedVerticesStatic.reserve(numVertices);
+
+            m.positionBuffer.resize(sizeof(math::v3) * numVertices);
+            math::v3* const positionBuffer{ (math::v3* const)m.positionBuffer.data() };
 
             for (u32 i{ 0 }; i < numVertices; ++i)
             {
-                vertex& v{ m.vertices[i] };
-
-                const u8 signs{ (u8)((v.normal.z > 0.f) << 1) };
-                const u16 normalX{ (u16)packFloat<16>(v.normal.x, -1.f, 1.f) };
-                const u16 normalY{ (u16)packFloat<16>(v.normal.y, -1.f, 1.f) };
-
-                //TODO: Pack tangents in sign and in x/y components.
-
-                m.packedVerticesStatic.emplace_back(packedVertex::vertexStatic{ v.position, {0, 0, 0}, signs, {normalX, normalY}, {}, v.uv });
+                positionBuffer[i] = m.vertices[i].position;
             }
-		}
+
+            struct u16v2 { u16 x, y; };
+            struct u8v3 { u8 x, y, z; };
+
+            utl::vector<u8>	tSigns(numVertices);
+            utl::vector<u16v2> normals(numVertices);
+            utl::vector<u16v2> tangents(numVertices);
+            utl::vector<u8v3> jointWeights(numVertices);
+
+            if (m.elementType & elements::elementTypes::staticNormal)
+            {
+                //Normals only.
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    tSigns[i] = (u8)((v.normal.z > 0.0f) << 1);
+                    normals[i] = { (u16)packFloat<16>(v.normal.x, -1.0f, 1.0f), (u16)packFloat<16>(v.normal.y, -1.0f, 1.0f) };
+                }
+
+                if (m.elementType & elements::elementTypes::staticNormalTexture)
+                {
+                    //Full T-space.
+                    for (u32 i{ 0 }; i < numVertices; i++)
+                    {
+                        vertex& v{ m.vertices[i] };
+                        tSigns[i] |= (u8)((v.tangent.w > 0.0f) && (v.tangent.z > 0.0f));
+                        tangents[i] = { (u16)packFloat<16>(v.tangent.x, -1.0f, 1.0f), (u16)packFloat<16>(v.tangent.y, -1.0f, 1.0f) };
+                    }
+                }
+            }
+
+            if (m.elementType & elements::elementTypes::skeletal)
+            {
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+
+                    //Pack joint weights (from [0.0, 1.0] to [0...255])
+                    jointWeights[i] =
+                    {
+                        (u8)packUnitFloat<8>(v.jointWeights.x),
+                        (u8)packUnitFloat<8>(v.jointWeights.y),
+                        (u8)packUnitFloat<8>(v.jointWeights.z)
+                    };
+                    //w3 will be calculated in the shader since joint weights total to one(1).
+                }
+            }
+
+            m.elementBuffer.resize(getVertexElementSize(m.elementType) * numVertices);
+
+            using namespace elements;
+
+            switch (m.elementType)
+            {
+            case elementTypes::staticColor:
+            {
+                staticColor* const elementBuffer{ (staticColor* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    elementBuffer[i] = { { v.red, v.green, v.blue }, {/*pad*/} };
+                }
+            }
+            break;
+            case elementTypes::staticNormal:
+            {
+                staticNormal* const elementBuffer{ (staticNormal* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    elementBuffer[i] = { { v.red, v.green, v.blue }, tSigns[i], {normals[i].x, normals[i].y} };
+                }
+            }
+            break;
+            case elementTypes::staticNormalTexture:
+            {
+                staticNormalTexture* const elementBuffer{ (staticNormalTexture* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    elementBuffer[i] = { { v.red, v.green, v.blue }, tSigns[i], {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y}, v.uv };
+                }
+            }
+            break;
+            case elementTypes::skeletal:
+            {
+                skeletal* const element_buffer{ (skeletal* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+                    element_buffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, {/*pad*/}, {indices[0], indices[1], indices[2], indices[3]} };
+                }
+            }
+            break;
+            case elementTypes::skeletalColor:
+            {
+                skeletalColor* const elementBuffer{ (skeletalColor* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+
+                    elementBuffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, {/*pad*/},
+                                         {indices[0], indices[1], indices[2], indices[3]},
+                                         {v.red, v.green, v.blue}, {/*pad*/} };
+                }
+            }
+            break;
+            case elementTypes::skeletalNormal:
+            {
+                skeletalNormal* const elementBuffer{ (skeletalNormal* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+
+                    elementBuffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, tSigns[i],
+                                         {indices[0], indices[1], indices[2], indices[3]},
+                                         {normals[i].x, normals[i].y} };
+                }
+            }
+            break;
+            case elementTypes::skeletalNormalColor:
+            {
+                skeletalNormalColor* const elementBuffer{ (skeletalNormalColor* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+
+                    elementBuffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, tSigns[i],
+                                         {indices[0], indices[1], indices[2], indices[3]},
+                                         {normals[i].x, normals[i].y}, {v.red, v.green, v.blue}, {/*pad*/} };
+                }
+            }
+            break;
+            case elementTypes::skeletalNormalTexture:
+            {
+                skeletalNormalTexture* const elementBuffer{ (skeletalNormalTexture* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+
+                    elementBuffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, tSigns[i],
+                                         {indices[0], indices[1], indices[2], indices[3]},
+                                         {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y}, v.uv };
+                }
+            }
+            break;
+            case elementTypes::skeletalNormalTextureColor:
+            {
+                skeletalNormalTextureColor* const elementBuffer{ (skeletalNormalTextureColor* const)m.elementBuffer.data() };
+
+                for (u32 i{ 0 }; i < numVertices; ++i)
+                {
+                    vertex& v{ m.vertices[i] };
+                    const u16 indices[4]{ (u16)v.jointIndices.x, (u16)v.jointIndices.y, (u16)v.jointIndices.z, (u16)v.jointIndices.w };
+
+                    elementBuffer[i] = { {jointWeights[i].x, jointWeights[i].y, jointWeights[i].z}, tSigns[i],
+                                         {indices[0], indices[1], indices[2], indices[3]},
+                                         {normals[i].x, normals[i].y}, {tangents[i].x, tangents[i].y}, v.uv,
+                                         {v.red, v.green, v.blue}, {/*pad*/} };
+                }
+            }
+            break;
+            }
+        }
+
+        void determineElementType(mesh& m)
+        {
+            using namespace elements;
+
+            if (m.normals.size())
+            {
+                if (m.uvSets.size() && m.uvSets[0].size())
+                {
+                    m.elementType = elementTypes::staticNormalTexture;
+                }
+                else
+                {
+                    m.elementType = elementTypes::staticNormal;
+                }
+            }
+            else if (m.colors.size())
+            {
+                m.elementType = elementTypes::staticColor;
+            }
+
+            // TODO: Will expand for skeletal meshes.
+        }
 
         void processVertices(mesh& m, const geometryImportSettings& settings)
         {
@@ -176,27 +391,33 @@ namespace mooncastle::tools
                 processUvs(m);
             }
 
-            packVerticesStatic(m);
+            determineElementType(m);
+            packVertices(m);
         }
 
         u64 getMeshSize(const mesh& m)
         {
             const u64 numVertices{ m.vertices.size() };
-            const u64 vertexBufferSize{ sizeof(packedVertex::vertexStatic) * numVertices };
+            const u64 positionBufferSize{ m.positionBuffer.size() };
+            assert(positionBufferSize == sizeof(math::v3) * numVertices);
+            const u64 elementBufferSize{ m.elementBuffer.size() };
+            assert(elementBufferSize == getVertexElementSize(m.elementType) * numVertices);
             const u64 indexSize{ (numVertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
             const u64 indexBufferSize{ indexSize * m.indices.size() };
             constexpr u64 su32{ sizeof(u32) };
             const u64 size
             {
-                su32 + m.name.size() + //Mesh name length and room for mesh name string
-                su32 + //LOD ID
-                su32 + //Vertex size
-                su32 + //Number of vertices
-                su32 + //Index size (16 bit or 32 bit)
-                su32 + //number of indices
-                sizeof(f32) + //LOD threshold
-                vertexBufferSize + //Room for vertices
-                indexBufferSize    //Room for indices
+                su32 + m.name.size() +  //Mesh name length and room for mesh name string
+                su32 +                  //LOD ID
+				su32 +                  //Vertex element size (excluding position)
+                su32 +                  //Element type
+                su32 +                  //Number of vertices
+                su32 +                  //Index size (16 bit or 32 bit)
+                su32 +                  //number of indices
+                sizeof(f32) +           //LOD threshold
+                positionBufferSize +    //Room for vertex positions
+				elementBufferSize +     //Room for vertex elements
+                indexBufferSize         //Room for indices
             };
 
             return size;
@@ -232,58 +453,62 @@ namespace mooncastle::tools
             return size;
         }
 
-        void packMeshData(const mesh& m, u8* const buffer, u64& at)
+        void packMeshData(const mesh& m, utl::blobStreamWriter& blob)
         {
-            constexpr u64 su32{ sizeof(u32) };
-            u32 s{ 0 };
+            //Mesh name.
+            blob.write((u32)m.name.size());
+            blob.write(m.name.c_str(), m.name.size());
 
-            //Mesh name
-            s = (u32)m.name.size();
-            memcpy(&buffer[at], &s, su32); at += su32;
-            memcpy(&buffer[at], m.name.c_str(), s); at += s;
+            //LOD ID.
+            blob.write(m.lodId);
 
-            //LOD ID
-            s = m.lodId;
-            memcpy(&buffer[at], &s, su32); at += su32;
+            //Vertex element size.
+            const u32 elementsSize{ (u32)getVertexElementSize(m.elementType) };
+            blob.write(elementsSize);
 
-            //Vertex size
-            constexpr u32 vertexSize{ sizeof(packedVertex::vertexStatic) };
-            s = vertexSize;
-            memcpy(&buffer[at], &s, su32); at += su32;
+            //Elements type.
+            blob.write((u32)m.elementType);
 
-            //Number of vertices
+            //Number of vertices.
             const u32 numVertices{ (u32)m.vertices.size() };
-            s = numVertices;
-            memcpy(&buffer[at], &s, su32); at += su32;
+            blob.write(numVertices);
 
-            //Index size (16 bit or 32 bit)
+            //Index size.
             const u32 indexSize{ (numVertices < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
-            s = indexSize;
-            memcpy(&buffer[at], &s, su32); at += su32;
+            blob.write(indexSize);
 
-            //Number of indices
+            //Number of indices.
             const u32 numIndices{ (u32)m.indices.size() };
-            s = numIndices;
-            memcpy(&buffer[at], &s, su32); at += su32;
+            blob.write(numIndices);
 
-            //LOD threshold
-            memcpy(&buffer[at], &m.lodThreshold, sizeof(f32)); at += sizeof(f32);
+            //LOD threshold.
+            blob.write(m.lodThreshold);
 
-            //Vertex data
-            s = vertexSize * numVertices;
-            memcpy(&buffer[at], m.packedVerticesStatic.data(), s); at += s;
+            //Position buffer.
+            assert(m.positionBuffer.size() == sizeof(math::v3) * numVertices);
+            blob.write(m.positionBuffer.data(), m.positionBuffer.size());
 
-            //Index data
-            s = indexSize * numIndices;
-            void* data{ (void*)m.indices.data() };
+            //Element buffer.
+            assert(m.elementBuffer.size() == elementsSize * numVertices);
+            blob.write(m.elementBuffer.data(), m.elementBuffer.size());
+
+            //Index data.
+            const u32 indexBufferSize{ indexSize * numIndices };
+            const u8* data{ (const u8*)m.indices.data() };
             utl::vector<u16> indices;
+
             if (indexSize == sizeof(u16))
             {
                 indices.resize(numIndices);
-                for (u32 i{ 0 }; i < numIndices; ++i) indices[i] = (u16)m.indices[i];
-                data = (void*)indices.data();
+
+                for (u32 i{ 0 }; i < numIndices; ++i)
+                {
+                    indices[i] = (u16)m.indices[i];
+                    data = (const u8*)indices.data();
+                }
             }
-            memcpy(&buffer[at], data, s); at += s;
+
+            blob.write(data, indexBufferSize);
         }
 
         bool splitMeshesByMaterial(u32 materialIndex, const mesh& m, mesh& submesh)
@@ -386,43 +611,36 @@ namespace mooncastle::tools
 
 	void packData(const scene& scene, sceneData& data)
 	{
-        constexpr u64 su32{ sizeof(u32) };
-		const u64 sceneSize{ getSceneSize(scene) };
-		data.bufferSize = (u32)sceneSize;
+        const u64 sceneSize{ getSceneSize(scene) };
+        data.bufferSize = (u32)sceneSize;
         data.buffer = (u8*)CoTaskMemAlloc(sceneSize);
 
-		assert(data.buffer);
+        assert(data.buffer);
 
-        u8* const buffer{ data.buffer };
-        u64 at{ 0 };
-        u32 s{ 0 };
+        utl::blobStreamWriter blob{ data.buffer, data.bufferSize };
 
-        //Scene name
-        s = (u32)scene.name.size();
-        memcpy(&buffer[at], &s, su32); at += su32;
-        memcpy(&buffer[at], scene.name.c_str(), s); at += s;
+        //Scene name.
+        blob.write((u32)scene.name.size());
+        blob.write(scene.name.c_str(), scene.name.size());
 
-        //Number of LODs
-        s = (u32)scene.lodGroups.size();
-        memcpy(&buffer[at], &s, su32); at += su32;
+        //Number of LODs.
+        blob.write((u32)scene.lodGroups.size());
 
         for (auto& lod : scene.lodGroups)
         {
-            //LOD name
-            s = (u32)lod.name.size();
-            memcpy(&buffer[at], &s, su32); at += su32;
-            memcpy(&buffer[at], lod.name.c_str(), s); at += s;
+            //LOD name.
+            blob.write((u32)lod.name.size());
+            blob.write(lod.name.c_str(), lod.name.size());
 
-            //Number of meshes in the LOD
-            s = (u32)lod.meshes.size();
-            memcpy(&buffer[at], &s, su32); at += su32;
+            //Number of meshes in this LOD.
+            blob.write((u32)lod.meshes.size());
 
             for (auto& m : lod.meshes)
             {
-                packMeshData(m, buffer, at);
+                packMeshData(m, blob);
             }
         }
 
-        assert(sceneSize == at);
+        assert(sceneSize == blob.getOffset());
 	}
 }
