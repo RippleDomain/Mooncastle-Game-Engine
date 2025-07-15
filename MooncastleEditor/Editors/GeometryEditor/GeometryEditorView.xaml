@@ -66,6 +66,7 @@
                 <ColumnDefinition MinWidth="250" MaxWidth="400" />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
+            <ed:GeometryDetailsView Tag="{Binding ElementName=geometryView}" />
             <GridSplitter
                 Width="5"
                 HorizontalAlignment="Right"
