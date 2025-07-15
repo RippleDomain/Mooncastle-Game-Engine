@@ -74,7 +74,7 @@ namespace mooncastle::tools
 		{
 			root = fbxScene->GetRootNode();
 
-			if (!root)return;
+			if (!root) return;
 		}
 
 		const i32 numNodes{ root->GetChildCount() };
@@ -83,94 +83,127 @@ namespace mooncastle::tools
 		{
 			FbxNode* node{ root->GetChild(i) };
 
-			if (!node)continue;
+			if (!node) continue;
 
-			if (node->GetMesh())
-			{
-				lodGroup lod{};
-				getMesh(node, lod.meshes);
-
-				if (lod.meshes.size())
-				{
-					lod.name = lod.meshes[0].name;
-					scene->lodGroups.emplace_back(lod);
-				}
-			}
-			else if (node->GetLodGroup())
-			{
-				getLODGroup(node);
-			}
-			else 
-			{
-				getScene(node);
-			}
-		}
-	}
-
-	void FBXContext::getMesh(FbxNode* node, utl::vector<mesh>& meshes)
-	{
-		assert(node);
-
-		if (FbxMesh* fbxMesh{ node->GetMesh() })
-		{
-			if (fbxMesh->RemoveBadPolygons() < 0) return;
-
-			FbxGeometryConverter gc{ fbxManager };
-			fbxMesh = static_cast<FbxMesh*>(gc.Triangulate(fbxMesh, true));
-
-			if (!fbxMesh || fbxMesh->RemoveBadPolygons() < 0) return;
-
-			mesh m;
-			m.lodId = (u32)meshes.size();
-			m.lodThreshold = -1.f;
-			m.name = (node->GetName()[0] != '\0') ? node->GetName() : fbxMesh->GetName();
-
-			if (getMeshData(fbxMesh, m))
-			{
-				meshes.emplace_back(m);
-			}
-		}
-
-		getScene(node);
-	}
-
-	void FBXContext::getLODGroup(FbxNode* node)
-	{
-		assert(node);
-
-		if (FbxLODGroup * lodGrp{ node->GetLodGroup() })
-		{
 			lodGroup lod{};
-			lod.name = (node->GetName()[0] != '\0') ? node->GetName() : lodGrp->GetName();
+			getMeshes(node, lod.meshes, 0, -1.f);
 
-			//Number of LODs is exclusive the base mesh (LOD 0).
-			const i32 num_lods{ lodGrp->GetNumThresholds() };
-			const i32 num_nodes{ node->GetChildCount() };
-
-			assert(num_lods > 0 && num_nodes > 0);
-
-			for (i32 i{ 0 }; i < num_nodes; ++i)
+			if (lod.meshes.size())
 			{
-				getMesh(node->GetChild(i), lod.meshes);
+				lod.name = lod.meshes[0].name;
+				scene->lodGroups.emplace_back(lod);
+			}
+		}
+	}
 
-				if (lod.meshes.size() > 1 && lod.meshes.size() <= num_lods + 1 && lod.meshes.back().lodThreshold < 0.f)
+	void FBXContext::getMeshes(FbxNode* node, utl::vector<mesh>& meshes, u32 lodId, f32 lodThreshold)
+	{
+		assert(node && lodId != u32_invalid_id);
+		bool isLODGroup{ false };
+
+		if (const i32 numAttributes{ node->GetNodeAttributeCount() })
+		{
+			for (i32 i{ 0 }; i < numAttributes; ++i)
+			{
+				FbxNodeAttribute* attribute{ node->GetNodeAttributeByIndex(i) };
+				const FbxNodeAttribute::EType attributeType{ attribute->GetAttributeType() };
+
+				if (attributeType == FbxNodeAttribute::eMesh)
 				{
-					FbxDistance threshold;
-					lodGrp->GetThreshold((u32)lod.meshes.size() - 2, threshold);
-					lod.meshes.back().lodThreshold = threshold.value() * sceneScale;
+					getMesh(attribute, meshes, lodId, lodThreshold);
+				}
+				else if (attributeType == FbxNodeAttribute::eLODGroup)
+				{
+					getLODGroup(attribute);
+					isLODGroup = true;
 				}
 			}
-
-			if (lod.meshes.size()) scene->lodGroups.emplace_back(lod);
 		}
+
+		if (!isLODGroup)
+		{
+			if (const i32 numChildren{ node->GetChildCount() })
+			{
+				for (i32 i{ 0 }; i < numChildren; ++i)
+				{
+					getMeshes(node->GetChild(i), meshes, lodId, lodThreshold);
+				}
+			}
+		}
+	}
+
+	void FBXContext::getMesh(FbxNodeAttribute* attribute, utl::vector<mesh>& meshes, u32 lodId, f32 lodThreshold)
+	{
+		assert(attribute);
+
+		FbxMesh* fbxMesh{ (FbxMesh*)attribute };
+
+		if (fbxMesh->RemoveBadPolygons() < 0) return;
+
+		FbxGeometryConverter gc{ fbxManager };
+		fbxMesh = (FbxMesh*)gc.Triangulate(fbxMesh, true);
+
+		if (!fbxMesh || fbxMesh->RemoveBadPolygons() < 0) return;
+
+		FbxNode* node{ fbxMesh->GetNode() };
+
+		mesh m;
+		m.lodId = lodId;
+		m.lodThreshold = lodThreshold;
+		m.name = (node->GetName()[0] != '\0') ? node->GetName() : fbxMesh->GetName();
+
+		if (getMeshData(fbxMesh, m))
+		{
+			meshes.emplace_back(m);
+		}
+	}
+
+	void FBXContext::getLODGroup(FbxNodeAttribute* attribute)
+	{
+		assert(attribute);
+
+		FbxLODGroup* lodGrp{ (FbxLODGroup*)attribute };
+		FbxNode* const node{ lodGrp->GetNode() };
+		lodGroup lod{};
+		lod.name = (node->GetName()[0] != '\0') ? node->GetName() : lodGrp->GetName();
+
+		//Number of LODs is exclusive the base mesh (LOD 0)
+		const i32 numNodes{ node->GetChildCount() };
+		assert(numNodes > 0 && lodGrp->GetNumThresholds() == (numNodes - 1));
+
+		for (i32 i{ 0 }; i < numNodes; ++i)
+		{
+			f32 lodThreshold{ -1.f };
+
+			if (i > 0)
+			{
+				FbxDistance threshold;
+				lodGrp->GetThreshold(i - 1, threshold);
+				lodThreshold = threshold.value() * sceneScale;
+			}
+
+			getMeshes(node->GetChild(i), lod.meshes, (u32)lod.meshes.size(), lodThreshold);
+		}
+
+		if (lod.meshes.size()) scene->lodGroups.emplace_back(lod);
 	}
 
 	bool FBXContext::getMeshData(FbxMesh * fbxMesh, mesh& m)
 	{
 		assert(fbxMesh);
 
-		const i32 num_polys{ fbxMesh->GetPolygonCount() };
-		if (num_polys <= 0)return false;
+		FbxNode* const node{ fbxMesh->GetNode() };
+		FbxAMatrix geometricTransform;
+
+		geometricTransform.SetT(node->GetGeometricTranslation(FbxNode::eSourcePivot));
+		geometricTransform.SetR(node->GetGeometricRotation(FbxNode::eSourcePivot));
+		geometricTransform.SetS(node->GetGeometricScaling(FbxNode::eSourcePivot));
+
+		FbxAMatrix transform{ node->EvaluateGlobalTransform() * geometricTransform };
+		FbxAMatrix inverseTranspose{ transform.Inverse().Transpose() };
+
+		const i32 numPolys{ fbxMesh->GetPolygonCount() };
+		if (numPolys <= 0) return false;
 
 		const i32 numVertices{ fbxMesh->GetControlPointsCount() };
 		FbxVector4* vertices{ fbxMesh->GetControlPoints() };
@@ -193,7 +226,7 @@ namespace mooncastle::tools
 			}
 			else
 			{
-				FbxVector4 v = vertices[vIdx] * sceneScale;
+				FbxVector4 v = transform.MultT(vertices[vIdx]) * sceneScale;
 				m.rawIndices[i] = (u32)m.positions.size();
 				vertexRef[vIdx] = m.rawIndices[i];
 				m.positions.emplace_back((f32)v[0], (f32)v[1], (f32)v[2]);
@@ -201,13 +234,13 @@ namespace mooncastle::tools
 		}
 
 		assert(m.rawIndices.size() % 3 == 0);
-		assert(num_polys > 0);
+		assert(numPolys > 0);
 
 		FbxLayerElementArrayTemplate<i32>* mtlIndices;
 
 		if (fbxMesh->GetMaterialIndices(&mtlIndices))
 		{
-			for (i32 i{ 0 }; i < num_polys; ++i)
+			for (i32 i{ 0 }; i < numPolys; ++i)
 			{
 				const i32 mtlIndex{ mtlIndices->GetAt(i) };
 				assert(mtlIndex >= 0);
@@ -235,7 +268,9 @@ namespace mooncastle::tools
 
 				for (i32 i{ 0 }; i < numNormals; ++i)
 				{
-					m.normals.emplace_back((f32)normals[i][0], (f32)normals[i][1], (f32)normals[i][2]);
+					FbxVector4 n{ inverseTranspose.MultT(normals[i]) };
+					n.Normalize();
+					m.normals.emplace_back((f32)n[0], (f32)n[1], (f32)n[2]);
 				}
 			}
 			else
@@ -256,7 +291,11 @@ namespace mooncastle::tools
 				for (i32 i{ 0 }; i < numTangents; ++i)
 				{
 					FbxVector4 t{ tangents->GetAt(i) };
-					m.tangents.emplace_back((f32)t[0], (f32)t[1], (f32)t[2], (f32)t[3]);
+					const f32 handedness{ (f32)t[3] };
+					t[3] = 0.0;
+					t.Normalize();
+					t = inverseTranspose.MultT(t);
+					m.tangents.emplace_back((f32)t[0], (f32)t[1], (f32)t[2], handedness);
 				}
 			}
 			else
