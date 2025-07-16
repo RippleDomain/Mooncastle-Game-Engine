@@ -27,6 +27,9 @@
     <ClInclude Include="Components\Script.h" />
     <ClInclude Include="Components\Transform.h" />
     <ClInclude Include="Content\ContentLoader.h" />
+    <ClInclude Include="Content\ContentToEngine.h" />
+    <ClInclude Include="Graphics\DirectX12\D3D12Content.h" />
+    <ClInclude Include="Graphics\DirectX12\D3D12Upload.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12PostProcess.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12CommonHeaders.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12Core.h" />
@@ -58,6 +61,8 @@
     <ClCompile Include="Content\ContentLoader.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
+    <ClCompile Include="Graphics\DirectX12\D3D12Content.cpp" />
+    <ClCompile Include="Graphics\DirectX12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12PostProcess.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12GPass.cpp" />

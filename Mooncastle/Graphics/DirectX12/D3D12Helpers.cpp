@@ -1,5 +1,6 @@
 #include "D3D12Helpers.h"
 #include "D3D12Core.h"
+#include "D3D12Upload.h"
 
 namespace mooncastle::graphics::d3D12::d3DX
 {
@@ -79,5 +80,71 @@ namespace mooncastle::graphics::d3D12::d3DX
 		desc.pPipelineStateSubobjectStream = stream;
 
 		return createPipelineState(desc);
+	}
+
+	ID3D12Resource* createBuffer(u32 bufferSize, const void* data, bool isCPUAccessible/* = false*/,
+			D3D12_RESOURCE_STATES state/* = D3D12_RESOURCE_STATE_COMMON*/,
+			D3D12_RESOURCE_FLAGS flags/* = D3D12_RESOURCE_FLAG_NONE*/,
+			ID3D12Heap* heap/* = nullptr*/, u64 heapOffset/* = 0*/)
+	{
+		assert(bufferSize);
+
+		D3D12_RESOURCE_DESC desc{};
+		desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		desc.Alignment = 0;
+		desc.Width = bufferSize;
+		desc.Height = 1;
+		desc.DepthOrArraySize = 1;
+		desc.MipLevels = 1;
+		desc.Format = DXGI_FORMAT_UNKNOWN;
+		desc.SampleDesc = { 1,0 };
+		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		desc.Flags = isCPUAccessible ? D3D12_RESOURCE_FLAG_NONE : flags;
+
+		//The buffer will be only used for upload or as constant buffer.
+		assert(desc.Flags == D3D12_RESOURCE_FLAG_NONE || desc.Flags == D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+		ID3D12Resource* resource{ nullptr };
+		const D3D12_RESOURCE_STATES resourceState{ isCPUAccessible ? D3D12_RESOURCE_STATE_GENERIC_READ : state };
+
+		if (heap)
+		{
+			DXCall(core::device()->CreatePlacedResource(heap, heapOffset, &desc, resourceState, nullptr, IID_PPV_ARGS(&resource)));
+		}
+		else
+		{
+			DXCall(core::device()->CreateCommittedResource(isCPUAccessible ? &heapProperties.uploadHeap : &heapProperties.defaultHeap,
+				D3D12_HEAP_FLAG_NONE, &desc, resourceState, nullptr, IID_PPV_ARGS(&resource)));
+		}
+
+		if (data)
+		{
+			/*If we have initial data which we'd like to be able to change later, we set isCPUAccessible
+			to true. If we only want to upload data to be used by the GPU, then isCPUAccessible
+			should be set to false.*/
+			if (isCPUAccessible)
+			{
+				//range's Begin and End fields are set to 0, to indicate that he CPU is not reading any data.
+				const D3D12_RANGE range{};
+				void* cpuAddress{ nullptr };
+				DXCall(resource->Map(0, &range, reinterpret_cast<void**>(&cpuAddress)));
+
+				assert(cpuAddress);
+
+				memcpy(cpuAddress, data, bufferSize);
+				resource->Unmap(0, nullptr);
+			}
+			else
+			{
+				upload::D3D12UploadContext context{ bufferSize };
+				memcpy(context.getCPUAddress(), data, bufferSize);
+				context.getCommandList()->CopyResource(resource, context.getUploadBuffer());
+				context.endUpload();
+			}
+		}
+
+		assert(resource);
+
+		return resource;
 	}
 }

@@ -3,6 +3,7 @@
 #include "D3D12Shaders.h"
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
+#include "D3D12Upload.h"
 
 using namespace Microsoft::WRL;
 
@@ -65,6 +66,7 @@ namespace mooncastle::graphics::d3D12::core
                 NAME_D3D12_OBJECT(fence, L"D3D12 Fence");
                 fenceEvent = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
                 assert(fenceEvent);
+                if (!fenceEvent) goto error;
 
                 return;
 
@@ -341,7 +343,7 @@ namespace mooncastle::graphics::d3D12::core
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
         //Initialize modules.
-        if (!(shaders::initialize() && gPass::initialize() && ppfx::initialize())) return failedInit();
+        if (!(shaders::initialize() && gPass::initialize() && ppfx::initialize() && upload::initialize())) return failedInit();
 
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
         NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
@@ -366,6 +368,7 @@ namespace mooncastle::graphics::d3D12::core
         ppfx::shutdown();
         gPass::shutdown();
         shaders::shutdown();
+        upload::shutdown();
 
         release(dxgiFactory);
 

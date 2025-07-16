@@ -32,6 +32,9 @@
     <ClInclude Include="Graphics\DirectX12\D3D12GPass.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12PostProcess.h" />
     <ClInclude Include="Utilities\IOStream.h" />
+    <ClInclude Include="Graphics\DirectX12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\DirectX12\D3D12Content.h" />
+    <ClInclude Include="Content\ContentToEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />
@@ -50,5 +53,7 @@
     <ClCompile Include="Graphics\DirectX12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12GPass.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12PostProcess.cpp" />
+    <ClCompile Include="Graphics\DirectX12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\DirectX12\D3D12Content.cpp" />
   </ItemGroup>
 </Project>

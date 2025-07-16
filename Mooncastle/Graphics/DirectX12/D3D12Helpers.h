@@ -14,6 +14,15 @@ namespace mooncastle::graphics::d3D12::d3DX
             0,                                          //CreationNodeMask
             0                                           //VisibleNodeMask
         };
+
+		const D3D12_HEAP_PROPERTIES uploadHeap
+		{
+			D3D12_HEAP_TYPE_UPLOAD,                     //Type
+			D3D12_CPU_PAGE_PROPERTY_UNKNOWN,            //CPUPageProperty
+			D3D12_MEMORY_POOL_UNKNOWN,                  //MemoryPoolPreference
+			0,                                          //CreationNodeMask
+			0                                           //VisibleNodeMask
+		};
     } heapProperties;
 
 	constexpr struct 
@@ -300,4 +309,9 @@ namespace mooncastle::graphics::d3D12::d3DX
 
 	ID3D12PipelineState* createPipelineState(D3D12_PIPELINE_STATE_STREAM_DESC desc);
 	ID3D12PipelineState* createPipelineState(void* stream, u64 stream_size);
+
+	ID3D12Resource* createBuffer(u32 bufferSize, const void* data = nullptr, bool isCPUAccessable = false,
+		D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE,
+		ID3D12Heap* heap = nullptr, u64 heapOffset = 0);
 }
