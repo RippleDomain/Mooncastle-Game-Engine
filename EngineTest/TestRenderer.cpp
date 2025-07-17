@@ -4,13 +4,17 @@
 #include "..\Platform\Platform.h"
 #include "..\Graphics\Renderer.h"
 #include "..\Graphics\DirectX12\D3D12Core.h"
+#include "..\Content\ContentToEngine.h"
+
+#include <filesystem>
+#include <fstream>
 
 #if TEST_RENDERER
 
 using namespace mooncastle;
 
 //// Multithreading test worker span code /////////////////////////////////////
-#define ENABLE_TEST_WORKERS 1
+#define ENABLE_TEST_WORKERS 0
 
 constexpr u32	threadCount{ 8 };
 bool			end{ false };
@@ -52,6 +56,7 @@ void jointTestWorkers()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+id::idType modelID{ id::invalidId };
 graphics::renderSurface surfaces[4];
 
 timeIt timer{};
@@ -146,6 +151,28 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+bool readFile(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size)
+{
+	if (!std::filesystem::exists(path)) return false;
+
+	size = std::filesystem::file_size(path);
+	assert(size);
+	if (!size) return false;
+
+	data = std::make_unique<u8[]>(size);
+
+	std::ifstream file{ path, std::ios::in | std::ios::binary };
+
+	if (!file || !file.read((char*)data.get(), size))
+	{
+		file.close();
+		return false;
+	}
+	file.close();
+
+	return true;
+}
+
 void createRenderSurface(graphics::renderSurface& surface, platform::windowInitInfo info)
 {
 	surface.window = platform::createWindow(&info);
@@ -196,6 +223,13 @@ bool testInitialize()
 		createRenderSurface(surfaces[i], info[i]);
 	}
 
+	//Loads the test model.
+	std::unique_ptr<u8[]> model;
+	u64 size{ 0 };
+	if (!readFile("..\\..\\EngineTest\\model.model", model, size)) return false;
+	modelID = content::createResource(model.get(), content::assetType::mesh);
+	if (!id::isValid(modelID)) return false;
+
 	initTestWorkers(bufferTestWorker);
 
 	isRestarting = false;
@@ -206,6 +240,11 @@ bool testInitialize()
 void testShutdown()
 {
 	jointTestWorkers();
+
+	if (id::isValid(modelID))
+	{
+		content::destroyResource(modelID, content::assetType::mesh);
+	}
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace MooncastleEditor.Utilities
         public static bool isValid(int id) => id != InvalidID;
     }
 
-    public static class Utilities
+    public static class MathUtil
     {
         public static float Epsilon = 0.00001f;
 
@@ -32,6 +33,22 @@ namespace MooncastleEditor.Utilities
             }
 
             return Math.Abs(a.Value - b.Value) < Epsilon;
+        }
+
+        public static long AlignSizeUp(long size, long alignment)
+        {
+            Debug.Assert(alignment > 0, "Alignment must be non-zero.");
+            long mask = alignment - 1;
+            Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
+            return ((size + mask) & ~mask);
+        }
+
+        public static long AlignSizeDown(long size, long alignment)
+        {
+            Debug.Assert(alignment > 0, "Alignment must be non-zero.");
+            long mask = alignment - 1;
+            Debug.Assert((alignment & mask) == 0, "Alignment should be a power of 2.");
+            return (size & ~mask);
         }
     }
 

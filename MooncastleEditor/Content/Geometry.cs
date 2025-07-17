@@ -34,6 +34,15 @@ namespace MooncastleEditor.Content
         Colors = 0x08
     }
 
+    enum PrimitiveTopology
+    {
+        PointList = 1,
+        LineList,
+        LineStrip,
+        TriangleList,
+        TriangleStrip
+    };
+
     class Mesh : ViewModelBase
     {
         public static int PositionSize = sizeof(float) * 3;
@@ -105,6 +114,7 @@ namespace MooncastleEditor.Content
         }
 
         public ElementsType ElementType { get; set; }
+        public PrimitiveTopology PrimitiveTopology { get; set; }
         public byte[] Positions { get; set; }
         public byte[] Elements { get; set; }
         public byte[] Indices { get; set; }
@@ -370,6 +380,7 @@ namespace MooncastleEditor.Content
             var lodId = reader.ReadInt32();
             mesh.ElementSize = reader.ReadInt32();
             mesh.ElementType = (ElementsType)reader.ReadInt32();
+            mesh.PrimitiveTopology = PrimitiveTopology.TriangleList; //ContentTools currently only supports triangle meshes.
             mesh.VertexCount = reader.ReadInt32();
             mesh.IndexSize = reader.ReadInt32();
             mesh.IndexCount = reader.ReadInt32();
@@ -476,6 +487,9 @@ namespace MooncastleEditor.Content
                     _lodGroups.Clear();
                     _lodGroups.Add(lodGroup);
                 }
+
+                //TODO: Remove later!
+                //PackForEngine();
             }
             catch (Exception ex)
             {
@@ -548,6 +562,60 @@ namespace MooncastleEditor.Content
             return savedFiles;
         }
 
+        public override byte[] PackForEngine()
+        {
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            writer.Write(GetLODGroup().LODs.Count);
+
+            foreach (var lod in GetLODGroup().LODs)
+            {
+                writer.Write(lod.LodThreshold);
+                writer.Write(lod.Meshes.Count);
+                var sizeOfSubmeshesPosition = writer.BaseStream.Position;
+                writer.Write(0);
+
+                foreach (var mesh in lod.Meshes)
+                {
+                    writer.Write(mesh.ElementSize);
+                    writer.Write(mesh.VertexCount);
+                    writer.Write(mesh.IndexCount);
+                    writer.Write((int)mesh.ElementType);
+                    writer.Write((int)mesh.PrimitiveTopology);
+
+                    var alignedPositionBuffer = new byte[MathUtil.AlignSizeUp(mesh.Positions.Length, 4)];
+                    Array.Copy(mesh.Positions, alignedPositionBuffer, mesh.Positions.Length);
+
+                    var alignedElementBuffer = new byte[MathUtil.AlignSizeUp(mesh.Elements.Length, 4)];
+                    Array.Copy(mesh.Elements, alignedElementBuffer, mesh.Elements.Length);
+
+                    writer.Write(alignedPositionBuffer);
+                    writer.Write(alignedElementBuffer);
+                    writer.Write(mesh.Indices);
+                }
+
+                var endOfSubmeshes = writer.BaseStream.Position;
+                var sizeOfSubmeshes = (int)(endOfSubmeshes - sizeOfSubmeshesPosition - sizeof(int));
+
+                writer.BaseStream.Position = sizeOfSubmeshesPosition;
+                writer.Write(sizeOfSubmeshes);
+                writer.BaseStream.Position = endOfSubmeshes;
+            }
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream)?.ToArray();
+
+            Debug.Assert(data?.Length > 0);
+
+            //TODO: Remove later!
+            using (var fs = new FileStream(@"..\..\EngineTest\model.model", FileMode.Create))
+            {
+                fs.Write(data, 0, data.Length);
+            }
+
+            return data;
+        }
+
         private void LODToBinary(MeshLOD lod, BinaryWriter writer, out byte[] hash)
         {
             writer.Write(lod.Name);
@@ -561,6 +629,7 @@ namespace MooncastleEditor.Content
                 writer.Write(mesh.Name);
                 writer.Write(mesh.ElementSize);
                 writer.Write((int)mesh.ElementType);
+                writer.Write((int)mesh.PrimitiveTopology);
                 writer.Write(mesh.VertexCount);
                 writer.Write(mesh.IndexSize);
                 writer.Write(mesh.IndexCount);
@@ -590,6 +659,7 @@ namespace MooncastleEditor.Content
                     Name = reader.ReadString(),
                     ElementSize = reader.ReadInt32(),
                     ElementType = (ElementsType)reader.ReadInt32(),
+                    PrimitiveTopology = (PrimitiveTopology)reader.ReadInt32(),
                     VertexCount = reader.ReadInt32(),
                     IndexSize = reader.ReadInt32(),
                     IndexCount = reader.ReadInt32()

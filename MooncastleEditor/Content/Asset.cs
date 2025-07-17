@@ -63,6 +63,7 @@ namespace MooncastleEditor.Content
         public abstract void Import(string file);
         public abstract void Load(string file);
         public abstract IEnumerable<string> Save(string file);
+        public abstract byte[] PackForEngine();
 
         public static AssetInfo TryGetAssetInfo(string file) => File.Exists(file) && Path.GetExtension(file) == AssetFileExtension ?
             AssetRegistry.GetAssetInfo(file) ?? GetAssetInfo(file) : null;

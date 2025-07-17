@@ -123,14 +123,14 @@ namespace mooncastle::content
 			for (u32 lodIndex{ 0 }; lodIndex < lodCount; ++lodIndex)
 			{
 				stream.getThresholds()[lodIndex] = blob.read<f32>();
-				const u32 id_count{ blob.read<u32>() };
+				const u32 idCount{ blob.read<u32>() };
 
-				assert(id_count < (1 << 16));
+				assert(idCount < (1 << 16));
 
-				stream.getLODOffsets()[lodIndex] = { submeshIndex, (u16)id_count };
+				stream.getLODOffsets()[lodIndex] = { submeshIndex, (u16)idCount };
 				blob.skip(sizeof(u32)); //Skips over the size of submeshes.
 
-				for (u32 idIndex{ 0 }; idIndex < id_count; ++idIndex)
+				for (u32 idIndex{ 0 }; idIndex < idCount; ++idIndex)
 				{
 					const u8* at{ blob.getPosition() };
 					gpuIDs[submeshIndex++] = graphics::addSubmesh(at);
@@ -171,13 +171,13 @@ namespace mooncastle::content
 			//Skips lodCount, lodThreshold, submeshCount, and size of submeshes.
 			blob.skip(sizeof(u32) + sizeof(f32) + sizeof(u32) + sizeof(u32));
 			const u8* at{ blob.getPosition() };
-			const id::idType gpu_id{ graphics::addSubmesh(at) };
+			const id::idType gpuID{ graphics::addSubmesh(at) };
 
 			//Create a fake pointer and put it in geometryHierarchies.
 			static_assert(sizeof(uintptr_t) > sizeof(id::idType));
 
 			constexpr u8 shiftBits{ (sizeof(uintptr_t) - sizeof(id::idType)) << 3 };
-			u8* const fakePtr{ (u8* const)((((uintptr_t)gpu_id) << shiftBits) | singleMeshMarker) };
+			u8* const fakePtr{ (u8* const)((((uintptr_t)gpuID) << shiftBits) | singleMeshMarker) };
 			std::lock_guard lock{ geometryMutex };
 
 			return geometryHierarchies.add(fakePtr);
@@ -197,11 +197,11 @@ namespace mooncastle::content
 
 			//Skips over the threshold.
 			blob.skip(sizeof(f32));
-			const u32 submesh_count{ blob.read<u32>() };
+			const u32 submeshCount{ blob.read<u32>() };
 
-			assert(submesh_count);
+			assert(submeshCount);
 
-			return submesh_count == 1;
+			return submeshCount == 1;
 		}
 
 		constexpr id::idType gpuIDFromFakePointer(u8* const pointer)
