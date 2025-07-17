@@ -44,4 +44,7 @@ namespace mooncastle::graphics
 
     surface createSurface(platform::window window);
     void removeSurface(surfaceId id);
+
+    id::idType addSubmesh(const u8*& data);
+    void removeSubmesh(id::idType id);
 }

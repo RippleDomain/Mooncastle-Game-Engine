@@ -8,22 +8,17 @@ namespace mooncastle::graphics::d3D12::content
 {
 	namespace
 	{
-		struct positionView
+		struct submeshView
 		{
 			D3D12_VERTEX_BUFFER_VIEW    positionBufferView{};
-			D3D12_INDEX_BUFFER_VIEW     indexBufferView{};
-		};
-
-		struct elementView
-		{
 			D3D12_VERTEX_BUFFER_VIEW    elementBufferView{};
-			u32                         elementType{};
+			D3D12_INDEX_BUFFER_VIEW     indexBufferView{};
 			D3D_PRIMITIVE_TOPOLOGY      primitiveTopology;
+			u32                         elementType{};
 		};
 
 		utl::freeList<ID3D12Resource*>  submeshBuffers{};
-		utl::freeList<positionView>     positionViews{};
-		utl::freeList<elementView>      elementViews{};
+		utl::freeList<submeshView>      submeshViews{};
 		std::mutex                      submeshMutex{};
 
 		D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(mooncastle::content::primitiveTopology::type type)
@@ -83,37 +78,35 @@ namespace mooncastle::graphics::d3D12::content
 			blob.skip(totalBufferSize);
 			data = blob.getPosition();
 
-			positionView positionView{};
-			positionView.positionBufferView.BufferLocation = resource->GetGPUVirtualAddress();
-			positionView.positionBufferView.SizeInBytes = positionBufferSize;
-			positionView.positionBufferView.StrideInBytes = sizeof(math::v3);
+			submeshView view{};
+			view.positionBufferView.BufferLocation = resource->GetGPUVirtualAddress();
+			view.positionBufferView.SizeInBytes = positionBufferSize;
+			view.positionBufferView.StrideInBytes = sizeof(math::v3);
 
-			positionView.indexBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize + alignedElementBufferSize;
-			positionView.indexBufferView.SizeInBytes = indexBufferSize;
-			positionView.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-
-			elementView elementView{};
 			if (elementSize)
 			{
-				elementView.elementBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize;
-				elementView.elementBufferView.SizeInBytes = elementBufferSize;
-				elementView.elementBufferView.StrideInBytes = elementSize;
+				view.elementBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize;
+				view.elementBufferView.SizeInBytes = elementBufferSize;
+				view.elementBufferView.StrideInBytes = elementSize;
 			}
 
-			elementView.primitiveTopology = getD3DPrimitiveTopology((mooncastle::content::primitiveTopology::type)primitiveTopology);
-			elementView.elementType = elementsType;
+			view.indexBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize + alignedElementBufferSize;
+			view.indexBufferView.SizeInBytes = indexBufferSize;
+			view.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+
+			view.primitiveTopology = getD3DPrimitiveTopology((mooncastle::content::primitiveTopology::type)primitiveTopology);
+			view.elementType = elementsType;
 
 			std::lock_guard lock{ submeshMutex };
 			submeshBuffers.add(resource);
 
-			return elementViews.add(elementView);
+			return submeshViews.add(view);
 		}
 
 		void remove(id::idType id)
 		{
 			std::lock_guard lock{ submeshMutex };
-			positionViews.remove(id);
-			elementViews.remove(id);
+			submeshViews.remove(id);
 
 			core::deferredRelease(submeshBuffers[id]);
 			submeshBuffers.remove(id);

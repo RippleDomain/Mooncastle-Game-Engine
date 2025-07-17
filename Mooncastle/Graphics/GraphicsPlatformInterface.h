@@ -21,6 +21,12 @@ namespace mooncastle::graphics
             void (*render)(surfaceId id);
         } surface;
 
+        struct
+        {
+            id::idType(*addSubmesh)(const u8*&);
+            void (*removeSubmesh)(id::idType);
+        } resources;
+
         graphicsPlatform platform = (graphicsPlatform)-1;
     };
 }

@@ -55,5 +55,6 @@
     <ClCompile Include="Graphics\DirectX12\D3D12PostProcess.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12Content.cpp" />
+    <ClCompile Include="Content\ContentToEngine.cpp" />
   </ItemGroup>
 </Project>

@@ -85,4 +85,14 @@ namespace mooncastle::graphics
         assert(isValid());
         gfx.surface.render(id);
     }
+
+    id::idType addSubmesh(const u8*& data)
+    {
+        return gfx.resources.addSubmesh(data);
+    }
+
+    void removeSubmesh(id::idType id)
+    {
+        gfx.resources.removeSubmesh(id);
+    }
 }
