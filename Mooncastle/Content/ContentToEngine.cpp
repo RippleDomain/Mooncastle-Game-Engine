@@ -68,6 +68,9 @@ namespace mooncastle::content
 			u32				            lodCount;
 		};
 
+		//This constant indicates that an element within geometryHierarchies is not a pointer, but a gpuID.
+		constexpr uintptr_t singleMeshMarker{ (uintptr_t)0x01 };
+
 		utl::freeList<u8*>				geometryHierarchies;
 		std::mutex                      geometryMutex;
 
@@ -151,33 +154,98 @@ namespace mooncastle::content
 				return true;
 			}());
 
+			static_assert(alignof(void*) > 2, "We need the least significant bit for the single mesh marker.");
+
 			std::lock_guard lock{ geometryMutex };
 
 			return geometryHierarchies.add(hierarchyBuffer);
 		}
 
+		//Creates geometry stream for the GPU that has a single submesh with a single LOD, expects the same data as createGeometryResource().
+		id::idType createSingleSubmesh(const void* const data)
+		{
+			assert(data);
+
+			utl::blobStreamReader blob{ (const u8*)data };
+
+			//Skips lodCount, lodThreshold, submeshCount, and size of submeshes.
+			blob.skip(sizeof(u32) + sizeof(f32) + sizeof(u32) + sizeof(u32));
+			const u8* at{ blob.getPosition() };
+			const id::idType gpu_id{ graphics::addSubmesh(at) };
+
+			//Create a fake pointer and put it in geometryHierarchies.
+			static_assert(sizeof(uintptr_t) > sizeof(id::idType));
+
+			constexpr u8 shiftBits{ (sizeof(uintptr_t) - sizeof(id::idType)) << 3 };
+			u8* const fakePtr{ (u8* const)((((uintptr_t)gpu_id) << shiftBits) | singleMeshMarker) };
+			std::lock_guard lock{ geometryMutex };
+
+			return geometryHierarchies.add(fakePtr);
+		}
+
+		//Determines if this geometry has a single LOD with a single submesh, expects the same data as createGeometryResource().
+		bool isSingleMesh(const void* const data)
+		{
+			assert(data);
+
+			utl::blobStreamReader blob{ (const u8*)data };
+			const u32 lodCount{ blob.read<u32>() };
+
+			assert(lodCount);
+
+			if (lodCount > 1) return false;
+
+			//Skips over the threshold.
+			blob.skip(sizeof(f32));
+			const u32 submesh_count{ blob.read<u32>() };
+
+			assert(submesh_count);
+
+			return submesh_count == 1;
+		}
+
+		constexpr id::idType gpuIDFromFakePointer(u8* const pointer)
+		{
+			assert((uintptr_t)pointer & singleMeshMarker);
+			static_assert(sizeof(uintptr_t) > sizeof(id::idType));
+
+			constexpr u8 shiftBits{ (sizeof(uintptr_t) - sizeof(id::idType)) << 3 };
+
+			return (((uintptr_t)pointer) >> shiftBits) & (uintptr_t)id::invalidId;
+		}
+
 		id::idType createGeometryResource(const void* const data)
 		{
-			return createMeshHierarchy(data);
+			assert(data);
+
+			return isSingleMesh(data) ? createSingleSubmesh(data) : createMeshHierarchy(data);
 		}
 
 		void destroyGeometryResource(id::idType id)
 		{
 			std::lock_guard lock{ geometryMutex };
 			u8* const pointer{ geometryHierarchies[id] };
-			geometryHierarchyStream stream{ pointer };
-			const u32 lodCount{ stream.getLODCount() };
-			u32 idIndex{ 0 };
 
-			for (u32 lod{ 0 }; lod < lodCount; ++lod)
+			if ((uintptr_t)pointer & singleMeshMarker)
 			{
-				for (u32 i{ 0 }; i < stream.getLODOffsets()[lod].count; ++i)
-				{
-					graphics::removeSubmesh(stream.getGPUIDs()[idIndex++]);
-				}
+				graphics::removeSubmesh(gpuIDFromFakePointer(pointer));
 			}
+			else
+			{
+				geometryHierarchyStream stream{ pointer };
+				const u32 lodCount{ stream.getLODCount() };
+				u32 idIndex{ 0 };
 
-			free(pointer);
+				for (u32 lod{ 0 }; lod < lodCount; ++lod)
+				{
+					for (u32 i{ 0 }; i < stream.getLODOffsets()[lod].count; ++i)
+					{
+						graphics::removeSubmesh(stream.getGPUIDs()[idIndex++]);
+					}
+				}
+
+				free(pointer);
+			}
 
 			geometryHierarchies.remove(id);
 		}

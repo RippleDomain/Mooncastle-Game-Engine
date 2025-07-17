@@ -3,10 +3,54 @@
 #include "..\Platform\PlatformTypes.h"
 #include "..\Platform\Platform.h"
 #include "..\Graphics\Renderer.h"
+#include "..\Graphics\DirectX12\D3D12Core.h"
 
 #if TEST_RENDERER
 
 using namespace mooncastle;
+
+//// Multithreading test worker span code /////////////////////////////////////
+#define ENABLE_TEST_WORKERS 1
+
+constexpr u32	threadCount{ 8 };
+bool			end{ false };
+std::thread		workers[threadCount];
+
+utl::vector<u8> buffer(1024 * 1024, 0);
+
+//Test worker for the upload context.
+void bufferTestWorker()
+{
+	while (!end)
+	{
+		auto* resource = graphics::d3D12::d3DX::createBuffer((u32)buffer.size(), buffer.data());
+
+		//We can also use core::release(resource) since we're not using the buffer for rendering.
+		graphics::d3D12::core::deferredRelease(resource);
+	}
+}
+
+template<class FnPtr, class... Args>
+void initTestWorkers(FnPtr&& fnPtr, Args&&... args)
+{
+#if ENABLE_TEST_WORKERS
+	end = false;
+
+	for (auto& w : workers)
+	{
+		w = std::thread(std::forward<FnPtr>(fnPtr), std::forward<Args>(args)...);
+	}
+#endif
+}
+
+void jointTestWorkers()
+{
+#if ENABLE_TEST_WORKERS
+	end = true;
+	for (auto& w : workers) w.join();
+#endif
+}
+///////////////////////////////////////////////////////////////////////////////
 
 graphics::renderSurface surfaces[4];
 
@@ -152,6 +196,8 @@ bool testInitialize()
 		createRenderSurface(surfaces[i], info[i]);
 	}
 
+	initTestWorkers(bufferTestWorker);
+
 	isRestarting = false;
 
 	return true;
@@ -159,6 +205,8 @@ bool testInitialize()
 
 void testShutdown()
 {
+	jointTestWorkers();
+
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
 		removeRenderSurface(surfaces[i]);
