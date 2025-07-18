@@ -1,10 +1,12 @@
 #include "TestRenderer.h"
 #include "ShaderCompilation.h"
-#include "..\Platform\PlatformTypes.h"
-#include "..\Platform\Platform.h"
-#include "..\Graphics\Renderer.h"
-#include "..\Graphics\DirectX12\D3D12Core.h"
-#include "..\Content\ContentToEngine.h"
+#include "Platform/PlatformTypes.h"
+#include "Platform/Platform.h"
+#include "Components/Entity.h"
+#include "Components/Transform.h"
+#include "Graphics/Renderer.h"
+#include "Graphics/DirectX12/D3D12Core.h"
+#include "Content/ContentToEngine.h"
 
 #include <filesystem>
 #include <fstream>
@@ -56,7 +58,9 @@ void jointTestWorkers()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+gameEntity::entity entity{};
 id::idType modelID{ id::invalidId };
+graphics::camera camera{};
 graphics::renderSurface surfaces[4];
 
 timeIt timer{};
@@ -151,6 +155,25 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+//Method that creates a game entity in order to test the camera.
+gameEntity::entity createOneGameEntity()
+{
+	transform::initInfo transformInfo{};
+	math::v3a rot{ 0, 3.14f, 0 };
+	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+	math::v4a rotQuaternion;
+	DirectX::XMStoreFloat4A(&rotQuaternion, quat);
+	memcpy(&transformInfo.rotation[0], &rotQuaternion.x, sizeof(transformInfo.rotation));
+
+	gameEntity::entityInfo entityInfo{};
+	entityInfo.transform = &transformInfo;
+	gameEntity::entity ntt{ gameEntity::create(entityInfo) };
+
+	assert(ntt.isValid());
+
+	return ntt;
+}
+
 bool readFile(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size)
 {
 	if (!std::filesystem::exists(path)) return false;
@@ -232,6 +255,10 @@ bool testInitialize()
 
 	initTestWorkers(bufferTestWorker);
 
+	entity = createOneGameEntity();
+	camera = graphics::createCamera(graphics::perspectiveCameraInitInfo(entity.getId()));
+	assert(camera.isValid());
+
 	isRestarting = false;
 
 	return true;
@@ -239,6 +266,9 @@ bool testInitialize()
 
 void testShutdown()
 {
+	if (camera.isValid()) graphics::removeCamera(camera.getId());
+	if (entity.isValid()) gameEntity::remove(entity.getId());
+
 	jointTestWorkers();
 
 	if (id::isValid(modelID))

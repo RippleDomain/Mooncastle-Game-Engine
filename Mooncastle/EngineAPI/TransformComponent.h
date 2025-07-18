@@ -15,6 +15,7 @@ namespace mooncastle::transform
 		constexpr bool isValid() const { return id::isValid(id); }
 
 		math::v4 rotation() const;
+		math::v3 orientation() const;
 		math::v3 position() const;
 		math::v3 scale() const;
 	private:

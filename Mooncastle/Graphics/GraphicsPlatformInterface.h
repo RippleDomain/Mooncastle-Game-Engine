@@ -2,7 +2,6 @@
 
 #include "CommonHeaders.h"
 #include "Renderer.h"
-#include "Platform/Window.h"
 
 namespace mooncastle::graphics 
 {
@@ -26,6 +25,14 @@ namespace mooncastle::graphics
             id::idType(*addSubmesh)(const u8*&);
             void (*removeSubmesh)(id::idType);
         } resources;
+
+        struct
+        {
+            camera(*create)(cameraInitInfo);
+            void(*remove)(cameraId);
+            void(*setParameter)(cameraId, cameraParameter::parameter, const void *const, u32);
+            void(*getParameter)(cameraId, cameraParameter::parameter, void *const, u32);
+        } camera;
 
         graphicsPlatform platform = (graphicsPlatform)-1;
     };
