@@ -1,6 +1,6 @@
  #pragma once
 
-#include "..\Components\ComponentsCommon.h"
+#include "Components/ComponentsCommon.h"
 #include "TransformComponent.h"
 #include "ScriptComponent.h"
 

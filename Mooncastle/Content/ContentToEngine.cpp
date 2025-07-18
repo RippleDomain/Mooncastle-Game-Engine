@@ -117,7 +117,7 @@ namespace mooncastle::content
 			assert(lodCount);
 
 			geometryHierarchyStream stream{ hierarchyBuffer, lodCount };
-			u16 submeshIndex{ 0 };
+			u32 submeshIndex{ 0 };
 			id::idType* const gpuIDs{ stream.getGPUIDs() };
 
 			for (u32 lodIndex{ 0 }; lodIndex < lodCount; ++lodIndex)
@@ -127,7 +127,7 @@ namespace mooncastle::content
 
 				assert(idCount < (1 << 16));
 
-				stream.getLODOffsets()[lodIndex] = { submeshIndex, (u16)idCount };
+				stream.getLODOffsets()[lodIndex] = { (u16)submeshIndex, (u16)idCount };
 				blob.skip(sizeof(u32)); //Skips over the size of submeshes.
 
 				for (u32 idIndex{ 0 }; idIndex < idCount; ++idIndex)

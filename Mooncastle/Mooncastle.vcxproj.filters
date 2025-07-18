@@ -35,6 +35,7 @@
     <ClInclude Include="Graphics\DirectX12\D3D12Upload.h" />
     <ClInclude Include="Graphics\DirectX12\D3D12Content.h" />
     <ClInclude Include="Content\ContentToEngine.h" />
+    <ClInclude Include="EngineAPI\Camera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\Entity.cpp" />

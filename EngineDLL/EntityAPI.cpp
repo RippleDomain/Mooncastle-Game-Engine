@@ -1,9 +1,9 @@
 #include "Common.h"
 #include "CommonHeaders.h"
 #include "Id.h"
-#include "..\Mooncastle\Components\Entity.h"
-#include "..\Mooncastle\Components\Transform.h"
-#include "..\Mooncastle\Components\Script.h"
+#include "Components/Entity.h"
+#include "Components/Transform.h"
+#include "Components/Script.h"
 
 using namespace mooncastle;
 
