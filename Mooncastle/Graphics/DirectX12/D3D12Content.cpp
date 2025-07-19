@@ -21,10 +21,8 @@ namespace mooncastle::graphics::d3D12::content
 		utl::freeList<submeshView>      submeshViews{};
 		std::mutex                      submeshMutex{};
 
-		D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(mooncastle::content::primitiveTopology::type type)
+		D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(primitiveTopology::type type)
 		{
-			using namespace mooncastle::content;
-
 			assert(type < primitiveTopology::count);
 
 			switch (type)
@@ -94,7 +92,7 @@ namespace mooncastle::graphics::d3D12::content
 			view.indexBufferView.SizeInBytes = indexBufferSize;
 			view.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 
-			view.primitiveTopology = getD3DPrimitiveTopology((mooncastle::content::primitiveTopology::type)primitiveTopology);
+			view.primitiveTopology = getD3DPrimitiveTopology((primitiveTopology::type)primitiveTopology);
 			view.elementType = elementsType;
 
 			std::lock_guard lock{ submeshMutex };

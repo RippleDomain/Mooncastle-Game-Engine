@@ -74,6 +74,9 @@ namespace mooncastle::content
 		utl::freeList<u8*>				geometryHierarchies;
 		std::mutex                      geometryMutex;
 
+		utl::freeList<std::unique_ptr<u8[]>>	compiledShaders;
+		std::mutex                              shaderMutex;
+
 		//Expects the same data as createGeometryResource().
 		u32 getGeometryHierarchyBufferSize(const void* const data)
 		{
@@ -293,5 +296,31 @@ namespace mooncastle::content
 			assert(false);
 			break;
 		}
+	}
+
+	id::idType createShader(const u8* data)
+	{
+		const compiledShaderPointer shaderPtr{ (const compiledShaderPointer)data };
+		const u64 size{ sizeof(u64) + compiledShader::hashLength + shaderPtr->getByteCodeSize() };
+		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
+		memcpy(shader.get(), data, size);
+		std::lock_guard lock{ shaderMutex };
+
+		return compiledShaders.add(std::move(shader));
+	}
+
+	void destroyShader(id::idType id)
+	{
+		std::lock_guard lock{ shaderMutex };
+		assert(id::isValid(id));
+		compiledShaders.remove(id);
+	}
+
+	compiledShaderPointer getShader(id::idType id)
+	{
+		std::lock_guard lock{ shaderMutex };
+		assert(id::isValid(id));
+
+		return (const compiledShaderPointer)(compiledShaders[id].get());
 	}
 }

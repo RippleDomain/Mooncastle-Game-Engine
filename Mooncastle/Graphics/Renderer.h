@@ -103,6 +103,19 @@ namespace mooncastle::graphics
 		}
 	};
 
+	struct primitiveTopology
+	{
+		enum type : u32
+		{
+			pointList = 1,
+			lineList,
+			lineStrip,
+			triangleList,
+			triangleStrip,
+			count
+		};
+	};
+
     enum class graphicsPlatform : u32
     {
         direct3D12 = 0,

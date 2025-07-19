@@ -1,31 +1,26 @@
 #include "D3D12Shaders.h"
 #include "../Content/ContentLoader.h"
+#include "../Content/ContentToEngine.h"
 
 namespace mooncastle::graphics::d3D12::shaders
 {
 	namespace
 	{
-		typedef struct compiledShader
-		{
-			u64			size;
-			const u8*	byte_code;
-		} const * compiledShaderPointer;
-
 		//Each element in this array points to an offset within the shaders blob.
-		compiledShaderPointer engineShaders[engineShader::count]{};
+		content::compiledShaderPointer engineShaders[engineShader::count]{};
 
 		/*This is a chunk of memory that contains all compiled engine shaders.
 		The blob is an array of shader byte code consisting of a u64 size and
 		an array of bytes.*/
-		std::unique_ptr<u8[]> shadersBlob{};
+		std::unique_ptr<u8[]> engineShadersBlob{};
 
 		bool loadEngineShaders()
 		{
-			assert(!shadersBlob);
+			assert(!engineShadersBlob);
 
 			u64 size{ 0 };
-			bool result{ content::loadEngineShaders(shadersBlob, size) };
-			assert(shadersBlob && size);
+			bool result{ content::loadEngineShaders(engineShadersBlob, size) };
+			assert(engineShadersBlob && size);
 
 			u64 offset{ 0 };
 			u32 index{ 0 };
@@ -33,13 +28,13 @@ namespace mooncastle::graphics::d3D12::shaders
 			while (offset < size && result)
 			{
 				assert(index < engineShader::count);
-				compiledShaderPointer& shader{ engineShaders[index] };
+				content::compiledShaderPointer& shader{ engineShaders[index] };
 				assert(!shader);
 				result &= index < engineShader::count && !shader;
 				if (!result) break;
 
-				shader = reinterpret_cast<const compiledShaderPointer>(&shadersBlob[offset]);
-				offset += sizeof(u64) + shader->size;
+				shader = reinterpret_cast<const content::compiledShaderPointer>(&engineShadersBlob[offset]);
+				offset += sizeof(u64) + content::compiledShader::hashLength + shader->getByteCodeSize();
 				++index;
 			}
 
@@ -61,15 +56,15 @@ namespace mooncastle::graphics::d3D12::shaders
 			engineShaders[i] = {};
 		}
 
-		shadersBlob.reset();
+		engineShadersBlob.reset();
 	}
 
 	D3D12_SHADER_BYTECODE getEngineShader(engineShader::id id)
 	{
 		assert(id < engineShader::count);
-		const compiledShaderPointer shader{ engineShaders[id] };
-		assert(shader && shader->size);
+		const content::compiledShaderPointer& shader{ engineShaders[id] };
+		assert(shader && shader->getByteCodeSize());
 
-		return { &shader->byte_code, shader->size };
+		return { shader->getByteCode(), shader->getByteCodeSize()};
 	}
 }

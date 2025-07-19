@@ -58,9 +58,14 @@ void jointTestWorkers()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-gameEntity::entity entity{};
+struct
+{
+	gameEntity::entity entity{};
+	graphics::camera camera{};
+} camera;
+
+id::idType itemID{ id::invalidId };
 id::idType modelID{ id::invalidId };
-graphics::camera camera{};
 graphics::renderSurface surfaces[4];
 
 timeIt timer{};
@@ -71,6 +76,9 @@ bool isRestarting{ false };
 void removeRenderSurface(graphics::renderSurface& surface);
 bool testInitialize();
 void testShutdown();
+
+id::idType createRenderItem(id::idType entityID);
+void destroyRenderItem(id::idType entityID);
 
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -255,9 +263,11 @@ bool testInitialize()
 
 	initTestWorkers(bufferTestWorker);
 
-	entity = createOneGameEntity();
-	camera = graphics::createCamera(graphics::perspectiveCameraInitInfo(entity.getId()));
-	assert(camera.isValid());
+	camera.entity = createOneGameEntity();
+	camera.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo(camera.entity.getId()));
+	assert(camera.camera.isValid());
+
+	itemID = createRenderItem(createOneGameEntity().getId());
 
 	isRestarting = false;
 
@@ -266,8 +276,10 @@ bool testInitialize()
 
 void testShutdown()
 {
-	if (camera.isValid()) graphics::removeCamera(camera.getId());
-	if (entity.isValid()) gameEntity::remove(entity.getId());
+	destroyRenderItem(itemID);
+
+	if (camera.camera.isValid()) graphics::removeCamera(camera.camera.getId());
+	if (camera.entity.isValid()) gameEntity::remove(camera.entity.getId());
 
 	jointTestWorkers();
 

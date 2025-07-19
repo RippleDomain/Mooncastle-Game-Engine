@@ -19,19 +19,24 @@ namespace mooncastle::content
 		};
 	};
 
-	struct primitiveTopology 
+	typedef struct compiledShader
 	{
-		enum type : u32 
-		{
-			pointList = 1,
-			lineList,
-			lineStrip,
-			triangleList,
-			triangleStrip,
-			count
-		};
-	};
+		static constexpr u32 hashLength{ 16 };
+
+		constexpr u64 getByteCodeSize() const { return byteCodeSize; }
+		constexpr const u8 *const getHash() const { return &hash[0]; }
+		constexpr const u8 *const getByteCode() const { return &byteCode; }
+
+	private:
+		u64			byteCodeSize;
+		u8          hash[hashLength];
+		u8	        byteCode;
+	} const * compiledShaderPointer;
 
 	id::idType createResource(const void* const data, assetType::type type);
 	void destroyResource(id::idType id, assetType::type type);
+
+	id::idType createShader(const u8* shaderData);
+	void destroyShader(id::idType id);
+	compiledShaderPointer getShader(id::idType id);
 }

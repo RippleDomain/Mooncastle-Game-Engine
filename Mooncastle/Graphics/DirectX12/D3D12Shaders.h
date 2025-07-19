@@ -4,22 +4,6 @@
 
 namespace mooncastle::graphics::d3D12::shaders
 {
-	struct shaderType
-	{
-		enum type : u32
-		{
-			vertex = 0,
-			hull,
-			domain,
-			geometry,
-			pixel,
-			compute,
-			amplification,
-			mesh,
-			count
-		};
-	};
-
 	struct engineShader
 	{
 		enum id : u32

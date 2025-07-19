@@ -60,4 +60,7 @@
     <ClCompile Include="Content\ContentToEngine.cpp" />
     <ClCompile Include="Graphics\DirectX12\D3D12Camera.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
