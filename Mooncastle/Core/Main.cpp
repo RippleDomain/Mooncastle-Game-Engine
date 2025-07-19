@@ -1,6 +1,6 @@
-#include "CommonHeaders.h"
-
 #ifdef _WIN64
+
+#include "CommonHeaders.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -43,21 +43,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
     if (engineInitialize())
     {
         MSG msg{};
-        bool is_running{ true };
+        bool isRunning{ true };
 
-        while (is_running)
+        while (isRunning)
         {
             while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
             {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
 
-                is_running &= (msg.message != WM_QUIT);
+                isRunning &= (msg.message != WM_QUIT);
             }
 
             engineUpdate();
         }
     }
+
     engineShutdown();
     return 0;
 }

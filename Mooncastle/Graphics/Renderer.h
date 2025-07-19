@@ -25,8 +25,8 @@ namespace mooncastle::graphics
 
     struct renderSurface
     {
-        platform::window window{};
-        surface surface{};
+        platform::window               window{};
+        mooncastle::graphics::surface  surface{};
     };
 
 	struct cameraParameter

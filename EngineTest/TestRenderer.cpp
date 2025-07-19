@@ -22,14 +22,14 @@ constexpr u32	threadCount{ 8 };
 bool			end{ false };
 std::thread		workers[threadCount];
 
-utl::vector<u8> buffer(1024 * 1024, 0);
+utl::vector<u8> emptyBuffer(1024 * 1024, 0);
 
 //Test worker for the upload context.
 void bufferTestWorker()
 {
 	while (!end)
 	{
-		auto* resource = graphics::d3D12::d3DX::createBuffer((u32)buffer.size(), buffer.data());
+		auto* resource = graphics::d3D12::d3DX::createBuffer((u32)emptyBuffer.size(), emptyBuffer.data());
 
 		//We can also use core::release(resource) since we're not using the buffer for rendering.
 		graphics::d3D12::core::deferredRelease(resource);
@@ -37,7 +37,7 @@ void bufferTestWorker()
 }
 
 template<class FnPtr, class... Args>
-void initTestWorkers(FnPtr&& fnPtr, Args&&... args)
+void initTestWorkers([[maybe_unused]] FnPtr&& fnPtr, [[maybe_unused]] Args&&... args)
 {
 #if ENABLE_TEST_WORKERS
 	end = false;

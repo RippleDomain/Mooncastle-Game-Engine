@@ -16,7 +16,7 @@ namespace mooncastle::math
 	{
 		static_assert(bits <= sizeof(u32) * 8);
 		assert(f >= 0.f && f <= 1.f);
-		constexpr f32 intervals{ (f32)((1ui32 << bits) - 1) };
+		constexpr f32 intervals{ (f32)(((u32)1 << bits) - 1) };
 
 		return (u32)(intervals * f + 0.5f);
 	}
@@ -25,8 +25,8 @@ namespace mooncastle::math
 	constexpr f32 unpackToUnitFloat(u32 i)
 	{
 		static_assert(bits <= sizeof(u32) * 8);
-		assert(i < (1ui32 << bits));
-		constexpr f32 intervals{ (f32)((1ui32 << bits) - 1) };
+		assert(i < ((u32)1 << bits));
+		constexpr f32 intervals{ (f32)(((u32)1 << bits) - 1) };
 
 		return (f32)i / intervals;
 	}

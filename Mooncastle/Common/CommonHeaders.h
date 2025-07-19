@@ -1,14 +1,17 @@
 #pragma once
 
+#ifdef _WIN64
 #pragma warning(disable: 4530) //Disable exception warnings
+#endif
 
 //C/C++
-#include <stdint.h>
+#include <cstdint>
 #include <assert.h>
 #include <typeinfo>
 #include <memory>
 #include <unordered_map>
 #include <mutex>
+#include <cstring>
 
 #if defined(_WIN64)
 #include <DirectXMath.h>
@@ -23,9 +26,9 @@
 
 //Common
 #include "PrimitiveTypes.h"
-#include "Utilities/Math.h"
-#include "Utilities/Utilities.h"
-#include "Utilities/MathTypes.h"
+#include "../Utilities/Math.h"
+#include "../Utilities/Utilities.h"
+#include "../Utilities/MathTypes.h"
 #include "Id.h"
 
 //Macros

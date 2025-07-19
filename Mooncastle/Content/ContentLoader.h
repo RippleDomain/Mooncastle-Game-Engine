@@ -2,7 +2,7 @@
 
 #include "CommonHeaders.h"
 
-#if !defined(SHIPPING)
+#if !defined(SHIPPING) && defined(_WIN64)
 
 namespace mooncastle::content
 {
