@@ -26,6 +26,8 @@ namespace mooncastle::graphics::d3D12
 
 		pi.resources.addSubmesh = content::submesh::add;
 		pi.resources.removeSubmesh = content::submesh::remove;
+		pi.resources.addMaterial = content::material::add;
+		pi.resources.removeMaterial = content::material::remove;
 
         pi.platform = graphicsPlatform::direct3D12;
     }

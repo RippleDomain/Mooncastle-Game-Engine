@@ -252,6 +252,25 @@ namespace mooncastle::content
 
 			geometryHierarchies.remove(id);
 		}
+
+		/*Expects data to contain:
+		struct 
+		{
+				materialType::type	type;
+				u32					textureCount;
+				id::idType			shaderIDs[shaderType::count];
+				id::idType			textureIDs;
+		} materialInitInfo*/
+		id::idType createMaterialResource(const void* const data)
+		{
+			assert(data);
+			return graphics::addMaterial(*(const graphics::materialInitInfo* const)data);
+		}
+
+		void destroyMaterialResource(id::idType id)
+		{
+			graphics::removeMaterial(id);
+		}
 	}
 
 	id::idType createResource(const void* const data, assetType::type type)
@@ -264,7 +283,9 @@ namespace mooncastle::content
 		case assetType::unknown: break;
 		case assetType::animation: break;
 		case assetType::audio: break;
-		case assetType::material: break;
+		case assetType::material: 
+			id = createMaterialResource(data);
+			break;
 		case assetType::mesh:
 			id = createGeometryResource(data);
 			break;
@@ -286,7 +307,9 @@ namespace mooncastle::content
 		case assetType::unknown: break;
 		case assetType::animation: break;
 		case assetType::audio: break;
-		case assetType::material: break;
+		case assetType::material:
+			destroyMaterialResource(id);
+			break;
 		case assetType::mesh:
 			destroyGeometryResource(id);
 			break;

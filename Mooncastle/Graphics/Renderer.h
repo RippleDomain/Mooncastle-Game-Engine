@@ -103,6 +103,55 @@ namespace mooncastle::graphics
 		}
 	};
 
+	struct shaderFlags 
+	{
+		enum flags : u32 
+		{
+			none = 0x0,
+			vertex = 0x01,
+			hull = 0x02,
+			domain = 0x04,
+			geometry = 0x08,
+			pixel = 0x10,
+			compute = 0x20,
+			amplification = 0x40,
+			mesh = 0x80,
+		};
+	};
+
+	struct shaderType
+	{
+		enum type : u32
+		{
+			vertex = 0,
+			hull,
+			domain,
+			geometry,
+			pixel,
+			compute,
+			amplification,
+			mesh,
+			count
+		};
+	};
+
+	struct materialType
+	{
+		enum type : u32
+		{
+			opaque,
+			count
+		};
+	};
+
+	struct materialInitInfo
+	{
+		materialType::type	type;
+		u32					textureCount;
+		id::idType			shaderIDs[shaderType::type::count]{ id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId };
+		id::idType*		    textureIDs;
+	};
+
 	struct primitiveTopology
 	{
 		enum type : u32
@@ -138,4 +187,7 @@ namespace mooncastle::graphics
 
     id::idType addSubmesh(const u8*& data);
     void removeSubmesh(id::idType id);
+
+    id::idType addMaterial(materialInitInfo info);
+    void removeMaterial(id::idType id);
 }

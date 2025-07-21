@@ -91,7 +91,8 @@ namespace mooncastle::graphics::d3D12::gPass
 			using index = gPassRootParamIndices;
 			d3DX::D3D12RootParameter parameters[index::count]{};
 			parameters[0].asConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-			const d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], index::count };
+			d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], index::count };
+			rootSignature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 			gPassRootSignature = rootSignature.create();
 			assert(gPassRootSignature);
 

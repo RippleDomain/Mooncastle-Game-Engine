@@ -237,14 +237,25 @@ namespace mooncastle::graphics::d3D12::d3DX
 
 	struct D3D12RootSignatureDescription :public D3D12_ROOT_SIGNATURE_DESC1
 	{
-		constexpr explicit D3D12RootSignatureDescription(const D3D12RootParameter* parameters,
-			u32 noParam, const D3D12_STATIC_SAMPLER_DESC* staticSamplers = nullptr,
-			u32 noSample = 0, D3D12_ROOT_SIGNATURE_FLAGS flags =
+		constexpr static D3D12_ROOT_SIGNATURE_FLAGS defaultFlags
+		{
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS)
-			:D3D12_ROOT_SIGNATURE_DESC1{ noParam, parameters, noSample, staticSamplers, flags }
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
+			D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED
+		};
+
+		constexpr explicit D3D12RootSignatureDescription(const D3D12RootParameter* parameters,
+			u32 parameterCount, D3D12_ROOT_SIGNATURE_FLAGS flags = defaultFlags,
+			const D3D12_STATIC_SAMPLER_DESC* staticSamplers = nullptr, u32 samplerCount = 0)
+			: D3D12_ROOT_SIGNATURE_DESC1{ parameterCount, parameters, samplerCount, staticSamplers, flags }
 		{
+
 		}
 
 		ID3D12RootSignature* create()const

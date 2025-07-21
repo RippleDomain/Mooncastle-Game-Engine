@@ -24,6 +24,9 @@ namespace mooncastle::graphics
         {
             id::idType(*addSubmesh)(const u8*&);
             void (*removeSubmesh)(id::idType);
+
+            id::idType(*addMaterial)(materialInitInfo);
+            void (*removeMaterial)(id::idType);
         } resources;
 
         struct

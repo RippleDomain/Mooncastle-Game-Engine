@@ -19,7 +19,7 @@ namespace mooncastle::graphics
             switch (platform)
             {
             case graphicsPlatform::direct3D12:
-                d3D12::getPlatformInterface(gfx);
+                d3D12::getPlatformInterface(gfx); 
                 break;
             default:
                 return false;
@@ -288,4 +288,14 @@ namespace mooncastle::graphics
     {
         gfx.resources.removeSubmesh(id);
     }
+
+	id::idType addMaterial(materialInitInfo info)
+	{
+		return gfx.resources.addMaterial(info);
+	}
+
+	void removeMaterial(id::idType id)
+	{
+		gfx.resources.removeMaterial(id);
+	}
 }

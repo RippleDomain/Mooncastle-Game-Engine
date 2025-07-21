@@ -9,6 +9,23 @@ namespace mooncastle::graphics::d3D12
 
 namespace mooncastle::graphics::d3D12::gPass
 {
+	struct opaqueRootParameter
+	{
+		enum parameter : u32
+		{
+			globalShaderData,
+			perobjectData,
+			positionbBuffer,
+			elementBuffer,
+			srvIndices,
+			directionalLights,
+			cullableLights,
+			lightGrid,
+			lightIndexlist,
+			count
+		};
+	};
+
 	bool initialize();
 	void shutdown();
 

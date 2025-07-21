@@ -13,7 +13,6 @@ namespace mooncastle::graphics::d3D12::ppfx
 			enum : u32
 			{
 				rootConstants,
-				descriptorTable,
 				count
 			};
 		};
@@ -25,21 +24,14 @@ namespace mooncastle::graphics::d3D12::ppfx
 		{
 			assert(!fxRootSignature);
 
-			d3DX::D3D12DescriptorRange range
-			{
-				D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-				D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND, 0, 0,
-				D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE
-			};
-
 			using idx = fxRootParamIndices;
 
-			d3DX::D3D12RootParameter parameters[2]{};
+			d3DX::D3D12RootParameter parameters[idx::count]{};
 			parameters[idx::rootConstants].asConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-			parameters[idx::descriptorTable].asDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
-			const d3DX::D3D12RootSignatureDescription root_signature{ &parameters[0], _countof(parameters) };
-			fxRootSignature = root_signature.create();
+			d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], _countof(parameters) };
+			rootSignature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+			fxRootSignature = rootSignature.create();
 
 			assert(fxRootSignature);
 
@@ -87,7 +79,6 @@ namespace mooncastle::graphics::d3D12::ppfx
 		using idx = fxRootParamIndices;
 
 		commandList->SetGraphicsRoot32BitConstant(idx::rootConstants, gPass::getMainBuffer().getSRV().index, 0);
-		commandList->SetGraphicsRootDescriptorTable(idx::descriptorTable, core::getSRVHeap().getGPUStart());
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		commandList->OMSetRenderTargets(1, &targetRTV, 1, nullptr);
 		commandList->DrawInstanced(3, 1, 0, 0);
