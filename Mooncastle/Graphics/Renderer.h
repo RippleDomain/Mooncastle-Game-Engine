@@ -5,6 +5,17 @@
 
 namespace mooncastle::graphics 
 {
+	struct frameInfo
+	{
+		id::idType*		renderItemIDs{ nullptr };
+		f32*			thresholds{ nullptr };
+		u64				lightSetKey{ 0 };
+		f32				lastFrameTime{ 0.f };
+		f32				averageFrameTime{ 0.f };
+		u32				renderItemCount{ 0 };
+		cameraId		camerID{ id::invalidId };
+	};
+
     DEFINE_TYPED_ID(surfaceId);
 
     class surface

@@ -9,12 +9,6 @@ namespace mooncastle::content
 		class geometryHierarchyStream
 		{
 		public:
-			struct lodOffset
-			{
-				u16 offset;
-				u16 count;
-			};
-
 			DISABLE_COPY_AND_MOVE(geometryHierarchyStream);
 
 			geometryHierarchyStream(u8* const newBuffer, u32 lods = u32_invalid_id) : buffer{ newBuffer }
@@ -88,7 +82,7 @@ namespace mooncastle::content
 			assert(lodCount);
 
 			//Add the sizes of LOD count, thresholds, and LOD offsets to the size of hierarchy.
-			u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(geometryHierarchyStream::lodOffset)) * lodCount };
+			u32 size{ sizeof(u32) + (sizeof(f32) + sizeof(lodOffset)) * lodCount };
 
 			for (u32 lodIndex{ 0 }; lodIndex < lodCount; ++lodIndex)
 			{
@@ -345,5 +339,57 @@ namespace mooncastle::content
 		assert(id::isValid(id));
 
 		return (const compiledShaderPointer)(compiledShaders[id].get());
+	}
+
+	void getSubmeshGPUIDs(id::idType geometryContentID, u32 idCount, id::idType* const gpuIDs)
+	{
+		std::lock_guard lock{ geometryMutex };
+		u8* const pointer{ geometryHierarchies[geometryContentID] };
+
+		if ((uintptr_t)pointer & singleMeshMarker)
+		{
+			assert(idCount == 1);
+			*gpuIDs = gpuIDFromFakePointer(pointer);
+		}
+		else
+		{
+			geometryHierarchyStream stream{ pointer };
+
+			assert([&]() 
+			{
+				const u32 lodCount{ stream.getLODCount() };
+				const lodOffset lodOffset{ stream.getLODOffsets()[lodCount - 1] };
+				const u32 gpuIDCount{ (u32)lodOffset.offset + (u32)lodOffset.count };
+
+				return gpuIDCount == idCount;
+			}());
+
+			memcpy(gpuIDs, stream.getGPUIDs(), sizeof(id::idType) * idCount);
+		}
+	}
+
+	void getLODOffsets(const id::idType* const geometryIDs, const f32* const thresholds, u32 idCount, utl::vector<lodOffset>& offsets)
+	{
+		assert(geometryIDs && thresholds && idCount);
+		assert(offsets.empty());
+
+		std::lock_guard lock{ geometryMutex };
+
+		for (u32 i{ 0 }; i < idCount; ++i)
+		{
+			u8* const pointer{ geometryHierarchies[geometryIDs[i]] };
+
+			if ((uintptr_t)pointer & singleMeshMarker)
+			{
+				assert(idCount == 1);
+				offsets.emplace_back(lodOffset{ 0, 1 });
+			}
+			else
+			{
+				geometryHierarchyStream stream{ pointer };
+				const u32 lod{ stream.lodFromThreshold(thresholds[i]) };
+				offsets.emplace_back(stream.getLODOffsets()[lod]);
+			}
+		}
 	}
 }

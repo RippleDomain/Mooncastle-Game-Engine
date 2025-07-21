@@ -10,24 +10,37 @@ namespace mooncastle::graphics::d3D12::content
 	{
 		struct submeshView
 		{
-			D3D12_VERTEX_BUFFER_VIEW          positionBufferView{};
-			D3D12_VERTEX_BUFFER_VIEW          elementBufferView{};
-			D3D12_INDEX_BUFFER_VIEW           indexBufferView{};
-			D3D_PRIMITIVE_TOPOLOGY            primitiveTopology;
-			u32                               elementType{};
-		};
+			D3D12_VERTEX_BUFFER_VIEW					 positionBufferView{};
+			D3D12_VERTEX_BUFFER_VIEW					 elementBufferView{};
+			D3D12_INDEX_BUFFER_VIEW						 indexBufferView{};
+			D3D_PRIMITIVE_TOPOLOGY						 primitiveTopology;
+			u32											 elementType{};
+		};												 
+														 
+		utl::freeList<ID3D12Resource*>					 submeshBuffers{};
+		utl::freeList<submeshView>						 submeshViews{};
+		std::mutex										 submeshMutex{};
+														 
+		utl::freeList<D3D12Texture>						 textures{};
+		std::mutex										 textureMutex{};
+														 
+		utl::vector<ID3D12RootSignature*>				 rootSignatures{};
+		std::unordered_map<u64, id::idType>				 materialMap{}; //Maps a material's type and flags to its ID.
+		utl::freeList<std::unique_ptr<u8[]>>			 materials{};
+		std::mutex										 materialMutex{};
+														 
+		utl::freeList<renderItem::D3D12RenderItem>		 renderItems;
+		utl::freeList<std::unique_ptr<id::idType[]>>	 renderItemIDs;
+		std::mutex										 renderItemMutex{};
+		utl::vector<ID3D12PipelineState*>				 pipelineStates;
+		std::unordered_map<u64, id::idType>				 psoMap;
+		std::mutex										 psoMutex{};
 
-		utl::freeList<ID3D12Resource*>        submeshBuffers{};
-		utl::freeList<submeshView>            submeshViews{};
-		std::mutex                            submeshMutex{};
-
-		utl::freeList<D3D12Texture>           textures{};
-		std::mutex                            textureMutex{};
-
-		utl::vector<ID3D12RootSignature*>     rootSignatures{};
-		std::unordered_map<u64, id::idType>   materialMap{}; //Maps a material's type and flags to its ID.
-		utl::freeList<std::unique_ptr<u8[]>>  materials{};
-		std::mutex                            materialMutex{};
+		struct
+		{
+			utl::vector<mooncastle::content::lodOffset>	 lodOffsets;
+			utl::vector<id::idType>					     geometryIDs;
+		} frameCache;
 
 		id::idType createRootSignature(materialType::type type, shaderFlags::flags flags);
 
@@ -247,6 +260,10 @@ namespace mooncastle::graphics::d3D12::content
 		return true;
 	}
 
+	/*We only release data that were created as a side-effect to adding resources here,
+	which the user of this module has no control over. The user is obligated to release
+	the rest of the data by calling their respective "remove" functions before to shutting down the renderer.
+	That way we can make sure the book-keeping of content is correct.*/
 	void shutdown()
 	{
 		for (auto& item : rootSignatures)
@@ -255,6 +272,17 @@ namespace mooncastle::graphics::d3D12::content
 			materialMap.clear();
 			rootSignatures.clear();
 		}
+
+		materialMap.clear();
+		rootSignatures.clear();
+
+		for (auto& item : pipelineStates)
+		{
+			core::release(item);
+		}
+
+		psoMap.clear();
+		pipelineStates.clear();
 	}
 
 	namespace submesh
@@ -328,6 +356,28 @@ namespace mooncastle::graphics::d3D12::content
 			core::deferredRelease(submeshBuffers[id]);
 			submeshBuffers.remove(id);
 		}
+
+		void getViews(const id::idType* const gpuIDs, u32 idCount, const viewsCache& cache)
+		{
+			assert(gpuIDs && idCount);
+			assert(cache.positionBuffers && 
+					cache.elementBuffers && 
+					cache.indexElementBufferViews &&
+					cache.primitiveTopologies && 
+					cache.elementsTypes);
+
+			std::lock_guard lock{ submeshMutex };
+
+			for (u32 i{ 0 }; i < idCount; ++i)
+			{
+				const submeshView& view{ submeshViews[gpuIDs[i]] };
+				cache.positionBuffers[i] = view.positionBufferView.BufferLocation;
+				cache.elementBuffers[i] = view.elementBufferView.BufferLocation;
+				cache.indexElementBufferViews[i] = view.indexBufferView;
+				cache.primitiveTopologies[i] = view.primitiveTopology;
+				cache.elementsTypes[i] = view.elementType;
+			}
+		}
 	}
 
 	namespace texture
@@ -373,6 +423,154 @@ namespace mooncastle::graphics::d3D12::content
 		{
 			std::lock_guard lock{ materialMutex };
 			materials.remove(id);
+		}
+
+		void getMaterials(const id::idType* const materialIDs, u32 materialCount, const materialsCache& cache)
+		{
+			assert(materialIDs && materialCount);
+			assert(cache.rootSignatures && cache.materialTypes);
+
+			std::lock_guard lock{ materialMutex };
+
+			for (u32 i{ 0 }; i < materialCount; ++i)
+			{
+				const D3D12MaterialStream stream{ materials[materialIDs[i]].get() };
+				cache.rootSignatures[i] = rootSignatures[stream.getRootSigID()];
+				cache.materialTypes[i] = stream.getMaterialType();
+			}
+		}
+	}
+
+	namespace renderItem
+	{
+		/*Creates a buffer that's basically an array of id::idTypes.
+		buffer[0] = geometryContentID.
+		buffer[1 ... n] = d3d12RenderItemIDs (n is the number of low-level render items which also must be equal the number of submeshes/material IDs).
+		buffer[n + 1] = id::invalidIDd (marks the end of d3d12RenderItemIDs array).*/
+		id::idType add(id::idType entityID, id::idType geometryContentID, u32 materialCount, const id::idType* const materialIDs)
+		{
+			assert(id::isValid(entityID) && id::isValid(geometryContentID));
+			assert(materialCount && materialIDs);
+
+			id::idType* const gpuIDs{ (id::idType* const)alloca(materialCount * sizeof(id::idType)) };
+			mooncastle::content::getSubmeshGPUIDs(geometryContentID, materialCount, gpuIDs);
+
+			submesh::viewsCache viewsCache
+			{
+				(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(materialCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
+				(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(materialCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
+				(D3D12_INDEX_BUFFER_VIEW* const)alloca(materialCount * sizeof(D3D12_INDEX_BUFFER_VIEW)),
+				(D3D12_PRIMITIVE_TOPOLOGY* const)alloca(materialCount * sizeof(D3D12_PRIMITIVE_TOPOLOGY)),
+				(u32* const)alloca(materialCount * sizeof(u32)),
+			};
+
+			submesh::getViews(gpuIDs, materialCount, viewsCache);
+
+			//Tthe list of IDs starts with a geometry ID and ends with an invalid ID to mark the beginning and end of the list.
+			std::unique_ptr<id::idType[]> items{ std::make_unique<id::idType[]>(sizeof(id::idType) * (1 + (u64)materialCount + 1)) };
+			items[0] = geometryContentID;
+			id::idType* const itemIDs{ &items[1] };
+
+			std::lock_guard lock{ renderItemMutex };
+
+			for (u32 i{ 0 }; i < materialCount; ++i)
+			{
+				D3D12RenderItem item{};
+				item.entityID = entityID;
+				item.submeshGPUID = gpuIDs[i];
+				item.materialID = materialIDs[i];
+
+				assert(id::isValid(item.submeshGPUID) && id::isValid(item.materialID));
+
+				itemIDs[i] = renderItems.add(item);
+			}
+
+			//Marks the end of the ID list.
+			itemIDs[materialCount] = id::invalidId;
+
+			return renderItemIDs.add(std::move(items));
+		}
+
+		void remove(id::idType id)
+		{
+			std::lock_guard lock{ renderItemMutex };
+			const id::idType* const itemIDs{ &renderItemIDs[id][1] };
+
+			//The last element in the list of IDs is always an invalid ID.
+			for (u32 i{ 0 }; itemIDs[i] != id::invalidId; ++i)
+			{
+				renderItems.remove(itemIDs[i]);
+			}
+
+			renderItemIDs.remove(id);
+		}
+
+		//This will be called at least once per frame, so it must run fast. Therefore it uses the predefined frameCache structure.
+		void getD3D12RenderItemIDs(const frameInfo& info, utl::vector<id::idType>& d3d12RenderItemIDs)
+		{
+			assert(info.renderItemIDs && info.thresholds && info.renderItemCount);
+			assert(d3d12RenderItemIDs.empty());
+
+			frameCache.lodOffsets.clear();
+			frameCache.geometryIDs.clear();
+
+			const u32 count{ info.renderItemCount };
+			std::lock_guard lock{ renderItemMutex };
+
+			for (u32 i{ 0 }; i < count; ++i)
+			{
+				const id::idType* const buffer{ renderItemIDs[info.renderItemIDs[i]].get() };
+				frameCache.geometryIDs.emplace_back(buffer[0]);
+			}
+
+			mooncastle::content::getLODOffsets(frameCache.geometryIDs.data(), info.thresholds, count, frameCache.lodOffsets);
+
+			assert(frameCache.lodOffsets.size() == count);
+
+			u32 d3d12RenderItemCount{ 0 };
+
+			for (u32 i{ 0 }; i < count; ++i)
+			{
+				d3d12RenderItemCount += frameCache.lodOffsets[i].count;
+			}
+
+			assert(d3d12RenderItemCount);
+
+			//This is grow only, because resize() will only resize the vector if it is too small.
+			d3d12RenderItemIDs.resize(d3d12RenderItemCount);
+
+			u32 itemIndex{ 0 };
+
+			for (u32 i{ 0 }; i < count; ++i)
+			{
+				const id::idType* const item_ids{ &renderItemIDs[info.renderItemIDs[i]][1] };
+				const mooncastle::content::lodOffset& lodOffset{ frameCache.lodOffsets[i] };
+				memcpy(&d3d12RenderItemIDs[itemIndex], &item_ids[lodOffset.offset], sizeof(id::idType) * lodOffset.count);
+				itemIndex += lodOffset.count;
+
+				assert(itemIndex <= d3d12RenderItemCount);
+			}
+
+			assert(itemIndex <= d3d12RenderItemCount);
+		}
+
+		void getItems(const id::idType* const d3d12RenderItemIDs, u32 idCount, const itemsCache& cache)
+		{
+			assert(d3d12RenderItemIDs && idCount);
+			assert(cache.entityIDs && cache.submeshGPUIds && cache.materialIDs && cache.gPassPSOs && cache.depthPSOs);
+
+			std::lock_guard lock1{ renderItemMutex };
+			std::lock_guard lock2{ psoMutex };
+
+			for (u32 i{ 0 }; i < idCount; ++i)
+			{
+				const D3D12RenderItem& item{ renderItems[d3d12RenderItemIDs[i]] };
+				cache.entityIDs[i] = item.entityID;
+				cache.submeshGPUIds[i] = item.submeshGPUID;
+				cache.materialIDs[i] = item.materialID;
+				cache.gPassPSOs[i] = pipelineStates[item.psoID];
+				cache.depthPSOs[i] = pipelineStates[item.depthPSOID];
+			}
 		}
 	}
 }

@@ -33,10 +33,19 @@ namespace mooncastle::content
 		u8	        byteCode;
 	} const * compiledShaderPointer;
 
+	struct lodOffset
+	{
+		u16 offset;
+		u16 count;
+	};
+
 	id::idType createResource(const void* const data, assetType::type type);
 	void destroyResource(id::idType id, assetType::type type);
 
 	id::idType createShader(const u8* shaderData);
 	void destroyShader(id::idType id);
 	compiledShaderPointer getShader(id::idType id);
+
+	void getSubmeshGPUIDs(id::idType geometryContentID, u32 idCount, id::idType* const gpuIDs);
+	void getLODOffsets(const id::idType* const geometryIDs, const f32* const thresholds, u32 idCount, utl::vector<lodOffset>& offsets);
 }
