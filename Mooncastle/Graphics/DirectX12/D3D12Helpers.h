@@ -102,7 +102,146 @@ namespace mooncastle::graphics::d3D12::d3DX
 			{},                                         //BackFace
 			0                                           //DepthBoundsTestEnable
 		};
+
+		const D3D12_DEPTH_STENCIL_DESC1 enabled
+		{
+			1,                                          //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ALL,                 //DepthWriteMask
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,           //DepthFunc
+			0,                                          //StencilEnable
+			0,                                          //StencilReadMask
+			0,                                          //StencilWriteMask
+			{},                                         //FrontFace
+			{},                                         //BackFace
+			0                                           //DepthBoundsTestEnable
+		};
+
+		const D3D12_DEPTH_STENCIL_DESC1 enabledReadonly
+		{
+			1,                                          //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ZERO,                //DepthWriteMask
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,           //DepthFunc
+			0,                                          //StencilEnable
+			0,                                          //StencilReadMask
+			0,                                          //StencilWriteMask
+			{},                                         //FrontFace
+			{},                                         //BackFace
+			0                                           //DepthBoundsTestEnable
+		};
+
+		const D3D12_DEPTH_STENCIL_DESC1 reversed
+		{
+			1,                                          //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ALL,                 //DepthWriteMask
+			D3D12_COMPARISON_FUNC_GREATER_EQUAL,        //DepthFunc
+			0,                                          //StencilEnable
+			0,                                          //StencilReadMask
+			0,                                          //StencilWriteMask
+			{},                                         //FrontFace
+			{},                                         //BackFace
+			0                                           //DepthBoundsTestEnable
+		};
+
+		const D3D12_DEPTH_STENCIL_DESC1 reversedReadonly
+		{
+			1,                                          //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ZERO,                //DepthWriteMask
+			D3D12_COMPARISON_FUNC_GREATER_EQUAL,        //DepthFunc
+			0,                                          //StencilEnable
+			0,                                          //StencilReadMask
+			0,                                          //StencilWriteMask
+			{},                                         //FrontFace
+			{},                                         //BackFace
+			0                                           //DepthBoundsTestEnable
+		};
 	} depthState;
+
+	constexpr struct
+	{
+		const D3D12_BLEND_DESC disabled{
+			0,											//AlphaToCoverageEnable
+			0,											//IndependentBlendEnable
+			{
+				{
+					0,									//BlendEnable
+					0,									//LogicOpEnable
+					D3D12_BLEND_SRC_ALPHA,				//SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
+					D3D12_BLEND_OP_ADD,					//BlendOp
+					D3D12_BLEND_ONE,					//SrcBlendAlpha
+					D3D12_BLEND_ONE,					//DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				//LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
+				},
+
+				{}, {}, {}, {}, {}, {}, {}
+			}
+		};
+
+		const D3D12_BLEND_DESC alphaBlend{
+			0,											//AlphaToCoverageEnable
+			0,											//IndependentBlendEnable
+			{
+				{
+					1,									//BlendEnable
+					0,									//LogicOpEnable
+					D3D12_BLEND_SRC_ALPHA,				//SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
+					D3D12_BLEND_OP_ADD,					//BlendOp
+					D3D12_BLEND_ONE,					//SrcBlendAlpha
+					D3D12_BLEND_ONE,					//DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				//LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
+				},
+
+				{}, {}, {}, {}, {}, {}, {}
+			}
+		};
+
+		const D3D12_BLEND_DESC additive{
+			0,											//AlphaToCoverageEnable
+			0,											//IndependentBlendEnable
+			{
+				{
+					1,									//BlendEnable
+					0,									//LogicOpEnable
+					D3D12_BLEND_ONE,					//SrcBlend
+					D3D12_BLEND_ONE,					//DestBlend
+					D3D12_BLEND_OP_ADD,					//BlendOp
+					D3D12_BLEND_ONE,					//SrcBlendAlpha
+					D3D12_BLEND_ONE,					//DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				//LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
+				},
+
+				{}, {}, {}, {}, {}, {}, {}
+			}
+		};
+
+		const D3D12_BLEND_DESC premultiplied{
+			0,											//AlphaToCoverageEnable
+			0,											//IndependentBlendEnable
+			{
+				{
+					0,									//BlendEnable
+					0,									//LogicOpEnable
+					D3D12_BLEND_ONE,					//SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
+					D3D12_BLEND_OP_ADD,					//BlendOp
+					D3D12_BLEND_ONE,					//SrcBlendAlpha
+					D3D12_BLEND_ONE,					//DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				//LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
+				},
+
+				{}, {}, {}, {}, {}, {}, {}
+			}
+		};
+	} blendState;
 
 	class D3D12ResourceBarrier
 	{
@@ -317,6 +456,34 @@ namespace mooncastle::graphics::d3D12::d3DX
 	PSS(ms, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS, D3D12_SHADER_BYTECODE);
 
 #undef PSS
+
+	struct D3D12PipelineStateSubobjectStream
+	{
+		D3D12PipelineStateSubobject_rootSignature			rootSignature{ nullptr };
+		D3D12PipelineStateSubobject_vs						vs{};
+		D3D12PipelineStateSubobject_ps						ps{};
+		D3D12PipelineStateSubobject_ds						ds{};
+		D3D12PipelineStateSubobject_hs						hs{};
+		D3D12PipelineStateSubobject_gs						gs{};
+		D3D12PipelineStateSubobject_cs						cs{};
+		D3D12PipelineStateSubobject_streamOutput			streamOutput{};
+		D3D12PipelineStateSubobject_blend					blend{ blendState.disabled };
+		D3D12PipelineStateSubobject_sampleMask				sampleMask{ UINT_MAX };
+		D3D12PipelineStateSubobject_rasterizer				rasterizer{ rasterizerState.noCull };
+		D3D12PipelineStateSubobject_inputLayout				inputLayout{};
+		D3D12PipelineStateSubobject_ibStripCutValue			ibStripCutValue{};
+		D3D12PipelineStateSubobject_primitiveTopology		primitiveTopology{};
+		D3D12PipelineStateSubobject_renderTargetFormats		renderTargetFormats{};
+		D3D12PipelineStateSubobject_depthStencilFormat		depthStencilFormat{};
+		D3D12PipelineStateSubobject_sampleDesc				sampleDesc{ {1, 0} };
+		D3D12PipelineStateSubobject_nodeMask				nodeMask{};
+		D3D12PipelineStateSubobject_cachedPSO				cachedPSO{};
+		D3D12PipelineStateSubobject_flags					flags{};
+		D3D12PipelineStateSubobject_depthStencil1			depthStencil1{ depthState.disabled };
+		D3D12PipelineStateSubobject_viewInstancing			viewInstancing{};
+		D3D12PipelineStateSubobject_as						as{};
+		D3D12PipelineStateSubobject_ms						ms{};
+	};
 
 	ID3D12PipelineState* createPipelineState(D3D12_PIPELINE_STATE_STREAM_DESC desc);
 	ID3D12PipelineState* createPipelineState(void* stream, u64 stream_size);

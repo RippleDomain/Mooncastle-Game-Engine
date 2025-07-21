@@ -79,8 +79,9 @@ id::idType createRenderItem(id::idType entityID)
 
 	//Add a render item using the model and its materials.
 	createMaterial();
+	id::idType materials[]{ materialId, materialId, materialId, materialId };
 
-	id::idType itemID{ 0 };
+	id::idType itemID{ graphics::addRenderItem(0, modelId, _countof(materials), &materials[0])};
 	renderItemMap[itemID] = entityID;
 
 	return itemID;
@@ -91,6 +92,8 @@ void destroyRenderItem(id::idType itemID)
 	//Removes the render item from engine (also the game entity).
 	if (id::isValid(itemID))
 	{
+		graphics::removeRenderItem(itemID);
+
 		auto pair = renderItemMap.find(itemID);
 
 		if (pair != renderItemMap.end())

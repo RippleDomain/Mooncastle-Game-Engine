@@ -201,4 +201,7 @@ namespace mooncastle::graphics
 
     id::idType addMaterial(materialInitInfo info);
     void removeMaterial(id::idType id);
+
+	id::idType addRenderItem(id::idType entityID, id::idType geometryContentID, u32 materialCount, const id::idType* const materialIDs);
+	void removeRenderItem(id::idType id);
 }

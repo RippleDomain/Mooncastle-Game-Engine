@@ -9,6 +9,9 @@ namespace mooncastle::graphics::d3D12
 
 namespace mooncastle::graphics::d3D12::gPass
 {
+	constexpr DXGI_FORMAT mainBufferFormat{ DXGI_FORMAT_R16G16B16A16_FLOAT };
+	constexpr DXGI_FORMAT depthBufferFormat{ DXGI_FORMAT_D32_FLOAT };
+
 	struct opaqueRootParameter
 	{
 		enum parameter : u32
