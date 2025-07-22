@@ -243,6 +243,16 @@ namespace mooncastle::graphics::d3D12::d3DX
 		};
 	} blendState;
 
+	constexpr u64 alignSizeForConstantBuffer(u64 size)
+	{
+		return math::alignSizeUp<D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT>(size);
+	}
+
+	constexpr u64 alignSizeForTexture(u64 size)
+	{
+		return math::alignSizeUp<D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT>(size);
+	}
+
 	class D3D12ResourceBarrier
 	{
 	public:

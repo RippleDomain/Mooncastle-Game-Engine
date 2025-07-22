@@ -51,7 +51,7 @@ namespace mooncastle::graphics::d3D12::gPass
 
 			//Creates the main buffer.
 			{
-				d3D12TextureInitInfo info{};
+				D3D12TextureInitInfo info{};
 				info.desc = &desc;
 				info.initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 				info.clearValue.Format = desc.Format;
@@ -65,7 +65,7 @@ namespace mooncastle::graphics::d3D12::gPass
 
 			//Creates the depth buffer.
 			{
-				d3D12TextureInitInfo info{};
+				D3D12TextureInitInfo info{};
 				info.desc = &desc;
 				info.initialState = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				info.clearValue.Format = desc.Format;

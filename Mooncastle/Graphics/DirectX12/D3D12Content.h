@@ -45,15 +45,6 @@ namespace mooncastle::graphics::d3D12::content
 
 	namespace renderItem
 	{
-		struct D3D12RenderItem
-		{
-			id::idType entityID;
-			id::idType submeshGPUID;
-			id::idType materialID;
-			id::idType psoID;
-			id::idType depthPSOID;
-		};
-
 		struct itemsCache
 		{
 			id::idType* const			 entityIDs;

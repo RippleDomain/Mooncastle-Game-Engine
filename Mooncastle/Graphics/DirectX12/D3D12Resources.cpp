@@ -116,7 +116,7 @@ namespace mooncastle::graphics::d3D12
         const u32 index{ (u32)(handle.cpu.ptr - cpuStart.ptr) / descriptorSize };
         assert(handle.index == index);
 
-        const u32 frameIndex{ core::currentFrameIndex() };
+        const u32 frameIndex{ core::getCurrentFrameIndex() };
         deferredFreeIndices[frameIndex].push_back(index);
         core::setDeferredReleasesFlag();
 
@@ -124,9 +124,59 @@ namespace mooncastle::graphics::d3D12
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// D3D12 BUFFER
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    D3D12Buffer::D3D12Buffer(D3D12BufferInitInfo info, bool isCPUAccessible)
+    {
+        assert(!buffer && info.size && info.alignment);
+
+        size = static_cast<u32>(math::alignSizeUp(info.size, info.alignment));
+        buffer = d3DX::createBuffer(size, info.data, isCPUAccessible, info.initialState, info.flags, info.heap, info.allocationInfo.Offset);
+        gpuAddress = buffer->GetGPUVirtualAddress();
+
+        NAME_D3D12_OBJECT_INDEXED(buffer, size, L"D3D12 Buffer - Size");
+    }
+
+    void D3D12Buffer::release()
+    {
+        core::deferredRelease(buffer);
+        gpuAddress = 0;
+        size = 0;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// CONSTANT BUFFER
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    constantBuffer::constantBuffer(D3D12BufferInitInfo info) : buffer{ info, true }
+    {
+        NAME_D3D12_OBJECT_INDEXED(getBuffer(), getSize(), L"Constant Buffer - Size");
+
+        D3D12_RANGE range{};
+        DXCall(getBuffer()->Map(0, &range, (void**)(&cpuAddress)));
+        assert(cpuAddress);
+    }
+
+    u8* const constantBuffer::allocate(u32 size)
+    {
+        std::lock_guard lock{ constantBufferMutex };
+        const u32 alignedSize{ static_cast<u32>(d3DX::alignSizeForConstantBuffer(size)) };
+
+        assert(cpuOffset + alignedSize <= buffer.getSize());
+
+        if (cpuOffset + alignedSize <= buffer.getSize())
+        {
+            u8* const address{ cpuAddress + cpuOffset };
+            cpuOffset += alignedSize;
+            return address;
+        }
+
+        return nullptr;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// D3D12 TEXTURE
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    D3D12Texture::D3D12Texture(d3D12TextureInitInfo info)
+    D3D12Texture::D3D12Texture(D3D12TextureInitInfo info)
     {
         auto* const device{ core::device() };
         assert(device);
@@ -168,7 +218,7 @@ namespace mooncastle::graphics::d3D12
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// RENDER TEXTURE
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    D3D12RenderTexture::D3D12RenderTexture(d3D12TextureInitInfo info) : texture{ info }
+    D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info) : texture{ info }
     {
         assert(info.desc);
 
@@ -206,7 +256,7 @@ namespace mooncastle::graphics::d3D12
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// DEPTH BUFFER
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    D3D12DepthBuffer::D3D12DepthBuffer(d3D12TextureInitInfo info)
+    D3D12DepthBuffer::D3D12DepthBuffer(D3D12TextureInitInfo info)
     {
         assert(info.desc);
         const DXGI_FORMAT dsvFormat{ info.desc->Format };

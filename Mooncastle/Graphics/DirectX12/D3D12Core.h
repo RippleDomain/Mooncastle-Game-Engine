@@ -42,20 +42,22 @@ namespace mooncastle::graphics::d3D12::core
         }
     }
 
-    ID3D12Device *const device();
+    [[nodiscard]] ID3D12Device *const device();
 
-    descriptorHeap& getRTVHeap();
-    descriptorHeap& getDSVHeap();
-    descriptorHeap& getSRVHeap();
-    descriptorHeap& getUAVHeap();
+    [[nodiscard]] descriptorHeap& getRTVHeap();
+    [[nodiscard]] descriptorHeap& getDSVHeap();
+    [[nodiscard]] descriptorHeap& getSRVHeap();
+    [[nodiscard]] descriptorHeap& getUAVHeap();
 
-    u32 currentFrameIndex();
+    [[nodiscard]] constantBuffer& getConstantBuffer();
+
+    [[nodiscard]] u32 getCurrentFrameIndex();
     void setDeferredReleasesFlag();
 
-    surface createSurface(platform::window window);
+    [[nodiscard]] surface createSurface(platform::window window);
     void removeSurface(surfaceId id);
     void resizeSurface(surfaceId id, u32, u32);
-    u32 surfaceWidth(surfaceId id);
-    u32 surfaceHeight(surfaceId id);
+    [[nodiscard]] u32 surfaceWidth(surfaceId id);
+    [[nodiscard]] u32 surfaceHeight(surfaceId id);
     void renderSurface(surfaceId id);
 }

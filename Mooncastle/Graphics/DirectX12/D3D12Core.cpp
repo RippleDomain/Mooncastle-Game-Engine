@@ -187,6 +187,7 @@ namespace mooncastle::graphics::d3D12::core
         D3D12Command               gfxCommand;
         surfaceCollection          surfaces;
         d3DX::D3D12ResourceBarrier resourceBarriers{};
+        constantBuffer             constantBuffers[frameBufferCount];
         descriptorHeap             rtvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV };
         descriptorHeap             dsvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_DSV };
         descriptorHeap             srvDescriptorHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
@@ -268,7 +269,7 @@ namespace mooncastle::graphics::d3D12::core
     {
         void deferredRelease(IUnknown* resource)
         {
-            const u32 frameIndex{ currentFrameIndex() };
+            const u32 frameIndex{ getCurrentFrameIndex() };
             std::lock_guard lock{ deferredReleasesMutex };
             deferredReleases[frameIndex].push_back(resource);
 
@@ -343,6 +344,12 @@ namespace mooncastle::graphics::d3D12::core
         result &= uavDescriptorHeap.initialize(512, false);
         if (!result) return failedInit();
 
+        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        {
+            new (&constantBuffers[i]) constantBuffer{ constantBuffer::getDefaultInitInfo(1024 * 1024) };
+            NAME_D3D12_OBJECT_INDEXED(constantBuffers[i].getBuffer(), i, L"Global Constant Buffer");
+        }
+
         new (&gfxCommand)D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
         if (!gfxCommand.getCommandQueue()) return failedInit();
 
@@ -380,6 +387,11 @@ namespace mooncastle::graphics::d3D12::core
         upload::shutdown();
 
         release(dxgiFactory);
+
+        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        {
+            constantBuffers[i].release();
+        }
 
         rtvDescriptorHeap.processDeferredFree(0);
         dsvDescriptorHeap.processDeferredFree(0);
@@ -438,14 +450,19 @@ namespace mooncastle::graphics::d3D12::core
         return uavDescriptorHeap;
     }
 
-    u32 currentFrameIndex()
+    constantBuffer& getConstantBuffer()
+    {
+        return constantBuffers[getCurrentFrameIndex()];
+    }
+
+    u32 getCurrentFrameIndex()
     {
         return gfxCommand.getFrameIndex();
     }
 
     void setDeferredReleasesFlag()
     {
-        deferredReleaseFlag[currentFrameIndex()] = 1;
+        deferredReleaseFlag[getCurrentFrameIndex()] = 1;
     }
 
     surface createSurface(platform::window window)
@@ -486,10 +503,13 @@ namespace mooncastle::graphics::d3D12::core
         gfxCommand.beginFrame();
         ID3D12GraphicsCommandList* commandList{ gfxCommand.getCommandList() };
 
-        const u32 frame_idx{ currentFrameIndex() };
-        if (deferredReleaseFlag[frame_idx])
+        const u32 frameIndex{ getCurrentFrameIndex() };
+        constantBuffer& cBuffer{ constantBuffers[frameIndex] };
+        cBuffer.clear();
+
+        if (deferredReleaseFlag[frameIndex])
         {
-            processDeferredReleases(frame_idx);
+            processDeferredReleases(frameIndex);
         }
 
         const D3D12Surface& surface{ surfaces[id] };

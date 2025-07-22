@@ -21,7 +21,16 @@ namespace mooncastle::graphics::d3D12::content
 			D3D12_INDEX_BUFFER_VIEW						 indexBufferView{};
 			D3D_PRIMITIVE_TOPOLOGY						 primitiveTopology;
 			u32											 elementType{};
-		};												 
+		};		
+
+		struct D3D12RenderItem
+		{
+			id::idType entityID;
+			id::idType submeshGPUID;
+			id::idType materialID;
+			id::idType psoID;
+			id::idType depthPSOID;
+		};
 														 
 		utl::freeList<ID3D12Resource*>					 submeshBuffers{};
 		utl::freeList<submeshView>						 submeshViews{};
@@ -35,7 +44,7 @@ namespace mooncastle::graphics::d3D12::content
 		utl::freeList<std::unique_ptr<u8[]>>			 materials{};
 		std::mutex										 materialMutex{};
 														 
-		utl::freeList<renderItem::D3D12RenderItem>		 renderItems;
+		utl::freeList<D3D12RenderItem>					 renderItems;
 		utl::freeList<std::unique_ptr<id::idType[]>>	 renderItemIDs;
 		std::mutex										 renderItemMutex{};
 		utl::vector<ID3D12PipelineState*>				 pipelineStates;

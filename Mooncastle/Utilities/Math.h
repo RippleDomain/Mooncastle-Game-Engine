@@ -6,13 +6,13 @@
 namespace mooncastle::math 
 {
     template<typename T>
-    constexpr T clamp(T value, T min, T max)
+    [[nodiscard]] constexpr T clamp(T value, T min, T max)
     {
         return (value < min) ? min : (value > max) ? max : value;
     }
 
 	template<u32 bits>
-	constexpr u32 packUnitFloat(f32 f)
+	[[nodiscard]] constexpr u32 packUnitFloat(f32 f)
 	{
 		static_assert(bits <= sizeof(u32) * 8);
 		assert(f >= 0.f && f <= 1.f);
@@ -22,7 +22,7 @@ namespace mooncastle::math
 	}
 
 	template<u32 bits>
-	constexpr f32 unpackToUnitFloat(u32 i)
+	[[nodiscard]] constexpr f32 unpackToUnitFloat(u32 i)
 	{
 		static_assert(bits <= sizeof(u32) * 8);
 		assert(i < ((u32)1 << bits));
@@ -32,7 +32,7 @@ namespace mooncastle::math
 	}
 
 	template<u32 bits>
-	constexpr u32 packFloat(f32 f, f32 min, f32 max)
+	[[nodiscard]] constexpr u32 packFloat(f32 f, f32 min, f32 max)
 	{
 		assert(min < max);
 		assert(f <= max && f >= min);
@@ -42,7 +42,7 @@ namespace mooncastle::math
 	}
 
 	template<u32 bits>
-	constexpr f32 unpackToFloat(u32 i, f32 min, f32 max)
+	[[nodiscard]] constexpr f32 unpackToFloat(u32 i, f32 min, f32 max)
 	{
 		assert(min < max);
 		return unpackToUnitFloat<bits>(i) * (max - min) + min;
@@ -50,7 +50,7 @@ namespace mooncastle::math
 
 	//Align by rounding up. Will result in a multiple of "alignment".
 	template<u64 alignment>
-	constexpr u64 alignSizeUp(u32 size)
+	[[nodiscard]] constexpr u64 alignSizeUp(u32 size)
 	{
 		static_assert(alignment, "Alignment must be non-zero.");
 		constexpr u32 mask{ alignment - 1 };
@@ -61,11 +61,31 @@ namespace mooncastle::math
 
 	//Align by rounding down. Will result in a multiple of "alignment".
 	template<u64 alignment>
-	constexpr u64 alignSizeDown(u32 size)
+	[[nodiscard]] constexpr u64 alignSizeDown(u32 size)
 	{
 		static_assert(alignment, "Alignment must be non-zero.");
 		constexpr u32 mask{ alignment - 1 };
 		static_assert(!(alignment & mask), "Alignment should be a power of 2.");
+
+		return (size & ~mask);
+	}
+
+	//Align by rounding up. Will result in a multiple of "alignment".
+	[[nodiscard]] constexpr u64 alignSizeUp(u32 size, u64 alignment)
+	{
+		assert(alignment && "Alignment must be non-zero.");
+		const u64 mask{ alignment - 1 };
+		assert(!(alignment & mask) && "Alignment should be a power of 2.");
+
+		return ((size + mask) & ~mask);
+	}
+
+	//Align by rounding down. Will result in a multiple of "alignment".
+	[[nodiscard]] constexpr u64 alignSizeDown(u32 size, u64 alignment)
+	{
+		assert(alignment && "Alignment must be non-zero.");
+		const u64 mask{ alignment - 1 };
+		assert(!(alignment & mask) && "Alignment should be a power of 2.");
 
 		return (size & ~mask);
 	}
