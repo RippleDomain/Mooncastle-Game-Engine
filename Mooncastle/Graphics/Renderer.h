@@ -9,11 +9,8 @@ namespace mooncastle::graphics
 	{
 		id::idType*		renderItemIDs{ nullptr };
 		f32*			thresholds{ nullptr };
-		u64				lightSetKey{ 0 };
-		f32				lastFrameTime{ 0.f };
-		f32				averageFrameTime{ 0.f };
 		u32				renderItemCount{ 0 };
-		cameraId		camerID{ id::invalidId };
+		cameraId		cameraID{ id::invalidId };
 	};
 
     DEFINE_TYPED_ID(surfaceId);
@@ -29,7 +26,7 @@ namespace mooncastle::graphics
         void resize(u32 width, u32 height) const;
         u32 width() const;
         u32 height() const;
-        void render() const;
+        void render(frameInfo info) const;
     private:
         surfaceId id{ id::invalidId };
     };

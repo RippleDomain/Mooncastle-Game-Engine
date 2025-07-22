@@ -36,8 +36,8 @@ namespace mooncastle::graphics::d3D12::gPass
 	[[nodiscard]] const D3D12DepthBuffer& getDepthBuffer();
 
 	void setSize(math::u32v2 size);
-	void depthPrepass(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& info);
-	void render(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& info);
+	void depthPrepass(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& d3D12Info);
+	void render(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& d3D12Info);
 
 	void addTransitionsForDepthPrepass(d3DX::D3D12ResourceBarrier& barriers);
 	void addTransitionsForDepthGPass(d3DX::D3D12ResourceBarrier& barriers);

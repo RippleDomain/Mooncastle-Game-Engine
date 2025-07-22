@@ -5,10 +5,18 @@
 
 namespace mooncastle::graphics::d3D12
 {
+    namespace camera { class D3D12Camera; }
+
     struct D3D12FrameInfo
     {
-        u32 surfaceWidth{};
-        u32 surfaceHeight{};
+        const frameInfo*			info{ nullptr };
+        camera::D3D12Camera*		camera{ nullptr };
+        D3D12_GPU_VIRTUAL_ADDRESS	globalShaderData{ 0 };
+        u32							surfaceWidth{ 0 };
+        u32							surfaceHeight{ 0 };
+        id::idType					lightCullingID{ id::invalidId };
+        u32							frameIndex{ 0 };
+        f32							deltaTime{ 16.7f };
     };
 }
 
@@ -59,5 +67,5 @@ namespace mooncastle::graphics::d3D12::core
     void resizeSurface(surfaceId id, u32, u32);
     [[nodiscard]] u32 surfaceWidth(surfaceId id);
     [[nodiscard]] u32 surfaceHeight(surfaceId id);
-    void renderSurface(surfaceId id);
+    void renderSurface(surfaceId id, frameInfo info);
 }

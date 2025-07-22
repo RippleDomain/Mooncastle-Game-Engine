@@ -233,6 +233,7 @@ namespace mooncastle::graphics::d3D12::content
 			{
 				using params = gPass::opaqueRootParameter;
 				d3DX::D3D12RootParameter parameters[params::count]{};
+				parameters[params::globalShaderData].asCBV(D3D12_SHADER_VISIBILITY_ALL, 0);
 
 				D3D12_SHADER_VISIBILITY bufferVisibility{};
 				D3D12_SHADER_VISIBILITY dataVisibility{};

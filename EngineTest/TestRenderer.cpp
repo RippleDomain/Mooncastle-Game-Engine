@@ -58,22 +58,23 @@ void jointTestWorkers()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-struct
+struct cameraSurface
 {
 	gameEntity::entity entity{};
 	graphics::camera camera{};
-} camera;
+	graphics::renderSurface surface{};
+};
 
 id::idType itemID{ id::invalidId };
 id::idType modelID{ id::invalidId };
-graphics::renderSurface surfaces[4];
+cameraSurface surfaces[4];
 
 timeIt timer{};
 
 bool resized{ false };
 bool isRestarting{ false };
 
-void removeRenderSurface(graphics::renderSurface& surface);
+void removeCameraSurface(cameraSurface& surface);
 bool testInitialize();
 void testShutdown();
 
@@ -92,11 +93,11 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		
 		for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 		{
-			if (surfaces[i].window.isValid()) 
+			if (surfaces[i].surface.window.isValid()) 
 			{
-				if (surfaces[i].window.isClosed())
+				if (surfaces[i].surface.window.isClosed())
 				{
-					removeRenderSurface(surfaces[i]);
+					removeCameraSurface(surfaces[i]);
 				}
 				else
 				{
@@ -138,7 +139,7 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 		for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 		{
-			if (win.getId() == surfaces[i].window.getId())
+			if (win.getId() == surfaces[i].surface.window.getId())
 			{
 				if (toggleFullscreen)
 				{
@@ -151,7 +152,8 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				}
 				else
 				{
-					surfaces[i].surface.resize(win.width(), win.height());
+					surfaces[i].surface.surface.resize(win.width(), win.height());
+					surfaces[i].camera.aspectRatio((f32)win.width() / win.height());
 					resized = false;
 				}
 
@@ -164,14 +166,20 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 //Method that creates a game entity in order to test the camera.
-gameEntity::entity createOneGameEntity()
+gameEntity::entity createOneGameEntity(bool isCamera)
 {
 	transform::initInfo transformInfo{};
-	math::v3a rot{ 0, 3.14f, 0 };
+	math::v3a rot{ 0, isCamera ? 3.14f : 0.f, 0 };
 	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
 	math::v4a rotQuaternion;
 	DirectX::XMStoreFloat4A(&rotQuaternion, quat);
 	memcpy(&transformInfo.rotation[0], &rotQuaternion.x, sizeof(transformInfo.rotation));
+
+	if (isCamera)
+	{
+		transformInfo.position[1] = 1.f;
+		transformInfo.position[2] = 3.f;
+	}
 
 	gameEntity::entityInfo entityInfo{};
 	entityInfo.transform = &transformInfo;
@@ -204,25 +212,35 @@ bool readFile(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size
 	return true;
 }
 
-void createRenderSurface(graphics::renderSurface& surface, platform::windowInitInfo info)
+void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
-	surface.window = platform::createWindow(&info);
-	surface.surface = graphics::createSurface(surface.window);
+	surface.surface.window = platform::createWindow(&info);
+	surface.surface.surface = graphics::createSurface(surface.surface.window);
+	surface.entity = createOneGameEntity(true);
+	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
+	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
 
-void removeRenderSurface(graphics::renderSurface& surface)
+void removeCameraSurface(cameraSurface& surface)
 {
-	graphics::renderSurface temp{ surface };
+	cameraSurface temp{ surface };
 	surface = {};
 
-	if (temp.surface.isValid())
+	if (temp.surface.surface.isValid())
 	{
-		graphics::removeSurface(temp.surface.getId());
+		graphics::removeSurface(temp.surface.surface.getId());
 	}
-
-	if (temp.window.isValid())
+	if (temp.surface.window.isValid())
 	{
-		platform::removeWindow(temp.window.getId());
+		platform::removeWindow(temp.surface.window.getId());
+	}
+	if (temp.camera.isValid())
+	{
+		graphics::removeCamera(temp.camera.getId());
+	}
+	if (temp.entity.isValid())
+	{
+		gameEntity::remove(temp.entity.getId());
 	}
 }
 
@@ -244,14 +262,14 @@ bool testInitialize()
 		{&winProc, nullptr, L"Render Window 1", 500, 100, 400, 800},
 		{&winProc, nullptr, L"Render Window 2", 550, 150, 800, 400},
 		{&winProc, nullptr, L"Render Window 3", 600, 200, 400, 400},
-		{&winProc, nullptr, L"Render Window 4", 650, 250, 800, 600},
+		{&winProc, nullptr, L"Render Window 4", 650, 250, 800, 600}
 	};
 
 	static_assert(_countof(info) == _countof(surfaces));
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
-		createRenderSurface(surfaces[i], info[i]);
+		createCameraSurface(surfaces[i], info[i]);
 	}
 
 	//Loads the test model.
@@ -262,13 +280,7 @@ bool testInitialize()
 	if (!id::isValid(modelID)) return false;
 
 	initTestWorkers(bufferTestWorker);
-
-	camera.entity = createOneGameEntity();
-	camera.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo(camera.entity.getId()));
-	assert(camera.camera.isValid());
-
-	itemID = createRenderItem(createOneGameEntity().getId());
-
+	itemID = createRenderItem(createOneGameEntity(false).getId());
 	isRestarting = false;
 
 	return true;
@@ -277,10 +289,6 @@ bool testInitialize()
 void testShutdown()
 {
 	destroyRenderItem(itemID);
-
-	if (camera.camera.isValid()) graphics::removeCamera(camera.camera.getId());
-	if (camera.entity.isValid()) gameEntity::remove(camera.entity.getId());
-
 	jointTestWorkers();
 
 	if (id::isValid(modelID))
@@ -290,7 +298,7 @@ void testShutdown()
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
-		removeRenderSurface(surfaces[i]);
+		removeCameraSurface(surfaces[i]);
 	}
 
 	graphics::shutdown();
@@ -309,9 +317,10 @@ void engineTest::run()
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
-		if (surfaces[i].surface.isValid())
+		if (surfaces[i].surface.surface.isValid())
 		{
-			surfaces[i].surface.render();
+			f32 threshold{ 10 };
+			surfaces[i].surface.surface.render({ &itemID, &threshold, 1, surfaces[i].camera.getId() });
 		}
 	}
 

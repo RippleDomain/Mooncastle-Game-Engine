@@ -43,6 +43,6 @@ namespace mooncastle::graphics
 		id::idType entityId() const;
 
 	private:
-		cameraId id{ 0 };
+		cameraId id{ id::invalidId };
 	};
 }

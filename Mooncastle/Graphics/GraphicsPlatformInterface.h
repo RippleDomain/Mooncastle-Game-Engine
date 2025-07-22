@@ -17,7 +17,7 @@ namespace mooncastle::graphics
             void (*resize)(surfaceId id, u32 width, u32 height);
             u32(*getWidth)(surfaceId id);
             u32(*getHeight)(surfaceId id);
-            void (*render)(surfaceId id);
+            void (*render)(surfaceId id, frameInfo);
         } surface;
 
         struct

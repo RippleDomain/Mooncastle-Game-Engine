@@ -91,7 +91,7 @@ namespace mooncastle::utl
 		}
 
 	private:
-		constexpr bool alreadyRemoved(u32 id)
+		constexpr bool alreadyRemoved(u32 id) const
 		{
 			//When sizeof(T) == sizeof(u32) we cannot test if the item was already removed.
 			if constexpr (sizeof(T) > sizeof(u32))

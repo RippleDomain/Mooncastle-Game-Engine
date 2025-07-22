@@ -273,10 +273,10 @@ namespace mooncastle::graphics
         return gfx.surface.getHeight(id);
     }
 
-    void surface::render() const
+    void surface::render(frameInfo info) const
     {
         assert(isValid());
-        gfx.surface.render(id);
+        gfx.surface.render(id, info);
     }
 
     id::idType addSubmesh(const u8*& data)

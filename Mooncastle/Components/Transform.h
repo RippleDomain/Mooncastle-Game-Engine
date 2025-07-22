@@ -13,4 +13,5 @@ namespace mooncastle::transform
 
 	component create(initInfo info, gameEntity::entity entity);
 	void remove(component c);
+	void getTransformMatrices(const gameEntity::entityId id, math::m4x4& world, math::m4x4& inverseWorld);
 }

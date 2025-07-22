@@ -5,6 +5,8 @@
 #include "D3D12PostProcess.h"
 #include "D3D12Upload.h"
 #include "D3D12Content.h"
+#include "D3D12Camera.h"
+#include "Shaders/SharedTypes.h"
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 606; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
@@ -263,6 +265,43 @@ namespace mooncastle::graphics::d3D12::core
                 resources.clear();
             }
         }
+
+        D3D12FrameInfo getD3D12FrameInfo(const frameInfo& info, constantBuffer& cbuffer, const D3D12Surface& surface, u32 frameIndex, f32 deltaTime)
+        {
+            camera::D3D12Camera& camera{ camera::get(info.cameraID) };
+            camera.update();
+
+            hlsl::GlobalShaderData data{};
+
+            using namespace DirectX;
+
+            XMStoreFloat4x4A(&data.View, camera.getView());
+            XMStoreFloat4x4A(&data.Projection, camera.getProjection());
+            XMStoreFloat4x4A(&data.InvProjection, camera.getInverseProjection());
+            XMStoreFloat4x4A(&data.InvViewProjection, camera.getInverseViewProjection());
+            XMStoreFloat3(&data.CameraPosition, camera.getPosition());
+            XMStoreFloat3(&data.CameraDirection, camera.getDirection());
+            data.ViewWidth = surface.getViewport().Width;
+            data.ViewHeight = surface.getViewport().Height;
+            data.DeltaTime = deltaTime;
+
+            //Be careful not to read from this buffer. Reads are very slow.
+            hlsl::GlobalShaderData* const shaderData{ cbuffer.allocate<hlsl::GlobalShaderData>() };
+            memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
+
+            D3D12FrameInfo d3D12Info
+            {
+                &info,
+                &camera,
+                cbuffer.getBufferGPUAddress(shaderData),
+                surface.getWidth(),
+                surface.getHeight(),
+                frameIndex,
+                deltaTime
+            };
+
+            return d3D12Info;
+        }
     }
 
     namespace detail 
@@ -495,7 +534,7 @@ namespace mooncastle::graphics::d3D12::core
         return surfaces[id].getHeight();
     }
 
-    void renderSurface(surfaceId id)
+    void renderSurface(surfaceId id, frameInfo info)
     {
         /*Wait for the GPU to finish with the command allocator and
         reset the allocator once it is done.
@@ -516,13 +555,9 @@ namespace mooncastle::graphics::d3D12::core
 
         ID3D12Resource* const currentBackBuffer{ surface.getBackBuffer() };
 
-        D3D12FrameInfo frameInfo
-        {
-            surface.getWidth(),
-            surface.getHeight()
-        };
+        const D3D12FrameInfo d3D12Info{ getD3D12FrameInfo(info, cBuffer, surface, frameIndex, 16.7f) };
 
-        gPass::setSize({ frameInfo.surfaceWidth, frameInfo.surfaceHeight });
+        gPass::setSize({ d3D12Info.surfaceWidth, d3D12Info.surfaceHeight });
 
         d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
 
@@ -540,20 +575,20 @@ namespace mooncastle::graphics::d3D12::core
         gPass::addTransitionsForDepthPrepass(barriers);
         barriers.apply(commandList);
         gPass::setRenderTargetsForDepthPrepass(commandList);
-        gPass::depthPrepass(commandList, frameInfo);
+        gPass::depthPrepass(commandList, d3D12Info);
 
         //Geometry and lighting pass.
         gPass::addTransitionsForDepthGPass(barriers);
         barriers.apply(commandList);
         gPass::setRenderTargetsForGPass(commandList);
-        gPass::render(commandList, frameInfo);
+        gPass::render(commandList, d3D12Info);
 
         d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         //Post-processing. Will write to the current back buffer.
         gPass::addTransitionsForPostProcess(barriers);
         barriers.apply(commandList);
-        ppfx::postProcess(commandList, surface.getRTV());
+        ppfx::postProcess(commandList, d3D12Info, surface.getRTV());
 
         //After post-processing.
         d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

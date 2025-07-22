@@ -81,7 +81,7 @@ id::idType createRenderItem(id::idType entityID)
 	createMaterial();
 	id::idType materials[]{ materialId, materialId, materialId, materialId };
 
-	id::idType itemID{ graphics::addRenderItem(0, modelId, _countof(materials), &materials[0])};
+	id::idType itemID{ graphics::addRenderItem(entityID, modelId, _countof(materials), &materials[0])};
 	renderItemMap[itemID] = entityID;
 
 	return itemID;

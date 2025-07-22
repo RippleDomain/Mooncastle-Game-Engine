@@ -1,34 +1,140 @@
 #include "D3D12Core.h"
 #include "D3D12GPass.h"
 #include "D3D12Shaders.h"
+#include "D3D12Content.h"
+#include "D3D12Camera.h"
+#include "Shaders/SharedTypes.h"
+#include "Components/Transform.h"
+#include "Components/Entity.h"
 
 namespace mooncastle::graphics::d3D12::gPass
 {
 	namespace
 	{
-		struct gPassRootParamIndices 
-		{
-			enum : u32 
-			{
-				rootConstants,
-				count
-			};
-		};
-
 		constexpr math::u32v2 initialDimensions{ 100, 100 };
 
 		D3D12RenderTexture    gPassMainBuffer{};
 		D3D12DepthBuffer      gPassDepthBuffer{};
 		math::u32v2           dimensions{ initialDimensions };
 
-		ID3D12RootSignature*  gPassRootSignature{ nullptr };
-		ID3D12PipelineState*  gPassPSO{ nullptr };
-
 #if _DEBUG
 		constexpr f32          clearValue[4]{ 0.5f, 0.5f, 0.5f, 1.f };
 #else
 		constexpr f32          clearValue[4]{ };
 #endif
+
+		struct gPassCache
+		{
+			utl::vector<id::idType> d3D12RenderItemIDs;
+
+			//When adding new arrays, do not forget to update resize() and structSize.
+			id::idType*					entityIDs{ nullptr };
+			id::idType*					submeshGPUIDs{ nullptr };
+			id::idType*					materialIDs{ nullptr };
+			ID3D12PipelineState**		gPassPipelineStates{ nullptr };
+			ID3D12PipelineState**		depthPipelineStates{ nullptr };
+			ID3D12RootSignature**		rootSignatures{ nullptr };
+			materialType::type*			materialTypes{ nullptr };
+			D3D12_GPU_VIRTUAL_ADDRESS*	positionBuffers{ nullptr };
+			D3D12_GPU_VIRTUAL_ADDRESS*	elementBuffers{ nullptr };
+			D3D12_INDEX_BUFFER_VIEW*	indexBufferViews{ nullptr };
+			D3D12_PRIMITIVE_TOPOLOGY*	primitiveTopologies{ nullptr };
+			u32*						elementTypes{ nullptr };
+			D3D12_GPU_VIRTUAL_ADDRESS*	perObjectData{ nullptr };
+
+			constexpr content::renderItem::itemsCache getItemsCache() const
+			{
+				return 
+				{
+					entityIDs,
+					submeshGPUIDs,
+					materialIDs,
+					gPassPipelineStates,
+					depthPipelineStates
+				};
+			}
+
+			constexpr content::submesh::viewsCache getViewsCache() const
+			{
+				return 
+				{
+					positionBuffers,
+					elementBuffers,
+					indexBufferViews,
+					primitiveTopologies,
+					elementTypes
+				};
+			}
+
+			constexpr content::material::materialsCache getMaterialsCache() const
+			{
+				return 
+				{
+					rootSignatures,
+					materialTypes
+				};
+			}
+
+			constexpr u32 getSize() const
+			{
+				return (u32)d3D12RenderItemIDs.size();
+			}
+
+			constexpr void clear()
+			{
+				d3D12RenderItemIDs.clear();
+			}
+
+			constexpr void resize()
+			{
+				const u64 itemsCount{ d3D12RenderItemIDs.size() };
+				const u64 newSize{ itemsCount * structSize };
+				const u64 oldSize{ buffer.size() };
+
+				if (newSize > oldSize)
+				{
+					buffer.resize(newSize);
+				}
+
+				if (newSize != oldSize)
+				{
+					entityIDs = (id::idType*)buffer.data();
+					submeshGPUIDs = (id::idType*)(&entityIDs[itemsCount]);
+					materialIDs = (id::idType*)(&submeshGPUIDs[itemsCount]);
+					gPassPipelineStates = (ID3D12PipelineState**)(&materialIDs[itemsCount]);
+					depthPipelineStates = (ID3D12PipelineState**)(&gPassPipelineStates[itemsCount]);
+					rootSignatures = (ID3D12RootSignature**)(&depthPipelineStates[itemsCount]);
+					materialTypes = (materialType::type*)(&rootSignatures[itemsCount]);
+					positionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&materialTypes[itemsCount]);
+					elementBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&positionBuffers[itemsCount]);
+					indexBufferViews = (D3D12_INDEX_BUFFER_VIEW*)(&elementBuffers[itemsCount]);
+					primitiveTopologies = (D3D12_PRIMITIVE_TOPOLOGY*)(&indexBufferViews[itemsCount]);
+					elementTypes = (u32*)(&primitiveTopologies[itemsCount]);
+					perObjectData = (D3D12_GPU_VIRTUAL_ADDRESS*)(&elementTypes[itemsCount]);
+				}
+			}
+
+		private:
+			constexpr static u32 structSize
+			{
+				sizeof(id::idType) +				// entityIDs
+				sizeof(id::idType) +				// submeshIDs
+				sizeof(id::idType) +				// materialIDs
+				sizeof(ID3D12PipelineState*) +		// gPassPipelineStates
+				sizeof(ID3D12PipelineState*) +		// depthPipelineStates
+				sizeof(ID3D12RootSignature*) +		// rootSignatures
+				sizeof(materialType::type) +		// materialTypes
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + // positionBuffers
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + // elementBuffers
+				sizeof(D3D12_INDEX_BUFFER_VIEW) +	// indexBufferViews
+				sizeof(D3D12_PRIMITIVE_TOPOLOGY) +	// primitiveTopologies
+				sizeof(u32) +						// element_types
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS)	// perObjectData
+			};
+
+			utl::vector<u8> buffer;
+
+		} frameCache;
 
 		bool createBuffers(math::u32v2 size)
 		{
@@ -69,7 +175,7 @@ namespace mooncastle::graphics::d3D12::gPass
 				info.desc = &desc;
 				info.initialState = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				info.clearValue.Format = desc.Format;
-				info.clearValue.DepthStencil.Depth = 0.f;
+				info.clearValue.DepthStencil.Depth = 1.f;
 				info.clearValue.DepthStencil.Stencil = 0;
 
 				gPassDepthBuffer = D3D12DepthBuffer{ info };
@@ -81,50 +187,85 @@ namespace mooncastle::graphics::d3D12::gPass
 			return gPassMainBuffer.getResource() && gPassDepthBuffer.getResource();
 		}
 
-		bool createGPassPSOAndRootSignature()
+		void fillPerObjectData(constantBuffer& cBuffer, const D3D12FrameInfo& d3D12Info)
 		{
-			assert(!gPassRootSignature && !gPassPSO);
+			const gPassCache& cache{ frameCache };
+			const u32 renderItemsCount{ (u32)cache.getSize() };
+			id::idType currentEntityID{ id::invalidId };
+			hlsl::PerObjectData* currentDataPtr{ nullptr };
+			constantBuffer& cbuffer{ core::getConstantBuffer() };
 
-			//Creates GPass root signature.
-			using index = gPassRootParamIndices;
-			d3DX::D3D12RootParameter parameters[index::count]{};
-			parameters[0].asConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-			d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], index::count };
-			rootSignature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-			gPassRootSignature = rootSignature.create();
-			assert(gPassRootSignature);
+			using namespace DirectX;
 
-			NAME_D3D12_OBJECT(gPassRootSignature, L"GPass Root Signature");
-
-			//Creates GPass PSO.
-			struct gPassStream 
+			for (u32 i{ 0 }; i < renderItemsCount; ++i)
 			{
-				d3DX::D3D12PipelineStateSubobject_rootSignature       rootSignature{ gPassRootSignature };
-				d3DX::D3D12PipelineStateSubobject_vs                  vs{ shaders::getEngineShader(shaders::engineShader::fullscreenTriangleVS) };
-				d3DX::D3D12PipelineStateSubobject_ps                  ps{ shaders::getEngineShader(shaders::engineShader::fillColorPS) };
-				d3DX::D3D12PipelineStateSubobject_primitiveTopology   primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
-				d3DX::D3D12PipelineStateSubobject_renderTargetFormats renderTargetFormats;
-				d3DX::D3D12PipelineStateSubobject_depthStencilFormat  depthStencilFormat{ depthBufferFormat };
-				d3DX::D3D12PipelineStateSubobject_rasterizer          rasterizer{ d3DX::rasterizerState.noCull };
-				d3DX::D3D12PipelineStateSubobject_depthStencil1       depth{ d3DX::depthState.disabled };
-			} stream;
+				if (currentEntityID != cache.entityIDs[i])
+				{
+					currentEntityID = cache.entityIDs[i];
+					hlsl::PerObjectData data{};
+					transform::getTransformMatrices(gameEntity::entityId{ currentEntityID }, data.World, data.InvWorld);
+					XMMATRIX world{ XMLoadFloat4x4(&data.World) };
+					XMMATRIX wvp{ XMMatrixMultiply(world, d3D12Info.camera->getViewProjection()) };
+					XMStoreFloat4x4(&data.WorldViewProjection, wvp);
 
-			D3D12_RT_FORMAT_ARRAY rtfArray{};
-			rtfArray.NumRenderTargets = 1;
-			rtfArray.RTFormats[0] = mainBufferFormat;
+					currentDataPtr = cbuffer.allocate<hlsl::PerObjectData>();
+					memcpy(currentDataPtr, &data, sizeof(hlsl::PerObjectData));
+				}
 
-			stream.renderTargetFormats = rtfArray;
+				assert(currentDataPtr);
+				cache.perObjectData[i] = cbuffer.getBufferGPUAddress(currentDataPtr);
+			}
+		}
 
-			gPassPSO = d3DX::createPipelineState(&stream, sizeof(stream));
-			NAME_D3D12_OBJECT(gPassPSO, L"GPass Pipeline State Object");
+		void setRootParams(ID3D12GraphicsCommandList *const commandList, u32 cacheIndex)
+		{
+			gPassCache& cache{ frameCache };
 
-			return gPassRootSignature && gPassPSO;
+			assert(cacheIndex < cache.getSize());
+
+			const materialType::type materialType{ cache.materialTypes[cacheIndex] };
+
+			switch (materialType)
+			{
+			case materialType::opaque:
+			{
+				using params = opaqueRootParameter;
+
+				commandList->SetGraphicsRootShaderResourceView(params::positionbBuffer, cache.positionBuffers[cacheIndex]);
+				commandList->SetGraphicsRootShaderResourceView(params::elementBuffer, cache.elementBuffers[cacheIndex]);
+				commandList->SetGraphicsRootConstantBufferView(params::perobjectData, cache.perObjectData[cacheIndex]);
+			}
+			break;
+			}
+		}
+
+		void prepareFrame(const D3D12FrameInfo& d3D12Info)
+		{
+			assert(d3D12Info.info && d3D12Info.camera);
+			assert(d3D12Info.info->renderItemIDs && d3D12Info.info->renderItemCount);
+
+			gPassCache& cache{ frameCache };
+			cache.clear();
+
+			using namespace content;
+
+			renderItem::getD3D12RenderItemIDs(*d3D12Info.info, cache.d3D12RenderItemIDs);
+			cache.resize();
+			const u32 itemCount{ cache.getSize() };
+			const renderItem::itemsCache itemsCache{ cache.getItemsCache() };
+			renderItem::getItems(cache.d3D12RenderItemIDs.data(), itemCount, itemsCache);
+
+			const submesh::viewsCache viewsCache{ cache.getViewsCache() };
+			submesh::getViews(itemsCache.submeshGPUIds, itemCount, viewsCache);
+
+			const material::materialsCache materialsCache{ cache.getMaterialsCache() };
+			material::getMaterials(itemsCache.materialIDs, itemCount, materialsCache);
 		}
 	}
 
 	bool initialize()
 	{
-		return createBuffers(initialDimensions) && createGPassPSOAndRootSignature();
+		return createBuffers(initialDimensions);
 	}
 
 	void shutdown()
@@ -132,8 +273,6 @@ namespace mooncastle::graphics::d3D12::gPass
 		gPassMainBuffer.release();
 		gPassDepthBuffer.release();
 		dimensions = initialDimensions;
-		core::release(gPassRootSignature);
-		core::release(gPassPSO);
 	}
 
 	const D3D12RenderTexture& getMainBuffer()
@@ -157,31 +296,77 @@ namespace mooncastle::graphics::d3D12::gPass
 		}
 	}
 
-	void depthPrepass(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& info)
+	void depthPrepass(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& d3D12Info)
 	{
+		prepareFrame(d3D12Info);
 
+		constantBuffer& cBuffer{ core::getConstantBuffer() };
+		fillPerObjectData(cBuffer, d3D12Info);
+
+		const gPassCache& cache{ frameCache };
+		const u32 itemsCount{ cache.getSize() };
+
+		ID3D12RootSignature* currentRootSig{ nullptr };
+		ID3D12PipelineState* currentPipelineState{ nullptr };
+
+		for (u32 i{ 0 }; i < itemsCount; ++i)
+		{
+			if (currentRootSig != cache.rootSignatures[i])
+			{
+				currentRootSig = cache.rootSignatures[i];
+				commandList->SetGraphicsRootSignature(currentRootSig);
+				commandList->SetGraphicsRootConstantBufferView(opaqueRootParameter::globalShaderData, d3D12Info.globalShaderData);
+			}
+
+			if (currentPipelineState != cache.depthPipelineStates[i])
+			{
+				currentPipelineState = cache.depthPipelineStates[i];
+				commandList->SetPipelineState(currentPipelineState);
+			}
+
+			setRootParams(commandList, i);
+
+			const D3D12_INDEX_BUFFER_VIEW& ibv{ cache.indexBufferViews[i] };
+			const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+
+			commandList->IASetIndexBuffer(&ibv);
+			commandList->IASetPrimitiveTopology(cache.primitiveTopologies[i]);
+			commandList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+		}
 	}
 
-	void render(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& info)
+	void render(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& d3D12Info)
 	{
-		commandList->SetGraphicsRootSignature(gPassRootSignature);
-		commandList->SetPipelineState(gPassPSO);
+		const gPassCache& cache{ frameCache };
+		const u32 itemsCount{ cache.getSize() };
 
-		static u32 frame{ 0 };
+		ID3D12RootSignature* currentRootSig{ nullptr };
+		ID3D12PipelineState* currentPipelineState{ nullptr };
 
-		struct 
+		for (u32 i{ 0 }; i < itemsCount; ++i)
 		{
-			f32 width;
-			f32 height;
-			u32 frame;
-		} constants{ (f32)info.surfaceWidth, (f32)info.surfaceHeight, ++frame };
+			if (currentRootSig != cache.rootSignatures[i])
+			{
+				currentRootSig = cache.rootSignatures[i];
+				commandList->SetGraphicsRootSignature(currentRootSig);
+				commandList->SetGraphicsRootConstantBufferView(opaqueRootParameter::globalShaderData, d3D12Info.globalShaderData);
+			}
 
-		using index = gPassRootParamIndices;
+			if (currentPipelineState != cache.gPassPipelineStates[i])
+			{
+				currentPipelineState = cache.gPassPipelineStates[i];
+				commandList->SetPipelineState(currentPipelineState);
+			}
 
-		commandList->SetGraphicsRoot32BitConstants(index::rootConstants, 3, &constants, 0);
+			setRootParams(commandList, i);
 
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		commandList->DrawInstanced(3, 1, 0, 0);
+			const D3D12_INDEX_BUFFER_VIEW& ibv{ cache.indexBufferViews[i] };
+			const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+
+			commandList->IASetIndexBuffer(&ibv);
+			commandList->IASetPrimitiveTopology(cache.primitiveTopologies[i]);
+			commandList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+		}
 	}
 
 	void addTransitionsForDepthPrepass(d3DX::D3D12ResourceBarrier& barriers)
@@ -207,7 +392,7 @@ namespace mooncastle::graphics::d3D12::gPass
 	void setRenderTargetsForDepthPrepass(ID3D12GraphicsCommandList* commandList)
 	{
 		const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gPassDepthBuffer.getDSV() };
-		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0.f, 0, 0, nullptr);
+		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 		commandList->OMSetRenderTargets(0, nullptr, 0, &dsv);
 	}
 
