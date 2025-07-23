@@ -244,6 +244,7 @@ namespace mooncastle::graphics::d3D12::camera
 
 		if (isDirty)
 		{
+			//nearZ and farZ are swapped because we use inverse depth buffer in D3D12 renderer.
 			projection = (projectionType == graphics::camera::perspective)
 				? XMMatrixPerspectiveFovRH(fieldOfView * XM_PI, aspectRatio, farZ, nearZ)
 				: XMMatrixOrthographicRH(viewWidth, viewHeight, farZ, nearZ);

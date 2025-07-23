@@ -318,6 +318,9 @@ namespace mooncastle::graphics::d3D12::content
 
 		psoId createPSO(id::idType materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 elementType)
 		{
+			std::lock_guard lock{ materialMutex };
+			const D3D12MaterialStream material{ materials[materialID].get() };
+
 			constexpr u64 alignedStreamSize{ math::alignSizeUp<sizeof(u64)>(sizeof(d3DX::D3D12PipelineStateSubobjectStream)) };
 			u8* const streamPointer{ (u8* const)alloca(alignedStreamSize) };
 			ZeroMemory(streamPointer, alignedStreamSize);
@@ -325,56 +328,50 @@ namespace mooncastle::graphics::d3D12::content
 			new (streamPointer) d3DX::D3D12PipelineStateSubobjectStream{};
 
 			d3DX::D3D12PipelineStateSubobjectStream& stream{ *(d3DX::D3D12PipelineStateSubobjectStream* const)streamPointer };
+
+			D3D12_RT_FORMAT_ARRAY renderTargetArray{};
+			renderTargetArray.NumRenderTargets = 1;
+			renderTargetArray.RTFormats[0] = gPass::mainBufferFormat;
+
+			stream.renderTargetFormats = renderTargetArray;
+			stream.rootSignature = rootSignatures[material.getRootSigID()];
+			stream.primitiveTopology = getD3DPrimitiveTopologyType(primitiveTopology);
+			stream.depthStencilFormat = gPass::depthBufferFormat;
+			stream.rasterizer = d3DX::rasterizerState.backfaceCull;
+			stream.depthStencil1 = d3DX::depthState.enabledReadonly;
+			stream.blend = d3DX::blendState.disabled;
+
+			const shaderFlags::flags flags{ material.getShaderFlags() };
+			D3D12_SHADER_BYTECODE shaders[shaderType::count]{};
+			u32 shaderIndex{ 0 };
+
+			for (u32 i{ 0 }; i < shaderType::count; ++i)
 			{
-				std::lock_guard lock{ materialMutex };
-				const D3D12MaterialStream material{ materials[materialID].get() };
-				D3D12_RT_FORMAT_ARRAY renderTargetArray{};
-
-				renderTargetArray.NumRenderTargets = 1;
-				renderTargetArray.RTFormats[0] = gPass::mainBufferFormat;
-
-				stream.renderTargetFormats = renderTargetArray;
-				stream.rootSignature = rootSignatures[material.getRootSigID()];
-				stream.primitiveTopology = getD3DPrimitiveTopologyType(primitiveTopology);
-				stream.depthStencilFormat = gPass::depthBufferFormat;
-				stream.rasterizer = d3DX::rasterizerState.backfaceCull;
-				stream.depthStencil1 = d3DX::depthState.reversedReadonly;
-				stream.blend = d3DX::blendState.disabled;
-
-				const shaderFlags::flags flags{ material.getShaderFlags() };
-				D3D12_SHADER_BYTECODE shaders[shaderType::count]{};
-				u32 shaderIndex{ 0 };
-
-				for (u32 i{ 0 }; i < shaderType::count; ++i)
+				if (flags & (1 << i))
 				{
-					if (flags & (1 << i))
-					{
-						//Each type of shader may have keys that are generated from different properties of the submesh or material.
-						mooncastle::content::compiledShaderPointer shader{ mooncastle::content::getShader(material.getShaderIDs()[shaderIndex]) };
-						assert(shader);
+					mooncastle::content::compiledShaderPointer shader{ mooncastle::content::getShader(material.getShaderIDs()[shaderIndex]) };
+					assert(shader);
 
-						shaders[i].pShaderBytecode = shader->getByteCode();
-						shaders[i].BytecodeLength = shader->getByteCodeSize();
-						++shaderIndex;
-					}
+					shaders[i].pShaderBytecode = shader->getByteCode();
+					shaders[i].BytecodeLength = shader->getByteCodeSize();
+					++shaderIndex;
 				}
-
-				stream.vs = shaders[shaderType::vertex];
-				stream.ps = shaders[shaderType::pixel];
-				stream.ds = shaders[shaderType::domain];
-				stream.hs = shaders[shaderType::hull];
-				stream.gs = shaders[shaderType::geometry];
-				stream.cs = shaders[shaderType::compute];
-				stream.as = shaders[shaderType::amplification];
-				stream.ms = shaders[shaderType::mesh];
 			}
+
+			stream.vs = shaders[shaderType::vertex];
+			stream.ps = shaders[shaderType::pixel];
+			stream.ds = shaders[shaderType::domain];
+			stream.hs = shaders[shaderType::hull];
+			stream.gs = shaders[shaderType::geometry];
+			stream.cs = shaders[shaderType::compute];
+			stream.as = shaders[shaderType::amplification];
+			stream.ms = shaders[shaderType::mesh];
 
 			psoId idPair{};
 			idPair.gPassPSOID = createPSOIfNecessary(streamPointer, alignedStreamSize, false);
 
 			stream.ps = D3D12_SHADER_BYTECODE{};
-			stream.depthStencil1 = d3DX::depthState.reversed;
-
+			stream.depthStencil1 = d3DX::depthState.enabled;
 			idPair.depthPSOID = createPSOIfNecessary(streamPointer, alignedStreamSize, true);
 
 			return idPair;

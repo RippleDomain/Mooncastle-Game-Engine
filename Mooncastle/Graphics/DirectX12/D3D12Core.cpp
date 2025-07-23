@@ -585,8 +585,6 @@ namespace mooncastle::graphics::d3D12::core
         gPass::setRenderTargetsForGPass(commandList);
         gPass::render(commandList, d3D12Info);
 
-        //d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
         //Post-processing. Will write to the current back buffer.
         barriers.add(currentBackBuffer,
             D3D12_RESOURCE_STATE_PRESENT,
