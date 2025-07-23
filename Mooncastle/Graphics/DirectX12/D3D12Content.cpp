@@ -261,14 +261,10 @@ namespace mooncastle::graphics::d3D12::content
 				}
 
 				parameters[params::globalShaderData].asCBV(D3D12_SHADER_VISIBILITY_ALL, 0);
-				parameters[params::perobjectData].asCBV(dataVisibility, 1);
-				parameters[params::positionbBuffer].asSRV(bufferVisibility, 0);
+				parameters[params::perObjectData].asCBV(dataVisibility, 1);
+				parameters[params::positionBuffer].asSRV(bufferVisibility, 0);
 				parameters[params::elementBuffer].asSRV(bufferVisibility, 1);
 				parameters[params::srvIndices].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
-				parameters[params::directionalLights].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 3);
-				parameters[params::cullableLights].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 4);
-				parameters[params::lightGrid].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
-				parameters[params::lightIndexlist].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
 
 				rootSignature = d3DX::D3D12RootSignatureDescription{ &parameters[0], _countof(parameters), getRootSignatureFlags(flags) }.create();
 			}
@@ -534,7 +530,7 @@ namespace mooncastle::graphics::d3D12::content
 			shaerFlags::flags	flags;
 			id::idType			rootSignatureID;
 			u32					textureCount;
-			id::idType			shader_ids[shaderCount];
+			id::idType			shaderIDs[shaderCount];
 			id::idType			textureIDs[textureCount;
 			u32*				descriptorIndices[textureCount];
 		} D3D12Material*/

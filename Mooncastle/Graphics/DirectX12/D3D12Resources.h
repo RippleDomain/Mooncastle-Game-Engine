@@ -86,6 +86,7 @@ namespace mooncastle::graphics::d3D12 {
 		constexpr D3D12Buffer& operator=(D3D12Buffer&& o)
 		{
 			assert(this != &o);
+
 			if (this != &o)
 			{
 				release();

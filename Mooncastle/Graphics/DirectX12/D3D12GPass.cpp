@@ -150,10 +150,10 @@ namespace mooncastle::graphics::d3D12::gPass
 			desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 			desc.Format = mainBufferFormat;
 			desc.Height = size.y;
+			desc.Width = size.x;
 			desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 			desc.MipLevels = 0; //Makes space for all MIP levels.
 			desc.SampleDesc = { 1, 0 };
-			desc.Width = size.x;
 
 			//Creates the main buffer.
 			{
@@ -193,7 +193,6 @@ namespace mooncastle::graphics::d3D12::gPass
 			const u32 renderItemsCount{ (u32)cache.getSize() };
 			id::idType currentEntityID{ id::invalidId };
 			hlsl::PerObjectData* currentDataPtr{ nullptr };
-			constantBuffer& cbuffer{ core::getConstantBuffer() };
 
 			using namespace DirectX;
 
@@ -208,16 +207,16 @@ namespace mooncastle::graphics::d3D12::gPass
 					XMMATRIX wvp{ XMMatrixMultiply(world, d3D12Info.camera->getViewProjection()) };
 					XMStoreFloat4x4(&data.WorldViewProjection, wvp);
 
-					currentDataPtr = cbuffer.allocate<hlsl::PerObjectData>();
+					currentDataPtr = cBuffer.allocate<hlsl::PerObjectData>();
 					memcpy(currentDataPtr, &data, sizeof(hlsl::PerObjectData));
 				}
 
 				assert(currentDataPtr);
-				cache.perObjectData[i] = cbuffer.getBufferGPUAddress(currentDataPtr);
+				cache.perObjectData[i] = cBuffer.getBufferGPUAddress(currentDataPtr);
 			}
 		}
 
-		void setRootParams(ID3D12GraphicsCommandList *const commandList, u32 cacheIndex)
+		void setRootParams(ID3D12GraphicsCommandList* const commandList, u32 cacheIndex)
 		{
 			gPassCache& cache{ frameCache };
 
@@ -231,9 +230,9 @@ namespace mooncastle::graphics::d3D12::gPass
 			{
 				using params = opaqueRootParameter;
 
-				commandList->SetGraphicsRootShaderResourceView(params::positionbBuffer, cache.positionBuffers[cacheIndex]);
+				commandList->SetGraphicsRootShaderResourceView(params::positionBuffer, cache.positionBuffers[cacheIndex]);
 				commandList->SetGraphicsRootShaderResourceView(params::elementBuffer, cache.elementBuffers[cacheIndex]);
-				commandList->SetGraphicsRootConstantBufferView(params::perobjectData, cache.perObjectData[cacheIndex]);
+				commandList->SetGraphicsRootConstantBufferView(params::perObjectData, cache.perObjectData[cacheIndex]);
 			}
 			break;
 			}
@@ -371,22 +370,31 @@ namespace mooncastle::graphics::d3D12::gPass
 
 	void addTransitionsForDepthPrepass(d3DX::D3D12ResourceBarrier& barriers)
 	{
+		barriers.add(gPassMainBuffer.getResource(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
 		barriers.add(gPassDepthBuffer.getResource(),
-			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	}
 
 	void addTransitionsForDepthGPass(d3DX::D3D12ResourceBarrier& barriers)
 	{
-		barriers.add(gPassMainBuffer.getResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		barriers.add(gPassMainBuffer.getResource(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
 		barriers.add(gPassDepthBuffer.getResource(),
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,
-			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
 	void addTransitionsForPostProcess(d3DX::D3D12ResourceBarrier& barriers)
 	{
-		barriers.add(gPassMainBuffer.getResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		barriers.add(gPassMainBuffer.getResource(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	}
 
 	void setRenderTargetsForDepthPrepass(ID3D12GraphicsCommandList* commandList)

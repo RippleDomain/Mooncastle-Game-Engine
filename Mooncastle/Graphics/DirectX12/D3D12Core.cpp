@@ -278,15 +278,16 @@ namespace mooncastle::graphics::d3D12::core
             XMStoreFloat4x4A(&data.View, camera.getView());
             XMStoreFloat4x4A(&data.Projection, camera.getProjection());
             XMStoreFloat4x4A(&data.InvProjection, camera.getInverseProjection());
+            XMStoreFloat4x4A(&data.ViewProjection, camera.getViewProjection());
             XMStoreFloat4x4A(&data.InvViewProjection, camera.getInverseViewProjection());
             XMStoreFloat3(&data.CameraPosition, camera.getPosition());
             XMStoreFloat3(&data.CameraDirection, camera.getDirection());
-            data.ViewWidth = surface.getViewport().Width;
-            data.ViewHeight = surface.getViewport().Height;
+            data.ViewWidth = surface.getWidth();
+            data.ViewHeight = surface.getHeight();
             data.DeltaTime = deltaTime;
 
             //Be careful not to read from this buffer. Reads are very slow.
-            hlsl::GlobalShaderData* const shaderData{ cbuffer.allocate<hlsl::GlobalShaderData>() };
+            hlsl::GlobalShaderData *const shaderData{ cbuffer.allocate<hlsl::GlobalShaderData>() };
             memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
 
             D3D12FrameInfo d3D12Info
@@ -294,8 +295,8 @@ namespace mooncastle::graphics::d3D12::core
                 &info,
                 &camera,
                 cbuffer.getBufferGPUAddress(shaderData),
-                surface.getWidth(),
-                surface.getHeight(),
+                data.ViewWidth,
+                data.ViewHeight,
                 frameIndex,
                 deltaTime
             };
@@ -560,18 +561,19 @@ namespace mooncastle::graphics::d3D12::core
         gPass::setSize({ d3D12Info.surfaceWidth, d3D12Info.surfaceHeight });
 
         d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
-
-        //TODO: Implement split barriers sometime (if necessary under realistic workload).
-        //Testing was done on fractal rendering and plain colors but no valuable difference was observed.
         
         //Records commands.
-        ID3D12DescriptorHeap* const heaps[]{ srvDescriptorHeap.getHeap() };
+        ID3D12DescriptorHeap *const heaps[]{ srvDescriptorHeap.getHeap() };
 
         commandList->SetDescriptorHeaps(1, &heaps[0]);
         commandList->RSSetViewports(1, &surface.getViewport());
         commandList->RSSetScissorRects(1, &surface.getScissorRect());
 
         //Depth prepass.
+		barriers.add(currentBackBuffer,
+            D3D12_RESOURCE_STATE_PRESENT,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
         gPass::addTransitionsForDepthPrepass(barriers);
         barriers.apply(commandList);
         gPass::setRenderTargetsForDepthPrepass(commandList);
@@ -583,9 +585,13 @@ namespace mooncastle::graphics::d3D12::core
         gPass::setRenderTargetsForGPass(commandList);
         gPass::render(commandList, d3D12Info);
 
-        d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        //d3DX::transitionResource(commandList, currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         //Post-processing. Will write to the current back buffer.
+        barriers.add(currentBackBuffer,
+            D3D12_RESOURCE_STATE_PRESENT,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
         gPass::addTransitionsForPostProcess(barriers);
         barriers.apply(commandList);
         ppfx::postProcess(commandList, d3D12Info, surface.getRTV());

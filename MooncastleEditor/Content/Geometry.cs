@@ -488,7 +488,6 @@ namespace MooncastleEditor.Content
                     _lodGroups.Add(lodGroup);
                 }
 
-                //TODO: Remove later!
                 //PackForEngine();
             }
             catch (Exception ex)
@@ -607,7 +606,6 @@ namespace MooncastleEditor.Content
 
             Debug.Assert(data?.Length > 0);
 
-            //TODO: Remove later!
             using (var fs = new FileStream(@"..\..\EngineTest\model.model", FileMode.Create))
             {
                 fs.Write(data, 0, data.Length);

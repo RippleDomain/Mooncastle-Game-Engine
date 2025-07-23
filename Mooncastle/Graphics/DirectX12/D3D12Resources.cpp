@@ -159,7 +159,7 @@ namespace mooncastle::graphics::d3D12
     u8* const constantBuffer::allocate(u32 size)
     {
         std::lock_guard lock{ constantBufferMutex };
-        const u32 alignedSize{ static_cast<u32>(d3DX::alignSizeForConstantBuffer(size)) };
+        const u32 alignedSize{ (u32)d3DX::alignSizeForConstantBuffer(size) };
 
         assert(cpuOffset + alignedSize <= buffer.getSize());
 

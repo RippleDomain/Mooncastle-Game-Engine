@@ -28,8 +28,8 @@ namespace mooncastle::transform
 			XMStoreFloat4x4(&toWorld[index], world);
 
 			world.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-			XMMATRIX inverse_world{ XMMatrixInverse(nullptr, world) };
-			XMStoreFloat4x4(&invWorld[index], inverse_world);
+			XMMATRIX inverseWorld{ XMMatrixInverse(nullptr, world) };
+			XMStoreFloat4x4(&invWorld[index], inverseWorld);
 
 			hasTransform[index] = 1;
 		}

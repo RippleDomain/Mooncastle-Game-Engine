@@ -17,14 +17,10 @@ namespace mooncastle::graphics::d3D12::gPass
 		enum parameter : u32
 		{
 			globalShaderData,
-			perobjectData,
-			positionbBuffer,
+			positionBuffer,
 			elementBuffer,
 			srvIndices,
-			directionalLights,
-			cullableLights,
-			lightGrid,
-			lightIndexlist,
+			perObjectData,
 			count
 		};
 	};
