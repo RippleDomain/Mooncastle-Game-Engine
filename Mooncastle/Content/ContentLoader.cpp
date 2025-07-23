@@ -115,7 +115,8 @@ namespace mooncastle::content
         for (u32 entity_index{ 0 }; entity_index < numEntities; ++entity_index)
         {
             gameEntity::entityInfo info{};
-            const u32 entityType{ *at }; at += su32;
+            //const u32 entityType{ *at }; 
+            at += su32;
             const u32 numComponents{ *at }; at += su32;
             if (!numComponents) return false;
 

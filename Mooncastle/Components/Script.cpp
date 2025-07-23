@@ -1,14 +1,22 @@
 #include "Script.h"
 #include "Entity.h"
+#include "Transform.h"
+
+#define USE_TRANSFORM_CACHE_MAP 1
 
 namespace mooncastle::script 
 {
 	namespace
 	{
-		utl::vector<detail::script_ptr>     entityScripts;
-		utl::vector<id::idType>             idMapping;
-		utl::vector<id::generationType>     generations;
-		utl::deque <scriptId>               freeIds;
+		utl::vector<detail::script_ptr>			entityScripts;
+		utl::vector<id::idType>					idMapping;
+		utl::vector<id::generationType>			generations;
+		utl::deque <scriptId>					freeIds;
+		utl::vector<transform::componentCache>	transformCache;
+
+#if USE_TRANSFORM_CACHE_MAP
+		std::unordered_map<id::idType, u32>     cacheMap;
+#endif
 
 		using scriptRegistery = std::unordered_map<size_t, detail::script_creator>;
 
@@ -37,6 +45,56 @@ namespace mooncastle::script
 			assert(generations[index] == id::generation(id));
 			return (generations[index] == id::generation(id)) && (entityScripts[idMapping[index]]) && (entityScripts[idMapping[index]])->isValid();
 		};
+
+#if USE_TRANSFORM_CACHE_MAP
+		transform::componentCache* const getCachePointer(const gameEntity::entity* const entity)
+		{
+			assert(gameEntity::isAlive((*entity).getId()));
+
+			const transform::transformId id{ (*entity).transform().getId() };
+
+			u32 index{ u32_invalid_id };
+			auto pair = cacheMap.try_emplace(id, id::invalidId);
+
+			//cacheMap didn't have an entry for this ID, so we create a new entry.
+			if (pair.second)
+			{
+				index = (u32)transformCache.size();
+				transformCache.emplace_back();
+				transformCache.back().id = id;
+				cacheMap[id] = index;
+			}
+			else
+			{
+				index = cacheMap[id];
+			}
+
+			assert(index < transformCache.size());
+
+			return &transformCache[index];
+		}
+#else
+		transform::componentCache* const getCachePointer(const gameEntity::entity* const entity)
+		{
+			assert(gameEntity::isAlive((*entity).getId()));
+
+			const transform::transformId id{ (*entity).transform().getId() };
+
+			for (auto& cache : transformCache)
+			{
+				if (cache.id == id)
+				{
+					return &cache;
+				}
+			}
+
+			transformCache.emplace_back();
+			transformCache.back().id = id;
+
+			return &transformCache.back();
+		}
+#endif
+
 	}
 
 	namespace detail
@@ -116,6 +174,44 @@ namespace mooncastle::script
 		{
 			ptr->update(dt);
 		}
+
+		if (transformCache.size())
+		{
+			transform::update(transformCache.data(), (u32)transformCache.size());
+			transformCache.clear();
+
+#if USE_TRANSFORM_CACHE_MAP
+			cacheMap.clear();
+#endif
+		}
+	}
+
+	void entityScript::setRotation(const gameEntity::entity *const entity, math::v4 rotationQuaternion)
+	{
+		transform::componentCache& cache{ *getCachePointer(entity) };
+		cache.flags |= transform::componentFlags::rotation;
+		cache.rotation = rotationQuaternion;
+	}
+
+	void entityScript::setOrientation(const gameEntity::entity *const entity, math::v3 orientationVector)
+	{
+		transform::componentCache& cache{ *getCachePointer(entity) };
+		cache.flags |= transform::componentFlags::orientation;
+		cache.orientation = orientationVector;
+	}
+
+	void entityScript::setPosition(const gameEntity::entity *const entity, math::v3 position)
+	{
+		transform::componentCache& cache{ *getCachePointer(entity) };
+		cache.flags |= transform::componentFlags::position;
+		cache.position = position;
+	}
+
+	void entityScript::setScale(const gameEntity::entity *const entity, math::v3 scale)
+	{
+		transform::componentCache& cache{ *getCachePointer(entity) };
+		cache.flags |= transform::componentFlags::scale;
+		cache.scale = scale;
 	}
 }
 

@@ -63,7 +63,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
 {
     PixelOut psOut;
 
-    psOut.Color = float4(0.f, 0.f, 0.f, 1.f);
+    psOut.Color = float4(psIn.WorldNormal, 1.f);
 
     return psOut;
 }

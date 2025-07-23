@@ -4,6 +4,7 @@
 #include "Platform/Platform.h"
 #include "Components/Entity.h"
 #include "Components/Transform.h"
+#include "Components/Script.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/DirectX12/D3D12Core.h"
 #include "Content/ContentToEngine.h"
@@ -14,6 +15,33 @@
 #if TEST_RENDERER
 
 using namespace mooncastle;
+
+class rotatorScript;
+REGISTER_SCRIPT(rotatorScript);
+
+class rotatorScript : public script::entityScript
+{
+public:
+	constexpr explicit rotatorScript(gameEntity::entity entity) : script::entityScript{ entity } {}
+
+	void beginPlay() override {}
+
+	void update(float dt) override
+	{
+		angle += 0.25f * dt * math::tau;
+		if (angle > math::tau) angle -= math::tau;
+
+		math::v3a rot{ 0.f, angle, 0.f };
+		DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+
+		math::v4 rotQuat{};
+		DirectX::XMStoreFloat4(&rotQuat, quat);
+		setRotation(rotQuat);
+	}
+
+private:
+	f32 angle{ 0.f };
+};
 
 //////////////// Multithreading test worker span code ////////////////
 #define ENABLE_TEST_WORKERS 0

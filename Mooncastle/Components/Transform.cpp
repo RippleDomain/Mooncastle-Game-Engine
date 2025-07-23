@@ -12,6 +12,8 @@ namespace mooncastle::transform
 		utl::vector<math::v3>	positions;
 		utl::vector<math::v3>	scales;
 		utl::vector<u8>			hasTransform;
+		utl::vector<u8>			changesDuringFrame;
+		u8						readWriteFlag;
 
 		void calculateTransformMatrices(id::idType index)
 		{
@@ -46,6 +48,36 @@ namespace mooncastle::transform
 
 			return orientation;
 		}
+
+		void setRotation(transformId id, const math::v4& rotationQuaternion)
+		{
+			const u32 index{ id::index(id) };
+			rotations[index] = rotationQuaternion;
+			orientations[index] = calculateOrientation(rotationQuaternion);
+			hasTransform[index] = 0;
+			changesDuringFrame[index] |= componentFlags::rotation;
+		}
+
+		void setOrientation(transformId id, const math::v3&)
+		{
+			
+		}
+
+		void setPosition(transformId id, const math::v3& position)
+		{
+			const u32 index{ id::index(id) };
+			positions[index] = position;
+			hasTransform[index] = 0;
+			changesDuringFrame[index] |= componentFlags::position;
+		}
+
+		void setScale(transformId id, const math::v3& scale)
+		{
+			const u32 index{ id::index(id) };
+			scales[index] = scale;
+			hasTransform[index] = 0;
+			changesDuringFrame[index] |= componentFlags::scale;
+		}
 	}
 
 	component create(initInfo info, gameEntity::entity entity) 
@@ -61,6 +93,7 @@ namespace mooncastle::transform
 			positions[entityIndex] = math::v3{ info.position };
 			scales[entityIndex] = math::v3{ info.scale };
 			hasTransform[entityIndex] = 0;
+			changesDuringFrame[entityIndex] = (u8)componentFlags::all;
 		}
 		else
 		{
@@ -73,6 +106,7 @@ namespace mooncastle::transform
 			positions.emplace_back(info.position);
 			scales.emplace_back(info.scale);
 			hasTransform.emplace_back((u8)0);
+			changesDuringFrame.emplace_back((u8)componentFlags::all);
 		}
 		return component(transformId{ entity.getId() });
 	}
@@ -95,6 +129,58 @@ namespace mooncastle::transform
 
 		world = toWorld[entityIndex];
 		inverseWorld = invWorld[entityIndex];
+	}
+
+	void getUpdatedComponentFlags(const gameEntity::entityId *const ids, u32 count, u8 *const flags)
+	{
+		assert(ids && count && flags);
+
+		readWriteFlag = 1;
+
+		for (u32 i{ 0 }; i < count; ++i)
+		{
+			assert(gameEntity::entity{ ids[i] }.isValid());
+			flags[i] = changesDuringFrame[id::index(ids[i])];
+		}
+	}
+
+	void update(const componentCache *const cache, u32 count)
+	{
+		assert(cache && count);
+
+		/*Clearing "changesDuringFrame" happens once every frame when there will be no reads and the caches are
+		about to be applied by calling this function. The rest of the current frame will only have writes.*/
+		if (readWriteFlag)
+		{
+			memset(changesDuringFrame.data(), 0, changesDuringFrame.size());
+			readWriteFlag = 0;
+		}
+
+		for (u32 i{ 0 }; i < count; ++i)
+		{
+			const componentCache& c{ cache[i] };
+			assert(component{ c.id }.isValid());
+
+			if (c.flags & componentFlags::rotation)
+			{
+				setRotation(c.id, c.rotation);
+			}
+
+			if (c.flags & componentFlags::orientation)
+			{
+				setOrientation(c.id, c.orientation);
+			}
+
+			if (c.flags & componentFlags::position)
+			{
+				setPosition(c.id, c.position);
+			}
+
+			if (c.flags & componentFlags::scale)
+			{
+				setScale(c.id, c.scale);
+			}
+		}
 	}
 
 	math::v4 component::rotation() const 

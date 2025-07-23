@@ -17,11 +17,16 @@ namespace mooncastle
 		public:
 			constexpr explicit entity(entityId id) : id{ id } {}
 			constexpr entity() : id{ id::invalidId } {}
-			constexpr entityId getId() const { return id; }
-			constexpr bool isValid() const { return id::isValid(id); }
+			[[nodiscard]] constexpr entityId getId() const { return id; }
+			[[nodiscard]] constexpr bool isValid() const { return id::isValid(id); }
 
-			transform::component transform() const;
-			script::component script() const;
+			[[nodiscard]] transform::component transform() const;
+			[[nodiscard]] script::component script() const;
+
+			[[nodiscard]] math::v4 rotation() const { return transform().rotation(); }
+			[[nodiscard]] math::v3 orientation() const { return transform().orientation(); }
+			[[nodiscard]] math::v3 position() const { return transform().position(); }
+			[[nodiscard]] math::v3 scale() const { return transform().scale(); }
 		private:
 			entityId id;
 		};
@@ -29,19 +34,29 @@ namespace mooncastle
 
 	namespace script 
 	{
-		class entity_script : public gameEntity::entity
+		class entityScript : public gameEntity::entity
 		{
 		public:
-			virtual ~entity_script() = default;
+			virtual ~entityScript() = default;
 			virtual void beginPlay() {}
 			virtual void update(float deltaTime) {}
 		protected:
-			constexpr explicit entity_script(gameEntity::entity entity) : gameEntity::entity{ entity.getId()} {}
+			constexpr explicit entityScript(gameEntity::entity entity) : gameEntity::entity{ entity.getId()} {}
+
+			void setRotation(math::v4 rotationQuaternion) const { setRotation(this, rotationQuaternion); }
+			void setOrientation(math::v3 orientationVector) const { setOrientation(this, orientationVector); }
+			void setPosition(math::v3 position) const { setPosition(this, position); }
+			void setScale(math::v3 scale) const { setScale(this, scale); }
+
+			static void setRotation(const gameEntity::entity *const entity, math::v4 rotationQuaternion);
+			static void setOrientation(const gameEntity::entity *const entity, math::v3 orientationVector);
+			static void setPosition(const gameEntity::entity *const entity, math::v3 position);
+			static void setScale(const gameEntity::entity *const entity, math::v3 scale);
 		};
 
 		namespace detail
 		{
-			using script_ptr = std::unique_ptr<entity_script>;
+			using script_ptr = std::unique_ptr<entityScript>;
 			using script_creator = script_ptr(*)(gameEntity::entity entity);
 			using string_hash = std::hash<std::string>;
 
