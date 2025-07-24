@@ -34,7 +34,7 @@ namespace mooncastle::graphics::d3D12::shaders
 				if (!result) break;
 
 				shader = reinterpret_cast<const content::compiledShaderPointer>(&engineShadersBlob[offset]);
-				offset += sizeof(u64) + content::compiledShader::hashLength + shader->getByteCodeSize();
+				offset += shader->getBufferSize();
 				++index;
 			}
 

@@ -26,6 +26,8 @@ namespace mooncastle::content
 		constexpr u64 getByteCodeSize() const { return byteCodeSize; }
 		constexpr const u8 *const getHash() const { return &hash[0]; }
 		constexpr const u8 *const getByteCode() const { return &byteCode; }
+		constexpr const u64 getBufferSize() const { return sizeof(byteCodeSize) + hashLength + byteCodeSize; }
+		constexpr static u64 getBufferSize(u64 size) { return sizeof(byteCodeSize) + hashLength + size; }
 
 	private:
 		u64			byteCodeSize;
@@ -42,9 +44,9 @@ namespace mooncastle::content
 	id::idType createResource(const void* const data, assetType::type type);
 	void destroyResource(id::idType id, assetType::type type);
 
-	id::idType createShader(const u8* shaderData);
-	void destroyShader(id::idType id);
-	compiledShaderPointer getShader(id::idType id);
+	id::idType addShaderGroup(const u8* const *shaders, u32 shaderCount, const u32 *const keys);
+	void destroyShaderGroup(id::idType id);
+	compiledShaderPointer getShader(id::idType id, u32 shaderKey);
 
 	void getSubmeshGPUIDs(id::idType geometryContentID, u32 idCount, id::idType* const gpuIDs);
 	void getLODOffsets(const id::idType* const geometryIDs, const f32* const thresholds, u32 idCount, utl::vector<lodOffset>& offsets);

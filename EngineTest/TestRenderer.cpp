@@ -194,28 +194,36 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 //Method that creates a game entity in order to test the camera.
-gameEntity::entity createOneGameEntity(bool isCamera)
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, bool rotates)
 {
 	transform::initInfo transformInfo{};
-	math::v3a rot{ 0, isCamera ? 3.14f : 0.f, 0 };
-	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
 	math::v4a rotQuaternion;
 	DirectX::XMStoreFloat4A(&rotQuaternion, quat);
 	memcpy(&transformInfo.rotation[0], &rotQuaternion.x, sizeof(transformInfo.rotation));
+	memcpy(&transformInfo.position[0], &position.x, sizeof(transformInfo.position));
 
-	if (isCamera)
+	script::initInfo scriptInfo{};
+
+	if (rotates)
 	{
-		transformInfo.position[1] = 1.f;
-		transformInfo.position[2] = 3.f;
+		scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()("rotatorScript"));
+		assert(scriptInfo.scriptCreator);
 	}
 
 	gameEntity::entityInfo entityInfo{};
 	entityInfo.transform = &transformInfo;
+	entityInfo.script = &scriptInfo;
 	gameEntity::entity ntt{ gameEntity::create(entityInfo) };
 
 	assert(ntt.isValid());
 
 	return ntt;
+}
+
+void removeGameEntity(gameEntity::entityId id)
+{
+	gameEntity::remove(id);
 }
 
 bool readFile(std::filesystem::path path, std::unique_ptr<u8[]>& data, u64& size)
@@ -244,7 +252,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity(true);
+	surface.entity = createOneGameEntity({0.f, 2.f, 6.f}, {0.3f, 3.14f, 0.f}, false);
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -308,7 +316,7 @@ bool testInitialize()
 	if (!id::isValid(modelID)) return false;
 
 	initTestWorkers(bufferTestWorker);
-	itemID = createRenderItem(createOneGameEntity(false).getId());
+	itemID = createRenderItem(createOneGameEntity({}, {}, true).getId());
 	isRestarting = false;
 
 	return true;
@@ -340,15 +348,22 @@ bool engineTest::initialize()
 void engineTest::run()
 {
 	timer.begin();
-
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	script::update(timer.dtAverage());
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
 		if (surfaces[i].surface.surface.isValid())
 		{
 			f32 threshold{ 10 };
-			surfaces[i].surface.surface.render({ &itemID, &threshold, 1, surfaces[i].camera.getId() });
+
+			graphics::frameInfo info{};
+			info.renderItemIDs = &itemID;
+			info.renderItemCount = 1;
+			info.thresholds = &threshold;
+			info.cameraID = surfaces[i].camera.getId();
+
+			surfaces[i].surface.surface.render(info);
 		}
 	}
 

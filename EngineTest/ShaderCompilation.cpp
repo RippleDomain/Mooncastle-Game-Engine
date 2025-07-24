@@ -67,7 +67,7 @@ namespace
 
 		DISABLE_COPY_AND_MOVE(shaderCompiler);
 
-		dxcCompiledShader compile(shaderFileInfo info, std::filesystem::path fullPath)
+		dxcCompiledShader compile(shaderFileInfo info, std::filesystem::path fullPath, mooncastle::utl::vector<std::wstring>& extraArgs)
 		{
 			assert(compiler && utils && includeHandler);
 			HRESULT hr{ S_OK };
@@ -79,49 +79,32 @@ namespace
 
 			assert(sourceBlob && sourceBlob->GetBufferSize());
 
-			std::wstring file{ toWString(info.fileName) };
-			std::wstring func{ toWString(info.function) };
-			std::wstring prof{ toWString(profileStrings[(u32)info.type]) };
-			std::wstring inc{ toWString(shadersSourcePath) };
-
-			LPCWSTR args[]
-			{
-				file.c_str(),                //Optional shader source file name for error reporting.
-				L"-E", func.c_str(),         //Entry function.
-				L"-T", prof.c_str(),         //Target profile.
-				L"-I", inc.c_str(),          //Include path.
-				L"-enable-16bit-types",      //Enable 16-bit type support.
-				DXC_ARG_ALL_RESOURCES_BOUND,
-#if _DEBUG
-				DXC_ARG_DEBUG,
-				DXC_ARG_SKIP_OPTIMIZATIONS,
-#else
-				DXC_ARG_OPTIMIZATION_LEVEL3,
-#endif
-				DXC_ARG_WARNINGS_ARE_ERRORS,
-				L"-Qstrip_reflect",          //Strip reflections into a separate blob.
-				L"-Qstrip_debug",            //Strip debug information into a separate blob.
-			};
-
 			OutputDebugStringA("Compiling ");
 			OutputDebugStringA(info.fileName);
 			OutputDebugStringA(" : ");
 			OutputDebugStringA(info.function);
 			OutputDebugStringA("\n");
 
-			return compile(sourceBlob.Get(), args, _countof(args));
+			return compile(sourceBlob.Get(), getArgs(info, extraArgs));
 		}
 
-		dxcCompiledShader compile(IDxcBlobEncoding* sourceBlob, LPCWSTR* args, u32 numArgs)
+		dxcCompiledShader compile(IDxcBlobEncoding* sourceBlob, mooncastle::utl::vector<std::wstring> compilerArgs)
 		{
 			DxcBuffer buffer{};
 			buffer.Encoding = DXC_CP_ACP;
 			buffer.Ptr = sourceBlob->GetBufferPointer();
 			buffer.Size = sourceBlob->GetBufferSize();
 
+			utl::vector<LPCWSTR> args;
+
+			for (const auto& arg : compilerArgs)
+			{
+				args.emplace_back(arg.c_str());
+			}
+
 			HRESULT hr{ S_OK };
 			ComPtr<IDxcResult> results{ nullptr };
-			DXCall(hr = compiler->Compile(&buffer, args, numArgs, includeHandler.Get(), IID_PPV_ARGS(&results)));
+			DXCall(hr = compiler->Compile(&buffer, args.data(), (u32)args.size(), includeHandler.Get(), IID_PPV_ARGS(&results)));
 			if (FAILED(hr)) return {};
 
 			ComPtr<IDxcBlobUtf8> errors{ nullptr };
@@ -183,6 +166,39 @@ namespace
 		}
 
 	private:
+		utl::vector<std::wstring> getArgs(const shaderFileInfo& info, mooncastle::utl::vector<std::wstring>& extraArgs)
+		{
+			utl::vector<std::wstring> args{};
+
+			args.emplace_back(toWString(info.fileName));					//Optional shader source file name for reporting possible errors.
+			args.emplace_back(L"-E");										//Entry function.
+			args.emplace_back(toWString(info.function));
+			args.emplace_back(L"-T");										//Target profile.
+			args.emplace_back(toWString(profileStrings[(u32)info.type]));
+			args.emplace_back(L"-I");										//Include path.
+			args.emplace_back(toWString(shadersSourcePath));
+			args.emplace_back(L"-enable-16bit-types");
+			args.emplace_back(DXC_ARG_ALL_RESOURCES_BOUND);
+
+#if _DEBUG
+			args.emplace_back(DXC_ARG_DEBUG);
+			args.emplace_back(DXC_ARG_SKIP_OPTIMIZATIONS);
+#else
+			args.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL3);
+#endif
+
+			args.emplace_back(DXC_ARG_WARNINGS_ARE_ERRORS);					//Treats warnings as errors.
+			args.emplace_back(L"-Qstrip_reflect");							//Strips reflections into a separate blob.
+			args.emplace_back(L"-Qstrip_debug");							//Strips debug information into a separate blob.
+
+			for (const auto& arg : extraArgs)
+			{
+				args.emplace_back(arg.c_str());
+			}
+
+			return args;
+		}
+
 		constexpr static const char* profileStrings[]{ "vs_6_6", "hs_6_6", "ds_6_6", "gs_6_6", "ps_6_6", "cs_6_6", "as_6_6", "ms_6_6" };
 		static_assert(_countof(profileStrings) == shaderType::count);
 
@@ -238,7 +254,7 @@ namespace
 			return false;
 		}
 
-		for (auto& shader : shaders)
+		for (const auto& shader : shaders)
 		{
 			const D3D12_SHADER_BYTECODE byteCode{ shader.byteCode->GetBufferPointer(), shader.byteCode->GetBufferSize()};
 
@@ -252,7 +268,7 @@ namespace
 	}
 }
 
-std::unique_ptr<u8[]> compileShader(shaderFileInfo info, const char* filePath)
+std::unique_ptr<u8[]> compileShader(shaderFileInfo info, const char* filePath, mooncastle::utl::vector<std::wstring>& extraArgs)
 {
 	std::filesystem::path fullPath{ filePath };
 	fullPath += info.fileName;
@@ -260,7 +276,7 @@ std::unique_ptr<u8[]> compileShader(shaderFileInfo info, const char* filePath)
 	if (!std::filesystem::exists(fullPath)) return {};
 
 	shaderCompiler compiler{};
-	dxcCompiledShader compiledShader{ compiler.compile(info, fullPath) };
+	dxcCompiledShader compiledShader{ compiler.compile(info, fullPath, extraArgs) };
 
 	if (compiledShader.byteCode && compiledShader.byteCode->GetBufferPointer() && compiledShader.byteCode->GetBufferSize())
 	{
@@ -300,7 +316,9 @@ bool compileShaders()
 
         if (!std::filesystem::exists(fullPath)) return false;
 
-        dxcCompiledShader compiledShader{ compiler.compile(file.info, fullPath) };
+		utl::vector<std::wstring> extraArgs{};
+
+        dxcCompiledShader compiledShader{ compiler.compile(file.info, fullPath, extraArgs) };
 
         if (compiledShader.byteCode && compiledShader.byteCode->GetBufferPointer() && compiledShader.byteCode->GetBufferSize())
         {

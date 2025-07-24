@@ -4,6 +4,7 @@
 #include "Graphics/Renderer.h"
 #include "Components/Entity.h"
 #include "ShaderCompilation.h"
+#include "../ContentTools/Geometry.h"
 
 using namespace mooncastle;
 
@@ -37,19 +38,39 @@ namespace
 
 		const char* shaderPath{ "..\\..\\EngineTest\\" };
 
-		auto vertexShader = compileShader(info, shaderPath);
+		std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
+		utl::vector<u32> keys;
+		keys.emplace_back(tools::elements::elementTypes::staticNormal);
+		keys.emplace_back(tools::elements::elementTypes::staticNormalTexture);
 
-		assert(vertexShader.get());
+		utl::vector<std::wstring> extraArgs{};
+		utl::vector<std::unique_ptr<u8[]>> vertexShaders;
+		utl::vector<const u8*> vertexShadersPointers;
+
+		for (u32 i{ 0 }; i < _countof(defines); ++i)
+		{
+			extraArgs.clear();
+			extraArgs.emplace_back(L"-D");
+			extraArgs.emplace_back(defines[i]);
+			vertexShaders.emplace_back(std::move(compileShader(info, shaderPath, extraArgs)));
+
+			assert(vertexShaders.back().get());
+			vertexShadersPointers.emplace_back(vertexShaders.back().get());
+		}
+
+		extraArgs.clear();
 
 		info.function = "TestShaderPS";
 		info.type = shaderType::pixel;
 
-		auto pixelShader = compileShader(info, shaderPath);
+		auto pixelShader = compileShader(info, shaderPath, extraArgs);
 
 		assert(pixelShader.get());
 
-		vertexShaderId = content::createShader(vertexShader.get());
-		pixelShaderId = content::createShader(pixelShader.get());
+		vertexShaderId = content::addShaderGroup(vertexShadersPointers.data(), (u32)vertexShadersPointers.size(), keys.data());
+
+		const u8* pixelShaders[]{ pixelShader.get() };
+		pixelShaderId = content::addShaderGroup(&pixelShaders[0], 1, &u32_invalid_id);
 	}
 
 	void createMaterial()
@@ -111,11 +132,11 @@ void destroyRenderItem(id::idType itemID)
 	//Removes shaders and textures.
 	if (id::isValid(vertexShaderId))
 	{
-		content::destroyShader(vertexShaderId);
+		content::destroyShaderGroup(vertexShaderId);
 	}
 	if (id::isValid(pixelShaderId))
 	{
-		content::destroyShader(pixelShaderId);
+		content::destroyShaderGroup(pixelShaderId);
 	}
 
 	//Removes model.

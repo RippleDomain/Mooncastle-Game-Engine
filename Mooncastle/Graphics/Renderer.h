@@ -89,8 +89,8 @@ namespace mooncastle::graphics
 			entityId = id;
 			type = camera::perspective;
 			up = { 0.0f, 1.0f, 0.0f };
-			nearZ = 0.001f;
-			farZ = 10000.0f;
+			nearZ = 0.01f;
+			farZ = 1000.0f;
 			fieldOfView = 0.25f;
 			aspectRatio = 16.0f / 9.0f;
 		}
@@ -105,8 +105,8 @@ namespace mooncastle::graphics
 			entityId = id;
 			type = camera::orthographic;
 			up = { 0.0f, 1.0f, 0.0f };
-			nearZ = 0.001f;
-			farZ = 10000.0f;
+			nearZ = 0.01f;
+			farZ = 1000.0f;
 			viewHeight = 1920;
 			viewWidth = 1080;
 		}

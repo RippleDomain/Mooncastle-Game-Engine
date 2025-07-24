@@ -31,10 +31,10 @@ namespace mooncastle::graphics::d3D12::d3DX
 		{
 			D3D12_FILL_MODE_SOLID,                      //FillMode
 			D3D12_CULL_MODE_NONE,                       //CullMode
-			0,                                          //FrontCounterClockwise
+			1,                                          //FrontCounterClockwise
 			0,                                          //DepthBias
 			0,                                          //DepthBiasClamp
-			1,                                          //SlopeScaledDepthBias
+			0,                                          //SlopeScaledDepthBias
 			1,                                          //DepthClipEnable
 			0,                                          //MultisampleEnable
 			0,                                          //AntialiasedLineEnable
@@ -46,10 +46,10 @@ namespace mooncastle::graphics::d3D12::d3DX
 		{
 			D3D12_FILL_MODE_SOLID,                      //FillMode
 			D3D12_CULL_MODE_BACK,                       //CullMode
-			0,											//FrontCounterClockwise
+			1,											//FrontCounterClockwise
 			0,											//DepthBias
 			0,											//DepthBiasClamp
-			1,											//SlopeScaledDepthBias
+			0,											//SlopeScaledDepthBias
 			1,											//DepthClipEnable
 			0,											//MultisampleEnable
 			0,											//AntialiasedLineEnable
@@ -61,10 +61,10 @@ namespace mooncastle::graphics::d3D12::d3DX
 		{
 			D3D12_FILL_MODE_SOLID,                      //FillMode
 			D3D12_CULL_MODE_FRONT,						//CullMode
-			0,											//FrontCounterClockwise
+			1,											//FrontCounterClockwise
 			0,											//DepthBias
 			0,											//DepthBiasClamp
-			1,											//SlopeScaledDepthBias
+			0,											//SlopeScaledDepthBias
 			1,											//DepthClipEnable
 			0,											//MultisampleEnable
 			0,											//AntialiasedLineEnable
@@ -76,10 +76,10 @@ namespace mooncastle::graphics::d3D12::d3DX
 		{
 			D3D12_FILL_MODE_WIREFRAME,                  //FillMode
 			D3D12_CULL_MODE_NONE,						//CullMode
-			0,											//FrontCounterClockwise
+			1,											//FrontCounterClockwise
 			0,											//DepthBias
 			0,											//DepthBiasClamp
-			1,											//SlopeScaledDepthBias
+			0,											//SlopeScaledDepthBias
 			1,											//DepthClipEnable
 			0,											//MultisampleEnable
 			0,											//AntialiasedLineEnable

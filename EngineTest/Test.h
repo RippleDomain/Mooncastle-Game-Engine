@@ -26,6 +26,9 @@ public:
     using clock = std::chrono::high_resolution_clock;
     using timeStamp = std::chrono::steady_clock::time_point;
 
+    //Average frame time per second.
+    constexpr float dtAverage() const { return dtAvg * 1e-6f; }
+
     void begin()
     {
         start = clock::now();
@@ -34,25 +37,27 @@ public:
     void end()
     {
         auto dt = clock::now() - start;
-        msAverage += ((float)std::chrono::duration_cast<std::chrono::milliseconds>(dt).count() - msAverage) / (float)counter;
+        usAverage += ((float)std::chrono::duration_cast<std::chrono::microseconds>(dt).count() - usAverage) / (float)counter;
         ++counter;
+        dtAvg = usAverage;
 
         if (std::chrono::duration_cast<std::chrono::seconds>(clock::now() - seconds).count() >= 1)
         {
             OutputDebugStringA("Average frame (ms): ");
-            OutputDebugStringA(std::to_string(msAverage).c_str());
+            OutputDebugStringA(std::to_string(usAverage * 0.001f).c_str());
             OutputDebugStringA((" " + std::to_string(counter)).c_str());
             OutputDebugStringA(" FPS");
             OutputDebugStringA("\n");
 
-            msAverage = 0.f;
+            usAverage = 0.f;
             counter = 1;
             seconds = clock::now();
         }
     }
 
 private:
-    float       msAverage{ 0.f };
+	float       dtAvg{ 16.7f };
+    float       usAverage{ 0.f };
     int         counter{ 1 };
     timeStamp   start;
     timeStamp   seconds{ clock::now() };

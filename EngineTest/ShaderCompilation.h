@@ -25,5 +25,5 @@ struct shaderFileInfo
     shaderType::type type;
 };
 
-std::unique_ptr<u8[]> compileShader(shaderFileInfo info, const char* filePath);
+std::unique_ptr<u8[]> compileShader(shaderFileInfo info, const char* filePath, mooncastle::utl::vector<std::wstring>& extraArgs);
 bool compileShaders();

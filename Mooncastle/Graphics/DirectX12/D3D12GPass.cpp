@@ -175,7 +175,7 @@ namespace mooncastle::graphics::d3D12::gPass
 				info.desc = &desc;
 				info.initialState = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 				info.clearValue.Format = desc.Format;
-				info.clearValue.DepthStencil.Depth = 1.f;
+				info.clearValue.DepthStencil.Depth = 0.f;
 				info.clearValue.DepthStencil.Stencil = 0;
 
 				gPassDepthBuffer = D3D12DepthBuffer{ info };
@@ -187,12 +187,14 @@ namespace mooncastle::graphics::d3D12::gPass
 			return gPassMainBuffer.getResource() && gPassDepthBuffer.getResource();
 		}
 
-		void fillPerObjectData(constantBuffer& cBuffer, const D3D12FrameInfo& d3D12Info)
+		void fillPerObjectData(const D3D12FrameInfo& d3D12Info)
 		{
 			const gPassCache& cache{ frameCache };
 			const u32 renderItemsCount{ (u32)cache.getSize() };
 			id::idType currentEntityID{ id::invalidId };
 			hlsl::PerObjectData* currentDataPtr{ nullptr };
+
+			constantBuffer& cBuffer{ core::getConstantBuffer() };
 
 			using namespace DirectX;
 
@@ -259,6 +261,8 @@ namespace mooncastle::graphics::d3D12::gPass
 
 			const material::materialsCache materialsCache{ cache.getMaterialsCache() };
 			material::getMaterials(itemsCache.materialIDs, itemCount, materialsCache);
+
+			fillPerObjectData(d3D12Info);
 		}
 	}
 
@@ -298,9 +302,6 @@ namespace mooncastle::graphics::d3D12::gPass
 	void depthPrepass(ID3D12GraphicsCommandList* commandList, const D3D12FrameInfo& d3D12Info)
 	{
 		prepareFrame(d3D12Info);
-
-		constantBuffer& cBuffer{ core::getConstantBuffer() };
-		fillPerObjectData(cBuffer, d3D12Info);
 
 		const gPassCache& cache{ frameCache };
 		const u32 itemsCount{ cache.getSize() };
@@ -400,7 +401,7 @@ namespace mooncastle::graphics::d3D12::gPass
 	void setRenderTargetsForDepthPrepass(ID3D12GraphicsCommandList* commandList)
 	{
 		const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gPassDepthBuffer.getDSV() };
-		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0.f, 0, 0, nullptr);
 		commandList->OMSetRenderTargets(0, nullptr, 0, &dsv);
 	}
 

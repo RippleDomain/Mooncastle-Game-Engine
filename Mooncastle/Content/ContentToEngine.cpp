@@ -65,11 +65,11 @@ namespace mooncastle::content
 		//This constant indicates that an element within geometryHierarchies is not a pointer, but a gpuID.
 		constexpr uintptr_t singleMeshMarker{ (uintptr_t)0x01 };
 
-		utl::freeList<u8*>				geometryHierarchies;
-		std::mutex                      geometryMutex;
+		utl::freeList<u8*>												geometryHierarchies;
+		std::mutex														geometryMutex;
 
-		utl::freeList<std::unique_ptr<u8[]>>	compiledShaders;
-		std::mutex                              shaderMutex;
+		utl::freeList<std::unordered_map<u32, std::unique_ptr<u8[]>>>	shaderGroups;
+		std::mutex														shaderMutex;
 
 		//Expects the same data as createGeometryResource().
 		u32 getGeometryHierarchyBufferSize(const void* const data)
@@ -315,30 +315,51 @@ namespace mooncastle::content
 		}
 	}
 
-	id::idType createShader(const u8* data)
+	id::idType addShaderGroup(const u8 *const *shaders, u32 shaderCount, const u32 *const keys)
 	{
-		const compiledShaderPointer shaderPtr{ (const compiledShaderPointer)data };
-		const u64 size{ sizeof(u64) + compiledShader::hashLength + shaderPtr->getByteCodeSize() };
-		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
-		memcpy(shader.get(), data, size);
+		assert(shaders && shaderCount && keys);
+		std::unordered_map<u32, std::unique_ptr<u8[]>> group;
+
+		for (u32 i{ 0 }; i < shaderCount; ++i)
+		{
+			assert(shaders[i]);
+
+			const compiledShaderPointer shaderPtr{ (const compiledShaderPointer)shaders[i] };
+			const u64 size{ compiledShader::getBufferSize(shaderPtr->getByteCodeSize()) };
+			std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
+			memcpy(shader.get(), shaders[i], size);
+			group[keys[i]] = std::move(shader);
+		}
+
 		std::lock_guard lock{ shaderMutex };
 
-		return compiledShaders.add(std::move(shader));
+		return shaderGroups.add(std::move(group));
 	}
 
-	void destroyShader(id::idType id)
+	void destroyShaderGroup(id::idType id)
 	{
 		std::lock_guard lock{ shaderMutex };
 		assert(id::isValid(id));
-		compiledShaders.remove(id);
+		shaderGroups[id].clear();
+		shaderGroups.remove(id);
 	}
 
-	compiledShaderPointer getShader(id::idType id)
+	compiledShaderPointer getShader(id::idType id, u32 shaderKey)
 	{
 		std::lock_guard lock{ shaderMutex };
+
 		assert(id::isValid(id));
 
-		return (const compiledShaderPointer)(compiledShaders[id].get());
+		for (const auto& [key, value] : shaderGroups[id])
+		{
+			if (key == shaderKey)
+			{
+				return (const compiledShaderPointer)value.get();
+			}
+		}
+
+		assert(false); //This should never occur.
+		return nullptr;
 	}
 
 	void getSubmeshGPUIDs(id::idType geometryContentID, u32 idCount, id::idType* const gpuIDs)
