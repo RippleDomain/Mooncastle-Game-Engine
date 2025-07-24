@@ -188,7 +188,7 @@ namespace mooncastle::tools
 		if (lod.meshes.size()) scene->lodGroups.emplace_back(lod);
 	}
 
-	bool FBXContext::getMeshData(FbxMesh * fbxMesh, mesh& m)
+	bool FBXContext::getMeshData(FbxMesh *fbxMesh, mesh& m)
 	{
 		assert(fbxMesh);
 
@@ -214,7 +214,13 @@ namespace mooncastle::tools
 		if (!(numVertices > 0 && vertices && numIndices > 0 && indices))return false;
 
 		m.rawIndices.resize(numIndices);
+
+#if USE_STL_VECTOR
+		utl::vector<id::idType> vertexRef(numVertices, u32_invalid_id);
+#else
 		utl::vector vertexRef(numVertices, u32_invalid_id);
+#endif
+		
 
 		for (i32 i{ 0 }; i < numIndices; ++i)
 		{

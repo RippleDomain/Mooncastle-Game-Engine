@@ -65,11 +65,21 @@ namespace mooncastle::content
 		//This constant indicates that an element within geometryHierarchies is not a pointer, but a gpuID.
 		constexpr uintptr_t singleMeshMarker{ (uintptr_t)0x01 };
 
-		utl::freeList<u8*>												geometryHierarchies;
-		std::mutex														geometryMutex;
+		struct noexceptMap 
+		{
+			std::unordered_map<u32, std::unique_ptr<u8[]>> map;
 
-		utl::freeList<std::unordered_map<u32, std::unique_ptr<u8[]>>>	shaderGroups;
-		std::mutex														shaderMutex;
+			noexceptMap() = default;
+			noexceptMap(const noexceptMap&) = default;
+			noexceptMap(noexceptMap&&) noexcept = default;
+			noexceptMap& operator=(const noexceptMap&) = default;
+			noexceptMap& operator=(noexceptMap&&) noexcept = default;
+		};
+
+		utl::freeList<u8*>			geometryHierarchies;
+		std::mutex					geometryMutex;
+		utl::freeList<noexceptMap>	shaderGroups;
+		std::mutex					shaderMutex;
 
 		//Expects the same data as createGeometryResource().
 		u32 getGeometryHierarchyBufferSize(const void* const data)
@@ -318,7 +328,7 @@ namespace mooncastle::content
 	id::idType addShaderGroup(const u8 *const *shaders, u32 shaderCount, const u32 *const keys)
 	{
 		assert(shaders && shaderCount && keys);
-		std::unordered_map<u32, std::unique_ptr<u8[]>> group;
+		noexceptMap group;
 
 		for (u32 i{ 0 }; i < shaderCount; ++i)
 		{
@@ -328,7 +338,7 @@ namespace mooncastle::content
 			const u64 size{ compiledShader::getBufferSize(shaderPtr->getByteCodeSize()) };
 			std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
 			memcpy(shader.get(), shaders[i], size);
-			group[keys[i]] = std::move(shader);
+			group.map[keys[i]] = std::move(shader);
 		}
 
 		std::lock_guard lock{ shaderMutex };
@@ -340,7 +350,7 @@ namespace mooncastle::content
 	{
 		std::lock_guard lock{ shaderMutex };
 		assert(id::isValid(id));
-		shaderGroups[id].clear();
+		shaderGroups[id].map.clear();
 		shaderGroups.remove(id);
 	}
 
@@ -350,7 +360,7 @@ namespace mooncastle::content
 
 		assert(id::isValid(id));
 
-		for (const auto& [key, value] : shaderGroups[id])
+		for (const auto& [key, value] : shaderGroups[id].map)
 		{
 			if (key == shaderKey)
 			{

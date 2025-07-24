@@ -23,6 +23,12 @@ namespace mooncastle::graphics::d3D12::gPass
 		constexpr f32          clearValue[4]{ };
 #endif
 
+#if USE_STL_VECTOR
+#define CONSTEXPR
+#else
+#define CONSTEXPR constexpr
+#endif
+
 		struct gPassCache
 		{
 			utl::vector<id::idType> d3D12RenderItemIDs;
@@ -75,17 +81,17 @@ namespace mooncastle::graphics::d3D12::gPass
 				};
 			}
 
-			constexpr u32 getSize() const
+			CONSTEXPR u32 getSize() const
 			{
 				return (u32)d3D12RenderItemIDs.size();
 			}
 
-			constexpr void clear()
+			CONSTEXPR void clear()
 			{
 				d3D12RenderItemIDs.clear();
 			}
 
-			constexpr void resize()
+			CONSTEXPR void resize()
 			{
 				const u64 itemsCount{ d3D12RenderItemIDs.size() };
 				const u64 newSize{ itemsCount * structSize };
@@ -135,6 +141,8 @@ namespace mooncastle::graphics::d3D12::gPass
 			utl::vector<u8> buffer;
 
 		} frameCache;
+
+#undef CONSTEXPR
 
 		bool createBuffers(math::u32v2 size)
 		{
