@@ -4,6 +4,9 @@
 
 namespace mooncastle::graphics::d3D12::light 
 {
+	bool initialize();
+	void shutdown();
+
 	graphics::light create(lightInitInfo info);
 	void remove(lightId id, u64 lightSetKey);
 	void setParameter(lightId id, u64 lightSetKey, lightParameter::parameter parameter, const void* const data, u32 dataSize);

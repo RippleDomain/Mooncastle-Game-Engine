@@ -208,6 +208,11 @@ namespace mooncastle::graphics::d3D12::light
                 }
             }
 
+            constexpr bool hasLights() const
+            {
+                return owners.getSize() > 0;
+            }
+
         private:
             //These containers are NOT tightly packed.
             utl::freeList<lightOwner>                       owners;
@@ -215,9 +220,85 @@ namespace mooncastle::graphics::d3D12::light
             utl::vector<lightId>                            nonCullableOwners;
         };
 
+        class D3D12LightBuffer
+        {
+        public:
+            D3D12LightBuffer() = default;
+
+            CONSTEXPR void updateLightBuffers(lightSet& set, u64 lightSetKey, u32 frameIndex)
+            {
+                u32 sizes[lightBuffer::count]{};
+                sizes[lightBuffer::nonCullableLight] = set.getNonCullableLightCount() * sizeof(hlsl::DirectionalLightParameters);
+
+                u32 currentSizes[lightBuffer::count]{};
+                currentSizes[lightBuffer::nonCullableLight] = buffers[lightBuffer::nonCullableLight].buffer.getSize();
+
+                if (currentSizes[lightBuffer::nonCullableLight] < sizes[lightBuffer::nonCullableLight])
+                {
+                    resizeBuffer(lightBuffer::nonCullableLight, sizes[lightBuffer::nonCullableLight], frameIndex);
+                }
+
+                set.setNonCullableLights((hlsl::DirectionalLightParameters* const)buffers[lightBuffer::nonCullableLight].cpuAddress,
+                    buffers[lightBuffer::nonCullableLight].buffer.getSize());
+
+                //TODO: Add cullable lights.
+            }
+
+            constexpr void release()
+            {
+                for (u32 i{ 0 }; i < lightBuffer::count; ++i)
+                {
+                    buffers[i].buffer.release();
+                    buffers[i].cpuAddress = nullptr;
+                }
+            }
+
+            constexpr D3D12_GPU_VIRTUAL_ADDRESS getNonCullableLights() const
+            {
+                return buffers[lightBuffer::nonCullableLight].buffer.getGPUAddress();
+            }
+
+        private:
+            struct lightBuffer
+            {
+                enum type : u32
+                {
+                    nonCullableLight,
+                    cullableLight,
+                    cullingInfo,
+                    count
+                };
+
+                D3D12Buffer     buffer{};
+                u8*             cpuAddress{ nullptr };
+            };
+
+            void resizeBuffer(lightBuffer::type type, u32 size, [[maybe_unused]] u32 frameIndex)
+            {
+                assert(type < lightBuffer::count);
+                if (!size) return;
+
+                buffers[type].buffer.release();
+                buffers[type].buffer = D3D12Buffer{ constantBuffer::getDefaultInitInfo(size), true };
+
+                NAME_D3D12_OBJECT_INDEXED(buffers[type].buffer.getBuffer(), frameIndex,
+                    type == lightBuffer::nonCullableLight ? L"Non-cullable Light Buffer" :
+                    type == lightBuffer::cullableLight ? L"Cullable Light Buffer" : L"Light Culling Info Buffer");
+
+                D3D12_RANGE range{};
+
+                DXCall(buffers[type].buffer.getBuffer()->Map(0, &range, (void**)&buffers[type].cpuAddress));
+                assert(buffers[type].cpuAddress);
+            }
+
+            lightBuffer     buffers[lightBuffer::count];
+            u64             currentLightSetKey{ 0 };
+        };
+
 #undef CONSTEXPR
 
 		std::unordered_map<u64, lightSet> lightSets;
+		D3D12LightBuffer                  lightBuffers[frameBufferCount];
 
         constexpr void setIsEnabled(lightSet& set, lightId id, const void* const data, [[maybe_unused]] u32 size)
         {
@@ -304,6 +385,31 @@ namespace mooncastle::graphics::d3D12::light
         };
 
         static_assert(_countof(getFunctions) == lightParameter::count);
+    }
+
+    bool initialize() 
+    {
+        return true;
+    }
+
+    void shutdown()
+    {
+        assert([] 
+        {
+            bool hasLights{ false };
+
+            for (const auto& it : lightSets)
+            {
+                hasLights |= it.second.hasLights();
+            }
+
+            return !hasLights;
+        }());
+
+        for (u32 i{ 0 }; i < frameBufferCount; ++i)
+        {
+            lightBuffers[i].release();
+        }
     }
 
     graphics::light create(lightInitInfo info)
