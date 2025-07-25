@@ -65,6 +65,7 @@ namespace mooncastle::content
 		//This constant indicates that an element within geometryHierarchies is not a pointer, but a gpuID.
 		constexpr uintptr_t singleMeshMarker{ (uintptr_t)0x01 };
 
+		//This map is needed in order to maintain compatibility with the STL vector.
 		struct noexceptMap 
 		{
 			std::unordered_map<u32, std::unique_ptr<u8[]>> map;
@@ -335,7 +336,7 @@ namespace mooncastle::content
 			assert(shaders[i]);
 
 			const compiledShaderPointer shaderPtr{ (const compiledShaderPointer)shaders[i] };
-			const u64 size{ compiledShader::getBufferSize(shaderPtr->getByteCodeSize()) };
+			const u64 size{ shaderPtr->getBufferSize() };
 			std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
 			memcpy(shader.get(), shaders[i], size);
 			group.map[keys[i]] = std::move(shader);

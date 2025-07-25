@@ -3,6 +3,7 @@
 #include "CommonHeaders.h"
 #include "Platform/Window.h"
 #include "EngineAPI/Camera.h"
+#include "EngineAPI/Light.h"
 
 namespace mooncastle::graphics 
 {
@@ -37,6 +38,56 @@ namespace mooncastle::graphics
         platform::window               window{};
         mooncastle::graphics::surface  surface{};
     };
+
+	struct directionalLightParameters {};
+
+	struct pointLightParameters
+	{
+		math::v3 attenuation;
+		f32      range;
+	};
+
+	struct spotLightParameters
+	{
+		math::v3 attenuation;
+		f32      range;
+
+		//Umbra angle in radians [0, pi)
+		f32      umbra;
+		//Penumbra angle in radians [umbra, pi)
+		f32      penumbra;
+	};
+
+	struct lightInitInfo
+	{
+		u64								lightSetKey{ 0 };
+		id::idType						entityID{ id::invalidId };
+		light::type						type{};
+		f32								intensity{ 1.f };
+		math::v3						color{ 1.f, 1.f, 1.f };
+
+		union
+		{
+			directionalLightParameters	directionalParams;
+			pointLightParameters		pointParams;
+			spotLightParameters			spotParams;
+		};
+
+		bool							isEnabled{ true };
+	};
+
+	struct lightParameter
+	{
+		enum parameter : u32
+		{
+			isEnabled,
+			intensity,
+			color,
+			type,
+			entityId,
+			count
+		};
+	};
 
 	struct cameraParameter
 	{
@@ -193,6 +244,9 @@ namespace mooncastle::graphics
 
     camera createCamera(cameraInitInfo info);
     void removeCamera(cameraId id);
+
+    light createLight(lightInitInfo info);
+    void removeLight(lightId id, u64 lightSetKey);
 
     id::idType addSubmesh(const u8*& data);
     void removeSubmesh(id::idType id);

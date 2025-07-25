@@ -255,6 +255,74 @@ namespace mooncastle::graphics
 		return idToGet;
 	}
 
+	light createLight(lightInitInfo info)
+	{
+		return gfx.light.create(info);
+	}
+
+	void removeLight(lightId id, u64 lightSetKey)
+	{
+		return gfx.light.remove(id, lightSetKey);
+	}
+
+	void light::setEnabled(bool isEnabled) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::isEnabled, &isEnabled, sizeof(isEnabled));
+	}
+
+	void light::setIntensity(f32 intensity) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::intensity, &intensity, sizeof(intensity));
+	}
+
+	void light::setColor(math::v3 color) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::color, &color, sizeof(color));
+	}
+
+	bool light::isEnabled() const
+	{
+		assert(isValid());
+		bool isEnabled;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::isEnabled, &isEnabled, sizeof(isEnabled));
+		return isEnabled;
+	}
+
+	f32 light::getIntensity() const
+	{
+		assert(isValid());
+		f32 intensity;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::intensity, &intensity, sizeof(intensity));
+		return intensity;
+	}
+
+	math::v3 light::getColor() const
+	{
+		assert(isValid());
+		math::v3 color;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::color, &color, sizeof(color));
+		return color;
+	}
+
+	light::type light::getLightType() const
+	{
+		assert(isValid());
+		type type;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::type, &type, sizeof(type));
+		return type;
+	}
+
+	id::idType light::getEntityID() const
+	{
+		assert(isValid());
+		id::idType entityID;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::entityId, &entityID, sizeof(entityID));
+		return entityID;
+	}
+
     void surface::resize(u32 width, u32 height) const
     {
         assert(isValid());

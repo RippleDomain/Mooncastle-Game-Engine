@@ -3,6 +3,7 @@
 #include "D3D12Core.h"
 #include "D3D12Content.h"
 #include "D3D12Camera.h"
+#include "D3D12Light.h"
 #include "Graphics/GraphicsPlatformInterface.h"
 
 namespace mooncastle::graphics::d3D12 
@@ -23,6 +24,11 @@ namespace mooncastle::graphics::d3D12
 		pi.camera.remove = camera::remove;
 		pi.camera.setParameter = camera::setParameter;
 		pi.camera.getParameter = camera::getParameter;
+
+		pi.light.create = light::create;
+		pi.light.remove = light::remove;
+		pi.light.setParameter = light::setParameter;
+		pi.light.getParameter = light::getParameter;
 
 		pi.resources.addSubmesh = content::submesh::add;
 		pi.resources.removeSubmesh = content::submesh::remove;

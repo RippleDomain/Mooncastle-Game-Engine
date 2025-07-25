@@ -217,7 +217,6 @@ namespace mooncastle::graphics::d3D12::camera
 		};
 
 		static_assert(_countof(getFunctions) == cameraParameter::count);
-
 	}
 
 	D3D12Camera::D3D12Camera(cameraInitInfo info)

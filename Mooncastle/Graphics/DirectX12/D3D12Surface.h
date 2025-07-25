@@ -51,7 +51,7 @@ namespace mooncastle::graphics::d3D12
             release(); 
         }
 
-        void createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format = defaultBackBufferFormat);
+        void createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue);
         void present() const;
         void resize();
 
@@ -113,7 +113,6 @@ namespace mooncastle::graphics::d3D12
         IDXGISwapChain4* swapChain{ nullptr };
         renderTargetData targetData[bufferCount]{};
         platform::window window{};
-        DXGI_FORMAT      format{ defaultBackBufferFormat };
         mutable u32      currentBBIndex{ 0 };
         u32              allowTearing{ 0 };
         u32              presentFlags{ 0 };

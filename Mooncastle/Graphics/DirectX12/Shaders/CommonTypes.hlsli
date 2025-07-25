@@ -28,8 +28,17 @@ struct PerObjectData
     float4x4 WorldViewProjection;
 };
 
+struct DirectionalLightParameters
+{
+    float3 Direction;
+    float Intensity;
+    float3 Color;
+    float Pad;
+};
+
 #ifdef __cplusplus
 
 static_assert((sizeof(PerObjectData) % 16) == 0, "Make sure PerObjectData is formatted in 16-byte chunks without any implicit padding.");
+static_assert((sizeof(DirectionalLightParameters) % 16) == 0, "Make sure DirectionalLightParameters is formatted in 16-byte chunks without any implicit padding.");
 
 #endif

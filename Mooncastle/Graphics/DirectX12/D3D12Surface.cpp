@@ -13,7 +13,7 @@ namespace mooncastle::graphics::d3D12
         }
     }
 
-    void D3D12Surface::createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format /*= defaultBackBufferFormat*/)
+    void D3D12Surface::createSwapChain(IDXGIFactory7* factory, ID3D12CommandQueue* cmdQueue)
     {
         assert(factory && cmdQueue);
 
@@ -24,16 +24,12 @@ namespace mooncastle::graphics::d3D12
             presentFlags = DXGI_PRESENT_ALLOW_TEARING;
         }
 
-        this->format = format;
-
-        //allowTearing = presentFlags = 0;
-
         DXGI_SWAP_CHAIN_DESC1 desc{};
         desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         desc.BufferCount = bufferCount;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-        desc.Format = toNonSrgb(format);
+        desc.Format = toNonSrgb(defaultBackBufferFormat);
         desc.Height = window.height();
         desc.Width = window.width();
         desc.SampleDesc.Count = 1;
@@ -94,7 +90,7 @@ namespace mooncastle::graphics::d3D12
             assert(!data.resource);
             DXCall(swapChain->GetBuffer(i, IID_PPV_ARGS(&data.resource)));
             D3D12_RENDER_TARGET_VIEW_DESC desc{};
-            desc.Format = format;
+            desc.Format = defaultBackBufferFormat;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
             core::device()->CreateRenderTargetView(data.resource, &desc, data.rtv.cpu);
         }

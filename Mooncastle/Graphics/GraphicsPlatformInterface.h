@@ -40,6 +40,14 @@ namespace mooncastle::graphics
             void(*getParameter)(cameraId, cameraParameter::parameter, void *const, u32);
         } camera;
 
+        struct
+        {
+            light(*create)(lightInitInfo);
+            void(*remove)(lightId, u64);
+            void(*setParameter)(lightId, u64, lightParameter::parameter, const void *const, u32);
+            void(*getParameter)(lightId, u64, lightParameter::parameter, void *const, u32);
+        } light;
+
         graphicsPlatform platform = (graphicsPlatform)-1;
     };
 }

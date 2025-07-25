@@ -79,7 +79,6 @@ namespace mooncastle::tools
 			const u32 rowLength{ horizontalCount + 1 }; //Number of vertices in a row
 			for (u32 j{ 0 }; j < verticalCount; ++j)
 			{
-				u32 k{ 0 };
 				for (u32 i{ 0 }; i < horizontalCount; ++i)
 				{
 					const u32 index[4]
@@ -97,8 +96,6 @@ namespace mooncastle::tools
 					m.rawIndices.emplace_back(index[2]);
 					m.rawIndices.emplace_back(index[flipWinding ? 3 : 1]);
 					m.rawIndices.emplace_back(index[flipWinding ? 1 : 3]);
-
-					++k;
 				}
 			}
 

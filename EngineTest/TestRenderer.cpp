@@ -109,6 +109,9 @@ void testShutdown();
 id::idType createRenderItem(id::idType entityID);
 void destroyRenderItem(id::idType entityID);
 
+void generateLights();
+void removeLights();
+
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	bool toggleFullscreen{ false };
@@ -194,7 +197,7 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 //Method that creates a game entity in order to test the camera.
-gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, bool rotates)
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, const char* scriptName)
 {
 	transform::initInfo transformInfo{};
 	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
@@ -205,9 +208,9 @@ gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, boo
 
 	script::initInfo scriptInfo{};
 
-	if (rotates)
+	if (scriptName)
 	{
-		scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()("rotatorScript"));
+		scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()(scriptName));
 		assert(scriptInfo.scriptCreator);
 	}
 
@@ -252,7 +255,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity({0.f, 2.f, 6.f}, {0.3f, 3.14f, 0.f}, false);
+	surface.entity = createOneGameEntity({0.f, 2.f, 6.f}, {0.3f, 3.14f, 0.f}, nullptr);
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -316,7 +319,10 @@ bool testInitialize()
 	if (!id::isValid(modelID)) return false;
 
 	initTestWorkers(bufferTestWorker);
-	itemID = createRenderItem(createOneGameEntity({}, {}, true).getId());
+	itemID = createRenderItem(createOneGameEntity({}, {}, "rotatorScript").getId());
+
+	generateLights();
+
 	isRestarting = false;
 
 	return true;
@@ -324,6 +330,7 @@ bool testInitialize()
 
 void testShutdown()
 {
+	removeLights();
 	destroyRenderItem(itemID);
 	jointTestWorkers();
 
