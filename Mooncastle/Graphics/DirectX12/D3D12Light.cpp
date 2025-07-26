@@ -1,5 +1,6 @@
 #include "D3D12Light.h"
 #include "Shaders/SharedTypes.h"
+#include "D3D12Core.h"
 #include "EngineAPI/GameEntity.h"
 
 namespace mooncastle::graphics::d3D12::light 
@@ -78,6 +79,25 @@ namespace mooncastle::graphics::d3D12::light
                 }
 
                 owners.remove(id);
+            }
+
+            void updateTransforms()
+            {
+                //Updates the directions for non-cullable lights.
+                for (const auto& id : nonCullableOwners)
+                {
+                    if (!id::isValid(id)) continue;
+
+                    const lightOwner& owner{ owners[id] };
+                    if (owner.isEnabled)
+                    {
+                        const gameEntity::entity entity{ gameEntity::entityId(owner.entityID) };
+                        hlsl::DirectionalLightParameters& params{ nonCullableLights[owner.dataIndex] };
+                        params.Direction = entity.orientation();
+                    }
+                }
+
+                //TODO: Add cullable lights.
             }
 
             constexpr void setEnabled(lightId id, bool isEnabled)
@@ -440,5 +460,32 @@ namespace mooncastle::graphics::d3D12::light
         assert(parameter < lightParameter::count);
 
         getFunctions[parameter](lightSets[lightSetKey], id, data, dataSize);
+    }
+
+    void updateLightBuffers(const D3D12FrameInfo& d3D12Info)
+    {
+        const u64 lightSetKey{ d3D12Info.info->lightSetKey };
+        assert(lightSets.count(lightSetKey));
+
+        lightSet& set{ lightSets[lightSetKey] };
+
+        if (!set.hasLights()) return;
+
+        set.updateTransforms();
+        const u32 frameIndex{ d3D12Info.frameIndex };
+        D3D12LightBuffer& lightBuffer{ lightBuffers[frameIndex] };
+        lightBuffer.updateLightBuffers(set, lightSetKey, frameIndex);
+    }
+
+    D3D12_GPU_VIRTUAL_ADDRESS getNonCullableLightBuffer(u32 frameIndex)
+    {
+        const D3D12LightBuffer& lightBuffer{ lightBuffers[frameIndex] };
+        return lightBuffer.getNonCullableLights();
+    }
+
+    u32 getNonCullableLightCount(u64 lightSetKey)
+    {
+        assert(lightSets.count(lightSetKey));
+        return lightSets[lightSetKey].getNonCullableLightCount();
     }
 }

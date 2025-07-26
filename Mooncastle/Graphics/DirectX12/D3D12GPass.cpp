@@ -2,6 +2,7 @@
 #include "D3D12GPass.h"
 #include "D3D12Shaders.h"
 #include "D3D12Content.h"
+#include "D3D12Light.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 #include "Components/Transform.h"
@@ -358,6 +359,7 @@ namespace mooncastle::graphics::d3D12::gPass
 				currentRootSig = cache.rootSignatures[i];
 				commandList->SetGraphicsRootSignature(currentRootSig);
 				commandList->SetGraphicsRootConstantBufferView(opaqueRootParameter::globalShaderData, d3D12Info.globalShaderData);
+				commandList->SetGraphicsRootShaderResourceView(opaqueRootParameter::directionalLights, light::getNonCullableLightBuffer(d3D12Info.frameIndex));
 			}
 
 			if (currentPipelineState != cache.gPassPipelineStates[i])

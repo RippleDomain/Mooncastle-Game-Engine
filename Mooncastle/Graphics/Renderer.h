@@ -11,6 +11,9 @@ namespace mooncastle::graphics
 	{
 		id::idType*		renderItemIDs{ nullptr };
 		f32*			thresholds{ nullptr };
+		u64				lightSetKey{ 0 };
+		f32				lastFrameTime{ 16.7f };
+		f32				averageFrameTime{ 16.7f };
 		u32				renderItemCount{ 0 };
 		cameraId		cameraID{ id::invalidId };
 	};

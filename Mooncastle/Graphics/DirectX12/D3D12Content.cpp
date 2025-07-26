@@ -260,11 +260,11 @@ namespace mooncastle::graphics::d3D12::content
 					dataVisibility = D3D12_SHADER_VISIBILITY_ALL;
 				}
 
-				parameters[params::globalShaderData].asCBV(D3D12_SHADER_VISIBILITY_ALL, 0);
-				parameters[params::perObjectData].asCBV(dataVisibility, 1);
 				parameters[params::positionBuffer].asSRV(bufferVisibility, 0);
 				parameters[params::elementBuffer].asSRV(bufferVisibility, 1);
 				parameters[params::srvIndices].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
+				parameters[params::directionalLights].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 3);
+				parameters[params::perObjectData].asCBV(dataVisibility, 1);
 
 				rootSignature = d3DX::D3D12RootSignatureDescription{ &parameters[0], _countof(parameters), getRootSignatureFlags(flags) }.create();
 			}

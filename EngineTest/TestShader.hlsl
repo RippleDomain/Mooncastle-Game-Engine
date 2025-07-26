@@ -45,10 +45,12 @@ struct VertexElement
 
 const static float InvIntervals = 2.f / ((1 << 16) - 1);
 
-ConstantBuffer<GlobalShaderData>    GlobalData :        register(b0, space0);
-ConstantBuffer<PerObjectData>       PerObjectBuffer :   register(b1, space0);
-StructuredBuffer<float3>            VertexPositions :   register(t0, space0);
-StructuredBuffer<VertexElement>     Elements : register(t1, space0);
+ConstantBuffer<GlobalShaderData>                GlobalData          :     register(b0, space0);
+ConstantBuffer<PerObjectData>                   PerObjectBuffer     :     register(b1, space0);
+StructuredBuffer<float3>                        VertexPositions     :     register(t0, space0);
+StructuredBuffer<VertexElement>                 Elements            :     register(t1, space0);
+
+StructuredBuffer<DirectionalLightParameters>    DirectionalLights   :     register(t3, space0);
 
 VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 {

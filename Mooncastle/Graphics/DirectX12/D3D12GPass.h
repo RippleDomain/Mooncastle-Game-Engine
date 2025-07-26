@@ -20,6 +20,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			positionBuffer,
 			elementBuffer,
 			srvIndices,
+			directionalLights,
 			perObjectData,
 			count
 		};
