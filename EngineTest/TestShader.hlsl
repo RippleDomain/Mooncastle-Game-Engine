@@ -101,8 +101,34 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 PixelOut TestShaderPS(in VertexOut psIn)
 {
     PixelOut psOut;
+    
+    //Phong shading for lighting.
+    float3 normal = normalize(psIn.WorldNormal);
+    float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
 
-    psOut.Color = float4(psIn.WorldNormal, 1.f);
+    float3 color = 0;
+
+    for (uint i = 0; i < GlobalData.NumDirectionalLights; ++i)
+    {
+        DirectionalLightParameters light = DirectionalLights[i];
+
+        float3 lightDirection = light.Direction;
+        
+        if (abs(lightDirection.z - 1.f) < 0.001f)
+        {
+            lightDirection = GlobalData.CameraDirection;
+        }
+        
+        float diffuse = max(dot(normal, -lightDirection), 0.f);
+        float3 reflection = reflect(lightDirection, normal);
+        float specular = pow(max(dot(viewDir, reflection), 0.f), 16) * 0.5f;
+
+        float3 lightColor = light.Color * light.Intensity;
+        color += (diffuse + specular) * lightColor;
+    }
+
+    float3 ambient = 10 / 255.f;
+    psOut.Color = saturate(float4(color + ambient, 1.f));
 
     return psOut;
 }

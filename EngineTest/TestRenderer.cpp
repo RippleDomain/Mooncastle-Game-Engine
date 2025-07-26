@@ -368,6 +368,8 @@ void engineTest::run()
 			info.renderItemIDs = &itemID;
 			info.renderItemCount = 1;
 			info.thresholds = &threshold;
+			info.lightSetKey = 0;
+			info.averageFrameTime = timer.dtAverage();
 			info.cameraID = surfaces[i].camera.getId();
 
 			surfaces[i].surface.surface.render(info);
