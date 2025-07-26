@@ -1,5 +1,6 @@
 #include "Platform.h"
 #include "PlatformTypes.h"
+#include "Input/InputWin32.h"
 
 #ifdef _WIN64
 
@@ -57,7 +58,9 @@ namespace mooncastle::platform
 				break;
 			}
 
-			if (resized && GetAsyncKeyState(VK_LBUTTON) >= 0)
+			input::processInputMessage(hwnd, msg, wparam, lparam);
+
+			if (resized && GetKeyState(VK_LBUTTON) >= 0)
 			{
 				windowInfo& info{ getWindowInfoFromHandle(hwnd) };
 				assert(info.hwnd);

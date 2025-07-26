@@ -4,9 +4,10 @@
 
 namespace mooncastle::math
 {
-	constexpr float pi = 3.14159265358979323846f;
-	constexpr float tau = 2.f * pi;
-	constexpr float epsilon = 1e-5f;
+	constexpr f32 pi{ 3.14159265358979323846f };
+	constexpr f32 tau{ 2.f * pi };
+	constexpr f32 halfPi{ 0.5f * pi };
+	constexpr f32 epsilon{ 1e-5f };
 
 #if defined(_WIN64)
 	using v2 = DirectX::XMFLOAT2;

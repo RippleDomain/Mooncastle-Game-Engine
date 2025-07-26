@@ -5,6 +5,7 @@
 #include "Components/Entity.h"
 #include "Components/Transform.h"
 #include "Components/Script.h"
+#include "Input/Input.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/DirectX12/D3D12Core.h"
 #include "Content/ContentToEngine.h"
@@ -230,7 +231,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity({13.76f, 3.f, -1.1f}, {-0.117f, -2.1f, 0.f}, nullptr);
+	surface.entity = createOneGameEntity({ 13.76f, 3.f, -1.1f }, { -0.117f, -2.1f, 0.f }, "cameraScript");
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -298,6 +299,36 @@ bool testInitialize()
 
 	generateLights();
 
+	input::inputSource source{};
+	source.binding = std::hash<std::string>()("move");
+	source.sourceType = input::inputSource::keyboard;
+	source.code = input::inputCode::keyA;
+	source.multiplier = 1.f;
+	source.axis = input::axis::x;
+	input::bind(source);
+
+	source.code = input::inputCode::keyD;
+	source.multiplier = -1.f;
+	input::bind(source);
+
+	source.code = input::inputCode::keyW;
+	source.multiplier = 1.f;
+	source.axis = input::axis::z;
+	input::bind(source);
+
+	source.code = input::inputCode::keyS;
+	source.multiplier = -1.f;
+	input::bind(source);
+
+	source.code = input::inputCode::keyQ;
+	source.multiplier = -1.f;
+	source.axis = input::axis::y;
+	input::bind(source);
+
+	source.code = input::inputCode::keyE;
+	source.multiplier = 1.f;
+	input::bind(source);
+
 	isRestarting = false;
 
 	return true;
@@ -305,6 +336,8 @@ bool testInitialize()
 
 void testShutdown()
 {
+	input::unbind(std::hash<std::string>()("move"));
+
 	removeLights();
 	destroyRenderItems();
 	jointTestWorkers();
