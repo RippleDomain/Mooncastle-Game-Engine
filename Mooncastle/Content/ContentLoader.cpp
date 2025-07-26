@@ -120,7 +120,7 @@ namespace mooncastle::content
             const u32 numComponents{ *at }; at += su32;
             if (!numComponents) return false;
 
-            for (u32 component_index{ 0 }; component_index < numComponents; ++component_index)
+            for (u32 componentIndex{ 0 }; componentIndex < numComponents; ++componentIndex)
             {
                 const u32 componentType{ *at }; at += su32;
 				assert(componentType < ComponentType::count);

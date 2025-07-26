@@ -296,6 +296,7 @@
     <ClCompile Include="Lights.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="RenderItem.cpp" />
+    <ClCompile Include="Scripts.cpp" />
     <ClCompile Include="ShaderCompilation.cpp" />
     <ClCompile Include="TestRenderer.cpp" />
   </ItemGroup>

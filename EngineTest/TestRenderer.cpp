@@ -16,33 +16,6 @@
 
 using namespace mooncastle;
 
-class rotatorScript;
-REGISTER_SCRIPT(rotatorScript);
-
-class rotatorScript : public script::entityScript
-{
-public:
-	constexpr explicit rotatorScript(gameEntity::entity entity) : script::entityScript{ entity } {}
-
-	void beginPlay() override {}
-
-	void update(float dt) override
-	{
-		angle += 0.25f * dt * math::tau;
-		if (angle > math::tau) angle -= math::tau;
-
-		math::v3a rot{ 0.f, angle, 0.f };
-		DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
-
-		math::v4 rotQuat{};
-		DirectX::XMStoreFloat4(&rotQuat, quat);
-		setRotation(rotQuat);
-	}
-
-private:
-	f32 angle{ 0.f };
-};
-
 //////////////// Multithreading test worker span code ////////////////
 #define ENABLE_TEST_WORKERS 0
 
@@ -106,11 +79,13 @@ void removeCameraSurface(cameraSurface& surface);
 bool testInitialize();
 void testShutdown();
 
-id::idType createRenderItem(id::idType entityID);
-void destroyRenderItem(id::idType entityID);
+void createRenderItems();
+void destroyRenderItems();
 
 void generateLights();
 void removeLights();
+
+void getRenderItems(id::idType* items, u32 count);
 
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -255,7 +230,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity({0.f, 2.f, 6.f}, {0.3f, 3.14f, 0.f}, nullptr);
+	surface.entity = createOneGameEntity({13.76f, 3.f, -1.1f}, {-0.117f, -2.1f, 0.f}, nullptr);
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -314,12 +289,12 @@ bool testInitialize()
 	//Loads the test model.
 	std::unique_ptr<u8[]> model;
 	u64 size{ 0 };
-	if (!readFile("..\\..\\EngineTest\\model.model", model, size)) return false;
+	if (!readFile("..\\..\\x64\\model.model", model, size)) return false;
 	modelID = content::createResource(model.get(), content::assetType::mesh);
 	if (!id::isValid(modelID)) return false;
 
 	initTestWorkers(bufferTestWorker);
-	itemID = createRenderItem(createOneGameEntity({}, {}, "rotatorScript").getId());
+	createRenderItems();
 
 	generateLights();
 
@@ -331,7 +306,7 @@ bool testInitialize()
 void testShutdown()
 {
 	removeLights();
-	destroyRenderItem(itemID);
+	destroyRenderItems();
 	jointTestWorkers();
 
 	if (id::isValid(modelID))
@@ -364,9 +339,12 @@ void engineTest::run()
 		{
 			f32 threshold{ 10 };
 
+			id::idType renderItems[3]{};
+			getRenderItems(&renderItems[0], 3);
+
 			graphics::frameInfo info{};
-			info.renderItemIDs = &itemID;
-			info.renderItemCount = 1;
+			info.renderItemIDs = &renderItems[0];
+			info.renderItemCount = 3;
 			info.thresholds = &threshold;
 			info.lightSetKey = 0;
 			info.averageFrameTime = timer.dtAverage();

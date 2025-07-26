@@ -8,25 +8,40 @@
 
 using namespace mooncastle;
 
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, const char* scriptName);
+void removeGameEntity(gameEntity::entityId);
 bool readFile(std::filesystem::path, std::unique_ptr<u8[]>&, u64&);
 
 namespace
 {
-	id::idType modelId{ id::invalidId };
+	id::idType labModelID{ id::invalidId };
+	id::idType fanModelID{ id::invalidId };
+	id::idType planeModelID{ id::invalidId };
+
+	id::idType labItemID{ id::invalidId };
+	id::idType fanItemID{ id::invalidId };
+	id::idType planeItemID{ id::invalidId };
+
+	gameEntity::entityId labEntityID{ id::invalidId };
+	gameEntity::entityId fanEntityID{ id::invalidId };
+	gameEntity::entityId planeEntityID{ id::invalidId };
+
 	id::idType vertexShaderId{ id::invalidId };
 	id::idType pixelShaderId{ id::invalidId };
 	id::idType materialId{ id::invalidId };
 
-	std::unordered_map<id::idType, id::idType> renderItemMap;
+	std::unordered_map<id::idType, gameEntity::entityId> renderItemMap;
 
-	void loadModel()
+	[[nodiscard]] id::idType loadModel(const char* path)
 	{
 		std::unique_ptr<u8[]> model;
 		u64 size{ 0 };
-		readFile("..\\..\\EngineTest\\model.model", model, size);
+		readFile(path, model, size);
 
-		modelId = content::createResource(model.get(), content::assetType::mesh);
-		assert(id::isValid(modelId));
+		const id::idType modelID = content::createResource(model.get(), content::assetType::mesh);
+		assert(id::isValid(modelID));
+
+		return modelID;
 	}
 
 	void loadShaders()
@@ -75,6 +90,8 @@ namespace
 
 	void createMaterial()
 	{
+		assert(id::isValid(vertexShaderId) && id::isValid(pixelShaderId));
+
 		graphics::materialInitInfo info{};
 
 		info.shaderIDs[graphics::shaderType::vertex] = vertexShaderId;
@@ -83,45 +100,60 @@ namespace
 
 		materialId = content::createResource(&info, content::assetType::material);
 	}
+
+	void removeItem(gameEntity::entityId entityID, id::idType itemID, id::idType modelID)
+	{
+		if (id::isValid(itemID))
+		{
+			graphics::removeRenderItem(itemID);
+			auto pair = renderItemMap.find(itemID);
+
+			if (pair != renderItemMap.end())
+			{
+				removeGameEntity(pair->second);
+			}
+		}
+
+		if (id::isValid(modelID))
+		{
+			content::destroyResource(modelID, content::assetType::mesh);
+		}
+	}
 }
 
-id::idType createRenderItem(id::idType entityID)
+void createRenderItems()
 {
-	//Loads a model, pretend it belongs to entityID.
-	auto first = std::thread([] { loadModel(); });
+	auto first = std::thread{ [] { planeModelID = loadModel("..\\..\\x64\\plane_model.model"); } };
+	auto second = std::thread{ [] { labModelID = loadModel("..\\..\\x64\\lab_model.model"); } };
+	auto third = std::thread{ [] { fanModelID = loadModel("..\\..\\x64\\fan_model.model"); } };
+	auto fourth = std::thread{ [] { loadShaders(); } };
 
-	//Loads a material:
-	//1) Loads textures.
-	//2) Loads shaders for that material.
-	auto second = std::thread([] { loadShaders(); });
+	labEntityID = createOneGameEntity({}, {}, nullptr).getId();
+	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
+	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.47f }, {}, "fanScript").getId();
 
 	first.join();
 	second.join();
+	third.join();
+	fourth.join();
 
-	//Add a render item using the model and its materials.
 	createMaterial();
-	id::idType materials[]{ materialId, materialId, materialId, materialId };
+	id::idType materials[]{ materialId };
 
-	id::idType itemID{ graphics::addRenderItem(entityID, modelId, _countof(materials), &materials[0])};
-	renderItemMap[itemID] = entityID;
+	planeItemID = graphics::addRenderItem(planeEntityID, planeModelID, _countof(materials), &materials[0]);
+	labItemID = graphics::addRenderItem(labEntityID, labModelID, _countof(materials), &materials[0]);
+	fanItemID = graphics::addRenderItem(fanEntityID, fanModelID, _countof(materials), &materials[0]);
 
-	return itemID;
+	renderItemMap[planeItemID] = planeEntityID;
+	renderItemMap[labItemID] = labEntityID;
+	renderItemMap[fanItemID] = fanEntityID;
 }
 
-void destroyRenderItem(id::idType itemID)
+void destroyRenderItems()
 {
-	//Removes the render item from engine (also the game entity).
-	if (id::isValid(itemID))
-	{
-		graphics::removeRenderItem(itemID);
-
-		auto pair = renderItemMap.find(itemID);
-
-		if (pair != renderItemMap.end())
-		{
-			gameEntity::remove(gameEntity::entityId{ pair->second });
-		}
-	}
+	removeItem(planeEntityID, planeItemID, planeModelID);
+	removeItem(labEntityID, labItemID, labModelID);
+	removeItem(fanEntityID, fanItemID, fanModelID);
 
 	//Remove material.
 	if (id::isValid(materialId))
@@ -138,10 +170,12 @@ void destroyRenderItem(id::idType itemID)
 	{
 		content::destroyShaderGroup(pixelShaderId);
 	}
+}
 
-	//Removes model.
-	if (id::isValid(modelId))
-	{
-		content::destroyResource(modelId, content::assetType::mesh);
-	}	
+void getRenderItems(id::idType* items, [[maybe_unused]] u32 count)
+{
+	assert(count == 3);
+	items[0] = planeItemID;
+	items[1] = labItemID;
+	items[2] = fanItemID;
 }

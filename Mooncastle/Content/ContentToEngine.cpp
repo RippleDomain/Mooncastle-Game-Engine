@@ -413,7 +413,6 @@ namespace mooncastle::content
 
 			if ((uintptr_t)pointer & singleMeshMarker)
 			{
-				assert(idCount == 1);
 				offsets.emplace_back(lodOffset{ 0, 1 });
 			}
 			else
