@@ -105,6 +105,9 @@ public:
 	{
 		inputSystem.addHandler(input::inputSource::mouse, this, &cameraScript::mouseMove);
 
+		const u64 binding{ std::hash<std::string>()("move") };
+		inputSystem.addHandler(binding, this, &cameraScript::onMove);
+
 		math::v3 startPos{ position() };
 		positionToReach = pos = DirectX::XMLoadFloat3(&startPos);
 
@@ -120,21 +123,13 @@ public:
 
 	void update(f32 dt) override
 	{
-		deltaTime = dt;
-
-		math::v3 move{};
-		input::inputValue value;
-		static u64 binding{ std::hash<std::string>()("move") };
-		input::get(binding, value);
-		move = value.current;
-
-		if (!(math::isEqual(move.x, 0.f) && math::isEqual(move.y, 0.f) && math::isEqual(move.z, 0.f)))
+		using namespace DirectX;
+		
+		if (moveMagnitude > math::epsilon)
 		{
-			using namespace DirectX;
-
 			const f32 fpsScale{ dt / 0.016667f };
 			math::v4 rot{ rotation() };
-			XMVECTOR d{ XMVector3Rotate(XMLoadFloat3(&move) * 0.05f * fpsScale, XMLoadFloat4(&rot)) };
+			XMVECTOR d{ XMVector3Rotate(move * 0.05f * fpsScale, XMLoadFloat4(&rot)) };
 
 			if (positionAcceleration < 1.f) positionAcceleration += (0.02f * fpsScale);
 
@@ -148,13 +143,23 @@ public:
 
 		if (moveRotation || movePosition) 
 		{
-			seekCamera();
+			seekCamera(dt);
 		}
 	}
 
 private:
+	void onMove(u64 binding, const input::inputValue& value)
+	{
+		using namespace DirectX;
+
+		move = XMLoadFloat3(&value.current);
+		moveMagnitude = XMVectorGetX(XMVector3LengthSq(move));
+	}
+
 	void mouseMove(input::inputSource::type type, input::inputCode::code code, const input::inputValue& mouse_pos)
 	{
+		using namespace DirectX;
+
 		if (code == input::inputCode::mousePosition)
 		{
 			input::inputValue value;
@@ -177,14 +182,14 @@ private:
 		}
 	}
 
-	void seekCamera()
+	void seekCamera(f32 deltaTime)
 	{
 		using namespace DirectX;
 		XMVECTOR p{ positionToReach - pos };
 		XMVECTOR r{ sphericalCoordinatesToReach - sphericalCoordinates };
 
-		movePosition = (XMVectorGetX(XMVector3Length(p)) > 1e-4f);
-		moveRotation = (XMVectorGetX(XMVector3Length(r)) > 1e-4f);
+		movePosition = (XMVectorGetX(XMVector3LengthSq(p)) > math::epsilon);
+		moveRotation = (XMVectorGetX(XMVector3LengthSq(r)) > math::epsilon);
 
 		const f32 scale{ 0.2f * deltaTime / 0.016667f };
 
@@ -216,7 +221,8 @@ private:
 	DirectX::XMVECTOR					pos;
 	DirectX::XMVECTOR					sphericalCoordinatesToReach;
 	DirectX::XMVECTOR					positionToReach;
-	f32									deltaTime;
+	DirectX::XMVECTOR					move{};
+	f32									moveMagnitude{ 0.f };
 	f32									positionAcceleration{ 0.f };
 	bool								moveRotation{ false };
 	bool								movePosition{ false };

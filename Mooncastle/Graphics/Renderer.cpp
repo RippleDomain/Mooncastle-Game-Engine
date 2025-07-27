@@ -283,6 +283,25 @@ namespace mooncastle::graphics
 		gfx.light.setParameter(id, lightSetKey, lightParameter::color, &color, sizeof(color));
 	}
 
+	void light::setAttenuation(math::v3 attenuation) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::attenuation, &attenuation, sizeof(attenuation));
+	}
+
+	void light::setRange(f32 range) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::range, &range, sizeof(range));
+	}
+
+	void light::setConeAngles(f32 umbra, f32 penumbra) const
+	{
+		assert(isValid());
+		gfx.light.setParameter(id, lightSetKey, lightParameter::umbra, &umbra, sizeof(umbra));
+		gfx.light.setParameter(id, lightSetKey, lightParameter::penumbra, &penumbra, sizeof(penumbra));
+	}
+
 	bool light::isEnabled() const
 	{
 		assert(isValid());
@@ -305,6 +324,38 @@ namespace mooncastle::graphics
 		math::v3 color;
 		gfx.light.getParameter(id, lightSetKey, lightParameter::color, &color, sizeof(color));
 		return color;
+	}
+
+	math::v3 light::getAttenuation() const
+	{
+		assert(isValid());
+		math::v3 attenuation;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::attenuation, &attenuation, sizeof(attenuation));
+		return attenuation;
+	}
+
+	f32 light::getRange() const
+	{
+		assert(isValid());
+		f32 range;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::range, &range, sizeof(range));
+		return range;
+	}
+
+	f32 light::getUmbra() const
+	{
+		assert(isValid());
+		f32 umbra;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::umbra, &umbra, sizeof(umbra));
+		return umbra;
+	}
+
+	f32 light::getPenumbra() const
+	{
+		assert(isValid());
+		f32 penumbra;
+		gfx.light.getParameter(id, lightSetKey, lightParameter::penumbra, &penumbra, sizeof(penumbra));
+		return penumbra;
 	}
 
 	light::type light::getLightType() const

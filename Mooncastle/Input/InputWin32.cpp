@@ -7,6 +7,7 @@ namespace mooncastle::input
 {
 	namespace
 	{
+		//TODO: Add all keys. 
 		constexpr u32 vkMapping[256]
 		{
 			/* 0x00 */ u32_invalid_id,

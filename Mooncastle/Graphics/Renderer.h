@@ -86,6 +86,10 @@ namespace mooncastle::graphics
 			isEnabled,
 			intensity,
 			color,
+			attenuation,
+			range,
+			umbra,
+			penumbra,
 			type,
 			entityId,
 			count

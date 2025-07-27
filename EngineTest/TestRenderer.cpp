@@ -362,6 +362,11 @@ bool engineTest::initialize()
 
 void engineTest::run()
 {
+	static u32 counter{ 0 };
+	static u32 lightSetKey{ 0 };
+	++counter;
+	if ((counter % 90) == 0) lightSetKey = (lightSetKey + 1) % 2;
+
 	timer.begin();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	script::update(timer.dtAverage());
@@ -370,7 +375,7 @@ void engineTest::run()
 	{
 		if (surfaces[i].surface.surface.isValid())
 		{
-			f32 threshold{ 10 };
+			f32 thresholds[3]{};
 
 			id::idType renderItems[3]{};
 			getRenderItems(&renderItems[0], 3);
@@ -378,10 +383,12 @@ void engineTest::run()
 			graphics::frameInfo info{};
 			info.renderItemIDs = &renderItems[0];
 			info.renderItemCount = 3;
-			info.thresholds = &threshold;
-			info.lightSetKey = 0;
+			info.thresholds = &thresholds[0];
+			info.lightSetKey = lightSetKey;
 			info.averageFrameTime = timer.dtAverage();
 			info.cameraID = surfaces[i].camera.getId();
+
+			assert(_countof(thresholds) >= info.renderItemCount);
 
 			surfaces[i].surface.surface.render(info);
 		}

@@ -145,6 +145,7 @@ namespace mooncastle::input
 			keyF11,
 			keyF12,
 
+			//TODO: Add these keys in the platform dependent part of the input implementation.
 			keyNumLock,
 			keyScrolLock,
 			keyColon,				
@@ -225,7 +226,7 @@ namespace mooncastle::input
 
 			for (const auto& func : bindingCallBacks)
 			{
-				if (func.binding == binding && func.instance == instance && func.callback == callback) return;
+				if (func.binding == binding && func.instance == instance && func.callBack == callback) return;
 			}
 
 			bindingCallBacks.emplace_back(bindingCallBack{ binding, instance, callback });

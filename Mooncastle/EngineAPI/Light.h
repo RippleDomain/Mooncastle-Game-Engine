@@ -26,10 +26,17 @@ namespace mooncastle::graphics
 		void setEnabled(bool isEnabled) const;
 		void setIntensity(f32 intensity) const;
 		void setColor(math::v3 color) const;
+		void setAttenuation(math::v3 attenuation) const;
+		void setRange(f32 range) const;
+		void setConeAngles(f32 umbra, f32 penumbra) const;
 
 		bool isEnabled() const;
 		f32 getIntensity() const;
 		math::v3 getColor() const;
+		math::v3 getAttenuation() const;
+		f32 getRange() const;
+		f32 getUmbra() const;
+		f32 getPenumbra() const;
 		type getLightType() const;
 		id::idType getEntityID() const;
 
