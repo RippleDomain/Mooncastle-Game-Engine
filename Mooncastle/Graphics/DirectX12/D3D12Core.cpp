@@ -6,6 +6,7 @@
 #include "D3D12Upload.h"
 #include "D3D12Content.h"
 #include "D3D12Light.h"
+#include "D3D12LightCulling.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 
@@ -283,8 +284,8 @@ namespace mooncastle::graphics::d3D12::core
             XMStoreFloat4x4A(&data.InvViewProjection, camera.getInverseViewProjection());
             XMStoreFloat3(&data.CameraPosition, camera.getPosition());
             XMStoreFloat3(&data.CameraDirection, camera.getDirection());
-            data.ViewWidth = (f32)surface.getWidth();
-            data.ViewHeight = (f32)surface.getHeight();
+            data.ViewWidth = surface.getViewport().Width;
+            data.ViewHeight = surface.getViewport().Height;
 			data.NumDirectionalLights = light::getNonCullableLightCount(info.lightSetKey);
             data.DeltaTime = deltaTime;
 
@@ -299,6 +300,7 @@ namespace mooncastle::graphics::d3D12::core
                 cbuffer.getBufferGPUAddress(shaderData),
                 surface.getWidth(),
                 surface.getHeight(),
+                surface.getLightCullingID(),
                 frameIndex,
                 deltaTime
             };
@@ -401,7 +403,7 @@ namespace mooncastle::graphics::d3D12::core
                 ppfx::initialize() &&
                 upload::initialize() &&
                 content::initialize() &&
-                light::initialize())) return failedInit();
+                culling::initialize())) return failedInit();
 
         NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
         NAME_D3D12_OBJECT(rtvDescriptorHeap.getHeap(), L"RTV Descriptor Heap");
@@ -423,7 +425,7 @@ namespace mooncastle::graphics::d3D12::core
         }
 
         //Shutdown modules.
-        light::shutdown();
+        culling::shutdown();
         content::shutdown();
         ppfx::shutdown();
         gPass::shutdown();
@@ -585,6 +587,7 @@ namespace mooncastle::graphics::d3D12::core
 
         //Geometry and lighting pass.
         light::updateLightBuffers(d3D12Info);
+		culling::cullLights(commandList, d3D12Info, barriers);
         gPass::addTransitionsForDepthGPass(barriers);
         barriers.apply(commandList);
         gPass::setRenderTargetsForGPass(commandList);

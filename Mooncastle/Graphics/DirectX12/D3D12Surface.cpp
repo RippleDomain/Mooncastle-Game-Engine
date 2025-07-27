@@ -1,5 +1,6 @@
 #include "D3D12Surface.h"
 #include "D3D12Core.h"
+#include "D3D12LightCulling.h"
 
 namespace mooncastle::graphics::d3D12
 {
@@ -53,6 +54,9 @@ namespace mooncastle::graphics::d3D12
         }
 
         finalize();
+
+        assert(!id::isValid(lightCullingID));
+        lightCullingID = culling::addCuller();
     }
 
     void D3D12Surface::present() const
@@ -113,6 +117,11 @@ namespace mooncastle::graphics::d3D12
 
     void D3D12Surface::release()
     {
+        if (id::isValid(lightCullingID))
+        {
+            culling::removeCuller(lightCullingID);
+        }
+
         for (u32 i{ 0 }; i < bufferCount; ++i)
         {
             renderTargetData& data{ targetData[i] };

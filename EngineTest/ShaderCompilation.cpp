@@ -28,9 +28,11 @@ namespace
 
 	constexpr engineShaderInfo engineShaderFiles[]
     {
-        engineShader::fullscreenTriangleVS, {"FullScreenTriangle.hlsl", "FullScreenTriangleVS", shaderType::vertex},
-		engineShader::fillColorPS, {"FillColor.hlsl", "FillColorPS", shaderType::pixel},
-		engineShader::postProcessPS, {"PostProcess.hlsl", "PostProcessPS", shaderType::pixel}
+		{engineShader::fullscreenTriangleVS, {"FullScreenTriangle.hlsl", "FullScreenTriangleVS", shaderType::vertex}},
+		{engineShader::fillColorPS, {"FillColor.hlsl", "FillColorPS", shaderType::pixel}},
+		{engineShader::postProcessPS, {"PostProcess.hlsl", "PostProcessPS", shaderType::pixel}},
+		{engineShader::gridFrustumsCS, {"GridFrustums.hlsl", "ComputeGridFrustumsCS", shaderType::compute}}
+
     };
 
     static_assert(_countof(engineShaderFiles) == engineShader::count);
@@ -317,6 +319,12 @@ bool compileShaders()
         if (!std::filesystem::exists(fullPath)) return false;
 
 		utl::vector<std::wstring> extraArgs{};
+
+		if (file.id == engineShader::gridFrustumsCS)
+		{
+			extraArgs.emplace_back(L"-D");
+			extraArgs.emplace_back(L"TILE_SIZE=16");
+		}
 
         dxcCompiledShader compiledShader{ compiler.compile(file.info, fullPath, extraArgs) };
 

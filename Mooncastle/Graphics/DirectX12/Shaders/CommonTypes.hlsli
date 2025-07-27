@@ -29,6 +29,35 @@ struct PerObjectData
     float4x4    WorldViewProjection;
 };
 
+struct Plane
+{
+    float3 Normal;
+    float Distance;
+};
+
+//View frustum planes.
+//Plane order: left, right, top, bottom.
+//Front and back planes are computed in light culling compute shader.
+struct Frustum
+{
+    Plane Planes[4];
+};
+
+struct LightCullingDispatchParameters
+{
+    //Number of groups dispatched.
+    uint2 NumThreadGroups;
+
+    //Total number of threads dispatched.
+    uint2 NumThreads;
+
+    //Number of lights to be culled.
+    uint NumLights;
+
+    //The index of current depth buffer in the SRV descriptor heap.
+    uint DepthBufferSrvIndex;
+};
+
 struct LightCullingLightInfo
 {
     float3 Position;

@@ -9,13 +9,14 @@ namespace mooncastle::graphics::d3D12
 
     struct D3D12FrameInfo
     {
-        const frameInfo*			info;
-        camera::D3D12Camera*		camera;
-        D3D12_GPU_VIRTUAL_ADDRESS	globalShaderData;
-        u32							surfaceWidth;
-        u32							surfaceHeight;
-        u32							frameIndex;
-        f32							deltaTime;
+        const frameInfo*			info{ nullptr };
+        camera::D3D12Camera*		camera{ nullptr };
+        D3D12_GPU_VIRTUAL_ADDRESS	globalShaderData{ 0 };
+        u32							surfaceWidth{ 0 };
+        u32							surfaceHeight{ 0 };
+        id::idType                  lightCullingID{ id::invalidId };
+        u32							frameIndex{ 0 };
+        f32							deltaTime{ 16.7f };
     };
 }
 

@@ -19,7 +19,8 @@ namespace mooncastle::graphics::d3D12
         DISABLE_COPY(D3D12Surface);
         constexpr D3D12Surface(D3D12Surface&& o)
             : swapChain{ o.swapChain }, window{ o.window }, currentBBIndex{ o.currentBBIndex }
-            , viewport{ o.viewport }, scissorRect{ o.scissorRect }, allowTearing{ o.allowTearing }, presentFlags{ o.presentFlags }
+            , viewport{ o.viewport }, scissorRect{ o.scissorRect }, allowTearing{ o.allowTearing }
+			, presentFlags{ o.presentFlags }, lightCullingID{ o.lightCullingID }
         {
             for (u32 i{ 0 }; i < bufferCount; ++i)
             {
@@ -55,12 +56,13 @@ namespace mooncastle::graphics::d3D12
         void present() const;
         void resize();
 
-        constexpr u32 getWidth() const { return (u32)viewport.Width; }
-        constexpr u32 getHeight() const { return (u32)viewport.Height; }
-        constexpr ID3D12Resource* const getBackBuffer() const { return targetData[currentBBIndex].resource; }
-        constexpr D3D12_CPU_DESCRIPTOR_HANDLE getRTV() const { return targetData[currentBBIndex].rtv.cpu; }
-        constexpr const D3D12_VIEWPORT& getViewport() const { return viewport; }
-        constexpr const D3D12_RECT& getScissorRect() const { return scissorRect; }
+        [[nodiscard]] constexpr u32 getWidth() const { return (u32)viewport.Width; }
+        [[nodiscard]] constexpr u32 getHeight() const { return (u32)viewport.Height; }
+        [[nodiscard]] constexpr ID3D12Resource* const getBackBuffer() const { return targetData[currentBBIndex].resource; }
+        [[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE getRTV() const { return targetData[currentBBIndex].rtv.cpu; }
+        [[nodiscard]] constexpr const D3D12_VIEWPORT& getViewport() const { return viewport; }
+        [[nodiscard]] constexpr const D3D12_RECT& getScissorRect() const { return scissorRect; }
+        [[nodiscard]] constexpr const id::idType getLightCullingID() const { return lightCullingID; }
 
     private:
         void release();
@@ -82,6 +84,7 @@ namespace mooncastle::graphics::d3D12
             presentFlags = 0;
             viewport = {};
             scissorRect = {};
+			lightCullingID = id::invalidId;
         }
 
         constexpr void move(D3D12Surface& o)
@@ -99,6 +102,7 @@ namespace mooncastle::graphics::d3D12
             presentFlags = o.presentFlags;
             viewport = o.viewport;
             scissorRect = o.scissorRect;
+			lightCullingID = o.lightCullingID;
 
             o.reset();
         }
@@ -118,5 +122,6 @@ namespace mooncastle::graphics::d3D12
         u32              presentFlags{ 0 };
         D3D12_VIEWPORT   viewport{};
         D3D12_RECT       scissorRect{};
+		id::idType       lightCullingID{ id::invalidId };
     };
 }

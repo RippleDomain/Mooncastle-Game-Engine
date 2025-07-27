@@ -140,7 +140,7 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 	}
 
-	if ((resized && GetAsyncKeyState(VK_LBUTTON) >= 0) || toggleFullscreen)
+	if ((resized && GetKeyState(VK_LBUTTON) >= 0) || toggleFullscreen)
 	{
 		platform::window win{ platform::windowId{(id::idType)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
 
@@ -365,7 +365,7 @@ void engineTest::run()
 	static u32 counter{ 0 };
 	static u32 lightSetKey{ 0 };
 	++counter;
-	if ((counter % 90) == 0) lightSetKey = (lightSetKey + 1) % 2;
+	//if ((counter % 90) == 0) lightSetKey = (lightSetKey + 1) % 2;
 
 	timer.begin();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));

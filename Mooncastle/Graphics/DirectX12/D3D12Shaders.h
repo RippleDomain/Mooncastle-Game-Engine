@@ -11,6 +11,7 @@ namespace mooncastle::graphics::d3D12::shaders
 			fullscreenTriangleVS = 0,
 			fillColorPS = 1,
 			postProcessPS = 2,
+			gridFrustumsCS = 3,
 			count
 		};
 	};

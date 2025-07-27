@@ -68,6 +68,11 @@ namespace mooncastle::platform
 				resized = false;
 			}
 
+			if (msg == WM_SYSCOMMAND && wparam == SC_KEYMENU)
+			{
+				return 0;
+			}
+
 			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, 0) };
 			return longPtr ? ((windowProc)longPtr)(hwnd, msg, wparam, lparam) : DefWindowProc(hwnd, msg, wparam, lparam);
 		}
