@@ -31,7 +31,8 @@ namespace
 		{engineShader::fullscreenTriangleVS, {"FullScreenTriangle.hlsl", "FullScreenTriangleVS", shaderType::vertex}},
 		{engineShader::fillColorPS, {"FillColor.hlsl", "FillColorPS", shaderType::pixel}},
 		{engineShader::postProcessPS, {"PostProcess.hlsl", "PostProcessPS", shaderType::pixel}},
-		{engineShader::gridFrustumsCS, {"GridFrustums.hlsl", "ComputeGridFrustumsCS", shaderType::compute}}
+		{engineShader::gridFrustumsCS, {"GridFrustums.hlsl", "ComputeGridFrustumsCS", shaderType::compute}},
+		{engineShader::lightCullingCS, {"CullLights.hlsl", "CullLightsCS", shaderType::compute}}
 
     };
 
@@ -221,20 +222,9 @@ namespace
 
 		auto shadersCompilationTime = std::filesystem::last_write_time(engineShadersPath);
 
-		std::filesystem::path fullPath{};
-
-		for (u32 i{ 0 }; i < engineShader::count; ++i)
+		for (const auto& entry : std::filesystem::directory_iterator{ shadersSourcePath })
 		{
-			auto& file = engineShaderFiles[i];
-
-			fullPath = shadersSourcePath;
-			fullPath += file.info.fileName;
-
-			if (!std::filesystem::exists(fullPath)) return false;
-
-			auto shaderFileTime = std::filesystem::last_write_time(fullPath);
-
-			if (shaderFileTime > shadersCompilationTime)
+			if (entry.last_write_time() > shadersCompilationTime)
 			{
 				return false;
 			}
@@ -320,10 +310,10 @@ bool compileShaders()
 
 		utl::vector<std::wstring> extraArgs{};
 
-		if (file.id == engineShader::gridFrustumsCS)
+		if (file.id == engineShader::gridFrustumsCS || file.id == engineShader::lightCullingCS)
 		{
 			extraArgs.emplace_back(L"-D");
-			extraArgs.emplace_back(L"TILE_SIZE=16");
+			extraArgs.emplace_back(L"TILE_SIZE=32");
 		}
 
         dxcCompiledShader compiledShader{ compiler.compile(file.info, fullPath, extraArgs) };

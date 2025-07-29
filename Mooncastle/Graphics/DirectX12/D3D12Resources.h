@@ -64,10 +64,7 @@ namespace mooncastle::graphics::d3D12 {
 		D3D12_RESOURCE_STATES				initialState{};
 		D3D12_RESOURCE_FLAGS				flags{ D3D12_RESOURCE_FLAG_NONE };
 		u32									size{ 0 };
-		u32									stride{ 0 };
-		u32									elementCount{ 0 };
 		u32									alignment{ 0 };
-		bool								createUAV{ false };
 	};
 
 	class D3D12Buffer
@@ -188,6 +185,92 @@ namespace mooncastle::graphics::d3D12 {
 		u8*				cpuAddress{ nullptr };
 		u32				cpuOffset{ 0 };
 		std::mutex		constantBufferMutex{};
+	};
+
+	class structuredBuffer
+	{
+	public:
+		structuredBuffer() = default;
+		explicit structuredBuffer(const D3D12BufferInitInfo& info);
+
+		DISABLE_COPY(structuredBuffer);
+
+		constexpr structuredBuffer(structuredBuffer&& o)
+			: buffer{ std::move(o.buffer) }, uav{ o.uav }
+			, uavShaderVisible{ o.uavShaderVisible }
+		{
+			o.reset();
+		}
+
+		constexpr structuredBuffer& operator=(structuredBuffer&& o)
+		{
+			assert(this != &o);
+			if (this != &o)
+			{
+				release();
+				move(o);
+			}
+
+			return *this;
+		}
+
+		~structuredBuffer() { release(); }
+
+		void release();
+
+		void clearUAV(ID3D12GraphicsCommandList *const commandList, const u32 *const values) const
+		{
+			assert(getBuffer());
+			assert(uav.isValid() && uavShaderVisible.isValid() && uavShaderVisible.isShaderVisible());
+
+			commandList->ClearUnorderedAccessViewUint(uavShaderVisible.gpu, uav.cpu, getBuffer(), values, 0, nullptr);
+		}
+
+		void clearUAV(ID3D12GraphicsCommandList *const commandList, const f32 *const values) const
+		{
+			assert(getBuffer());
+			assert(uav.isValid() && uavShaderVisible.isValid() && uavShaderVisible.isShaderVisible());
+
+			commandList->ClearUnorderedAccessViewFloat(uavShaderVisible.gpu, uav.cpu, getBuffer(), values, 0, nullptr);
+		}
+
+		[[nodiscard]] constexpr ID3D12Resource* getBuffer() const { return buffer.getBuffer(); }
+		[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const { return buffer.getGPUAddress(); }
+		[[nodiscard]] constexpr u32 getSize() const { return buffer.getSize(); }
+		[[nodiscard]] constexpr descriptorHandle getUAV() const { return uav; }
+		[[nodiscard]] constexpr descriptorHandle getUAVShaderVisible() const { return uavShaderVisible; }
+
+		[[nodiscard]] constexpr static D3D12BufferInitInfo getDefaultInitInfo(u32 size)
+		{
+			assert(size);
+
+			D3D12BufferInitInfo info{};
+			info.size = size;
+			info.alignment = sizeof(math::v4);
+			info.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+			return info;
+		}
+
+	private:
+		constexpr void move(structuredBuffer& o)
+		{
+			buffer = std::move(o.buffer);
+			uav = o.uav;
+			uavShaderVisible = o.uavShaderVisible;
+
+			o.reset();
+		}
+
+		constexpr void reset()
+		{
+			uav = {};
+			uavShaderVisible = {};
+		}
+
+		D3D12Buffer        buffer{};
+		descriptorHandle   uav{};
+		descriptorHandle   uavShaderVisible{};
 	};
 
 	struct D3D12TextureInitInfo

@@ -12,6 +12,7 @@ namespace mooncastle::graphics::d3D12::shaders
 			fillColorPS = 1,
 			postProcessPS = 2,
 			gridFrustumsCS = 3,
+			lightCullingCS = 4,
 			count
 		};
 	};

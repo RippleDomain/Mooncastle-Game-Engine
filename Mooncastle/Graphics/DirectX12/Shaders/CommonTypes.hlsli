@@ -4,6 +4,8 @@
 
 #endif
 
+#define USE_BOUNDING_SPHERES 1
+
 struct GlobalShaderData
 {
     float4x4    View;
@@ -35,6 +37,31 @@ struct Plane
     float Distance;
 };
 
+struct Sphere
+{
+    float3 Center;
+    float Radius;
+};
+
+struct Cone
+{
+    float3 Tip;
+    float Height;
+    float3 Direction;
+    float Radius;
+};
+
+#if USE_BOUNDING_SPHERES
+
+//Frustum cone in view space.
+struct Frustum
+{
+    float3 ConeDirection;
+    float UnitRadius;
+};
+
+#else
+
 //View frustum planes.
 //Plane order: left, right, top, bottom.
 //Front and back planes are computed in light culling compute shader.
@@ -42,6 +69,20 @@ struct Frustum
 {
     Plane Planes[4];
 };
+
+#endif
+
+#ifndef __cplusplus
+
+struct ComputeShaderInput
+{
+    uint3 GroupID           :   SV_GroupID;             //3D index of the thread group in the dispatch.
+    uint3 GroupThreadID     :   SV_GroupThreadID;       //3D index of local thread ID in a thread group.
+    uint3 DispatchThreadID  :   SV_DispatchThreadID;    //3D index of global thread ID in the dispatch.
+    uint GroupIndex         :   SV_GroupIndex;          //Flattened local index of the thread within a thread group.
+};
+
+#endif
 
 struct LightCullingDispatchParameters
 {
@@ -64,8 +105,11 @@ struct LightCullingLightInfo
     float Range;
 
     float3 Direction;
+#if USE_BOUNDING_SPHERES
+    float CosPenumbra;
+#else
     float ConeRadius;
-
+#endif
     uint Type;
     float3 Pad;
 };
@@ -76,16 +120,18 @@ struct LightParameters
     float Intensity;
 
     float3 Direction;
-    uint Type;
-
-    float3 Color;
     float Range;
 
-    float3 Attenuation;
+    float3 Color;
     float CosUmbra;
 
+    float3 Attenuation;
     float CosPenumbra;
+    
+#if !USE_BOUNDING_SPHERES
+    uint Type;
     float3 Pad;
+#endif
 };
 
 struct DirectionalLightParameters

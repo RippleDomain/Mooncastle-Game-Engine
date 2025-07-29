@@ -19,5 +19,9 @@ namespace mooncastle::graphics::d3D12::light
 
 	void updateLightBuffers(const D3D12FrameInfo& d3D12Info);
 	D3D12_GPU_VIRTUAL_ADDRESS getNonCullableLightBuffer(u32 frameIndex);
+	D3D12_GPU_VIRTUAL_ADDRESS getCullableLightBuffer(u32 frameIndex);
+	D3D12_GPU_VIRTUAL_ADDRESS getCullingInfoBuffer(u32 frameIndex);
+	D3D12_GPU_VIRTUAL_ADDRESS getBoundingSpheresBuffer(u32 frameIndex);
 	u32 getNonCullableLightCount(u64 lightSetKey);
+	u32 getCullableLightCount(u64 lightSetKey);
 }

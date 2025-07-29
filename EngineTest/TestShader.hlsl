@@ -51,6 +51,9 @@ StructuredBuffer<float3>                        VertexPositions     :     regist
 StructuredBuffer<VertexElement>                 Elements            :     register(t1, space0);
 
 StructuredBuffer<DirectionalLightParameters>    DirectionalLights   :     register(t3, space0);
+StructuredBuffer<LightParameters>               CullableLights      :     register(t4, space0);
+StructuredBuffer<uint2>                         LightGrid           :     register(t5, space0);
+StructuredBuffer<uint>                          LightIndexList      :     register(t6, space0);
 
 VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 {
@@ -97,6 +100,93 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     return vsOut;
 }
 
+#define TILE_SIZE 32
+#define NO_LIGHT_ATTENUATION 0
+
+float3 CalculateLighting(float3 N, float3 L, float3 V, float3 lightColor)
+{
+    const float NoL = dot(N, L);
+    float specular = 0;
+
+    if (NoL > 0.f)
+    {
+        const float3 R = reflect(-L, N);
+        const float VoR = max(dot(V, R), 0.f);
+        specular = saturate(NoL * pow(VoR, 4.f) * 0.5f);
+    }
+
+    return (max(0.f, NoL) + specular) * lightColor;
+}
+
+float3 PointLight(float3 N, float3 worldPosition, float3 V, LightParameters light)
+{
+    float3 L = light.Position - worldPosition;
+    const float dSq = dot(L, L);
+    float3 color = 0.f;
+    
+#if NO_LIGHT_ATTENUATION
+    
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * 0.02f;
+    }
+    
+#else
+    
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation);
+    }
+    
+#endif
+    return color;
+}
+
+float3 Spotlight(float3 N, float3 worldPosition, float3 V, LightParameters light)
+{
+    float3 L = light.Position - worldPosition;
+    const float dSq = dot(L, L);
+    float3 color = 0.f;
+    
+#if NO_LIGHT_ATTENUATION
+    
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float CosAngleToLight = saturate(dot(-L, light.Direction));
+        const float angularAttenuation = float(light.CosPenumbra < CosAngleToLight);
+        color = saturate(dot(N, L)) * light.Color * light.Intensity * angularAttenuation * 0.02f;
+    }
+    
+#else
+    
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        const float CosAngleToLight = saturate(dot(-L, light.Direction));
+        const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, CosAngleToLight);
+        color = CalculateLighting(N, L, V, light.Color * light.Intensity * attenuation * angularAttenuation);
+    }
+    
+#endif
+    return color;
+}
+
+uint GetGridIndex(float2 posXY, float viewWidth)
+{
+    const uint2 pos = uint2(posXY);
+    const uint tileX = ceil(viewWidth / TILE_SIZE);
+    return (pos.x / TILE_SIZE) + (tileX * (pos.y / TILE_SIZE));
+}
+
 [earlydepthstencil]
 PixelOut TestShaderPS(in VertexOut psIn)
 {
@@ -107,27 +197,65 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
 
     float3 color = 0;
-
-    for (uint i = 0; i < GlobalData.NumDirectionalLights; ++i)
+    uint i = 0;
+    
+    for (i = 0; i < GlobalData.NumDirectionalLights; ++i)
     {
         DirectionalLightParameters light = DirectionalLights[i];
 
-        float3 lightDirection = light.Direction;
-        
-        if (abs(lightDirection.z - 1.f) < 0.001f)
+        float3 LightDirection = light.Direction;
+        if (abs(LightDirection.z - 1.f) < 0.001f)
         {
-            lightDirection = GlobalData.CameraDirection;
+            LightDirection = GlobalData.CameraDirection;
         }
-        
-        float diffuse = max(dot(normal, -lightDirection), 0.f);
-        float3 reflection = reflect(lightDirection, normal);
-        float specular = pow(max(dot(viewDir, reflection), 0.f), 16) * 0.5f;
 
-        float3 lightColor = light.Color * light.Intensity;
-        color += (diffuse + specular) * lightColor;
+        //Directional light.
+        color += 0.1f * CalculateLighting(normal, -LightDirection, viewDir, light.Color * light.Intensity);
     }
 
-    float3 ambient = 10 / 255.f;
+    const uint gridIndex = GetGridIndex(psIn.HomogeneousPosition.xy, GlobalData.ViewWidth);
+    uint lightStartIndex = LightGrid[gridIndex].x;
+    const uint lightCount = LightGrid[gridIndex].y;
+
+#if USE_BOUNDING_SPHERES
+    
+    const uint numPointLights = lightStartIndex + (lightCount >> 16);
+    const uint numSpotlights = numPointLights + (lightCount & 0xffff);
+    
+    for (i = lightStartIndex; i < numPointLights; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        LightParameters light = CullableLights[lightIndex];
+        color += PointLight(normal, psIn.WorldPosition, viewDir, light);
+    }
+    
+    for (i = numPointLights; i < numSpotlights; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        LightParameters light = CullableLights[lightIndex];
+        color += Spotlight(normal, psIn.WorldPosition, viewDir, light);
+    }
+    
+#else
+    
+    for (i = 0; i < lightCount; ++i)
+    {
+        const uint lightIndex = LightIndexList[lightStartIndex + i];
+        LightParameters light = CullableLights[lightIndex];
+
+        if (light.Type == LIGHT_TYPE_POINT_LIGHT)
+        {
+            color += PointLight(normal, psIn.WorldPosition, viewDir, light);
+        }
+        else if (light.Type == LIGHT_TYPE_SPOTLIGHT)
+        {
+            color += Spotlight(normal, psIn.WorldPosition, viewDir, light);
+        }
+    }
+    
+#endif
+
+    float3 ambient = 0 / 255.f;
     psOut.Color = saturate(float4(color + ambient, 1.f));
 
     return psOut;

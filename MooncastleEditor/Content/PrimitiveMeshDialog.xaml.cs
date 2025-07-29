@@ -51,10 +51,10 @@ namespace MooncastleEditor.Content
             {
                 case PrimitiveMeshType.Plane:
                     {
-                        info.SegmentX = Math.Max(1, (int)xSliderPlane.Value);
-                        info.SegmentZ = Math.Max(1, (int)zSliderPlane.Value);
-                        info.Size.X = Math.Max(Value(widthScalarBoxPlane, 0.001f), 0.001f);
-                        info.Size.Z = Math.Max(Value(lengthScalarBoxPlane, 0.001f), 0.001f);
+                        info.SegmentX = (int)xSliderPlane.Value;
+                        info.SegmentZ = (int)zSliderPlane.Value;
+                        info.Size.X = Value(widthScalarBoxPlane, 0.001f);
+                        info.Size.Z = Value(lengthScalarBoxPlane, 0.001f);
                     }
                     break;
                 case PrimitiveMeshType.Cube:

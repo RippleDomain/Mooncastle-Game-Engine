@@ -4,6 +4,7 @@
 #include "D3D12Content.h"
 #include "D3D12Light.h"
 #include "D3D12Camera.h"
+#include "D3D12LightCulling.h"
 #include "Shaders/SharedTypes.h"
 #include "Components/Transform.h"
 #include "Components/Entity.h"
@@ -348,6 +349,8 @@ namespace mooncastle::graphics::d3D12::gPass
 	{
 		const gPassCache& cache{ frameCache };
 		const u32 itemsCount{ cache.getSize() };
+		const u32 frameIndex{ d3D12Info.frameIndex };
+		const id::idType lightCullingID{ d3D12Info.lightCullingID };
 
 		ID3D12RootSignature* currentRootSig{ nullptr };
 		ID3D12PipelineState* currentPipelineState{ nullptr };
@@ -356,10 +359,15 @@ namespace mooncastle::graphics::d3D12::gPass
 		{
 			if (currentRootSig != cache.rootSignatures[i])
 			{
+				using idx = opaqueRootParameter;
+
 				currentRootSig = cache.rootSignatures[i];
 				commandList->SetGraphicsRootSignature(currentRootSig);
-				commandList->SetGraphicsRootConstantBufferView(opaqueRootParameter::globalShaderData, d3D12Info.globalShaderData);
-				commandList->SetGraphicsRootShaderResourceView(opaqueRootParameter::directionalLights, light::getNonCullableLightBuffer(d3D12Info.frameIndex));
+				commandList->SetGraphicsRootConstantBufferView(idx::globalShaderData, d3D12Info.globalShaderData);
+				commandList->SetGraphicsRootShaderResourceView(idx::directionalLights, light::getNonCullableLightBuffer(frameIndex));
+				commandList->SetGraphicsRootShaderResourceView(idx::cullableLights, light::getCullableLightBuffer(frameIndex));
+				commandList->SetGraphicsRootShaderResourceView(idx::lightGrid, culling::getLightGridOpaque(lightCullingID, frameIndex));
+				commandList->SetGraphicsRootShaderResourceView(idx::lightIndexList, culling::getLightIndexListOpaque(lightCullingID, frameIndex));
 			}
 
 			if (currentPipelineState != cache.gPassPipelineStates[i])

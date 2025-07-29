@@ -8,8 +8,9 @@ struct ShaderConstants
 ConstantBuffer<GlobalShaderData>    GlobalData      :   register(b0, space0);
 ConstantBuffer<ShaderConstants>     ShaderParams    :   register(b1, space0);
 
-#define TILE_SIZE 16
-StructuredBuffer<Frustum> Frustums : register(t0, space0);
+#define TILE_SIZE 32
+StructuredBuffer<Frustum>           Frustums        :   register(t0, space0);
+StructuredBuffer<uint2>             LightGridOpaque :   register(t1, space0);
 
 uint GetGridIndex(float2 posXY, float viewWidth)
 {
@@ -18,13 +19,53 @@ uint GetGridIndex(float2 posXY, float viewWidth)
     return (pos.x / TILE_SIZE) + (tileX * (pos.y / TILE_SIZE));
 }
 
+//Adapted from WickedEngine: https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/shaders/LightCullingCS.hlsl
+float4 Heatmap(StructuredBuffer<uint2> buffer, float2 posXY, float blend)
+{
+    const float w = GlobalData.ViewWidth;
+    const uint gridIndex = GetGridIndex(posXY, w);
+    uint numLights = buffer[gridIndex].y;
+    
+#if USE_BOUNDING_SPHERES
+    const uint numPointLights = numLights >> 16;
+    const uint numSpotLights = numLights & 0xffff;
+    numLights = numPointLights + numSpotLights;
+#endif
+
+    const float3 mapTex[] =
+    {
+        float3(0, 0, 0),
+        float3(0, 0, 1),
+        float3(0, 1, 0),
+        float3(1, 1, 0),
+        float3(1, 0, 0),
+    };
+    
+    const uint mapTexLen = 5;
+    const uint maxHeat = 40;
+    float l = saturate((float) numLights / maxHeat) * mapTexLen;
+    float3 a = mapTex[floor(l)];
+    float3 b = mapTex[ceil(l)];
+    float3 heatmap = lerp(a, b, l - floor(l));
+
+    Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+    return float4(lerp(gpassMain[posXY].xyz, heatmap, blend), 1.f);
+}
+
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_Target0
 {
-#if 1
-    
     const float w = GlobalData.ViewWidth;
     const uint gridIndex = GetGridIndex(Position.xy, w);
     const Frustum f = Frustums[gridIndex];
+    
+#if 0
+    
+#if USE_BOUNDING_SPHERES
+    
+    float3 color = abs(f.ConeDirection); 
+    
+#else
+    
     const uint halfTile = TILE_SIZE / 2;
     float3 color = abs(f.Planes[1].Normal);
 
@@ -43,6 +84,8 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     {
         color = abs(f.Planes[3].Normal);
     }
+    
+#endif
 
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     color = lerp(gpassMain[Position.xy].xyz, color, 0.3f);
@@ -64,6 +107,10 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     return float4((float3) c, 1.f);
     
 #elif 0
+    
+    return Heatmap(LightGridOpaque, Position.xy, 0.75f);
+    
+#elif 1
     
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     return float4(gpassMain[Position.xy].xyz, 1.f);

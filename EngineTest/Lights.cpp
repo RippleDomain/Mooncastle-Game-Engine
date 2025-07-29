@@ -17,6 +17,7 @@ namespace
 	constexpr f32 invRandMax{ 1.f / RAND_MAX };
 
 	utl::vector<graphics::light> lights;
+	utl::vector<graphics::light> disabledLights;
 
 	constexpr math::v3 rgbToColor(u8 r, u8 g, u8 b) { return { r / 255.f, g / 255.f, b / 255.f }; }
 
@@ -24,7 +25,8 @@ namespace
 
 	void createLight(math::v3 position, math::v3 rotation, graphics::light::type type, u64 lightSetKey)
 	{
-		gameEntity::entityId entityId{ createOneGameEntity(position, rotation, nullptr).getId() };
+		const char* scriptName{ nullptr }; //{ type == graphics::light::spot ? "rotatorScript" : nullptr };
+		gameEntity::entityId entityId{ createOneGameEntity(position, rotation, scriptName).getId() };
 
 		graphics::lightInitInfo info{};
 		info.entityID = entityId;
@@ -108,16 +110,17 @@ void generateLights()
 #if !RANDOM_LIGHTS
 
 	createLight({ 0, -3, 0 }, {}, graphics::light::point, leftSet);
-	createLight({ 0, -6, 0 }, {}, graphics::light::point, leftSet);
-	createLight({ 0, -3, 2.5f }, {}, graphics::light::point, leftSet);
-	createLight({ 0, 7, 0 }, { 0, 3.14f, 0 }, graphics::light::spot, leftSet);
+	createLight({ 0, 0.2, 1.f }, {}, graphics::light::point, leftSet);
+	createLight({ 0, 3, 2.5f }, {}, graphics::light::point, leftSet);
+	createLight({ 0, 0.1, 7 }, { 0, 3.14f, 0 }, graphics::light::spot, leftSet);
 
 #else
 
 	srand(37);
 
-	constexpr math::v3 scale{ 1.f, 0.5f, 1.f };
-	constexpr i32 dim{ 5 };
+	constexpr f32 scale1{ 1 };
+	constexpr math::v3 scale{ 1.f * scale1, 0.5f * scale1, 1.f * scale1 };
+	constexpr i32 dim{ 20 };
 
 	for (i32 x{ -dim }; x < dim; ++x)
 	{
@@ -126,10 +129,12 @@ void generateLights()
 			for (i32 z{ -dim }; z < dim; ++z)
 			{
 				createLight({ (f32)(x * scale.x), (f32)(y * scale.y), (f32)(z * scale.z) },
-					{ 3.14f, random(), 0.f }, random() > 0.5f ? graphics::light::spot : graphics::light::point, leftSet);
+					{ random() * 3.14f, random() * 3.14f, random() * 3.14f },
+						random() > 0.5f ? graphics::light::spot : graphics::light::point, leftSet);
 
 				createLight({ (f32)(x * scale.x), (f32)(y * scale.y), (f32)(z * scale.z) },
-					{ 3.14f, random(), 0.f }, random() > 0.5f ? graphics::light::spot : graphics::light::point, rightSet);
+					{ random() * 3.14f, random() * 3.14f, random() * 3.14f },
+						random() > 0.5f ? graphics::light::spot : graphics::light::point, rightSet);
 			}
 		}
 	}
@@ -147,4 +152,85 @@ void removeLights()
 	}
 
 	lights.clear();
+}
+
+void testLights(f32 dt)
+{
+#if 0
+	static f32 t{ 0 };
+	t += 0.05f;
+
+	for (u32 i{ 0 }; i < (u32)lights.size(); i++)
+	{
+		f32 sine{ DirectX::XMScalarSin(t + lights[i].getID()) };
+		sine *= sine;
+		lights[i].setIntensity(2.f * sine);
+	}
+#else
+	u32 count{ (u32)(random(0.1f) * 100) };
+
+	for (u32 i{ 0 }; i < count; ++i)
+	{
+		if (!lights.size()) break;
+
+		const u32 index{ (u32)(random() * (lights.size() - 1)) };
+		graphics::light light{ lights[index] };
+		light.setEnabled(false);
+		utl::erase_unordered(lights, index);
+		disabledLights.emplace_back(light);
+	}
+
+	count = (u32)(random(0.1f) * 50);
+
+	for (u32 i{ 0 }; i < count; ++i)
+	{
+		if (!lights.size()) break;
+
+		const u32 index{ (u32)(random() * (lights.size() - 1)) };
+		graphics::light light{ lights[index] };
+		const gameEntity::entityId id{ light.getEntityID() };
+		graphics::removeLight(light.getID(), light.getLightSetKey());
+		removeGameEntity(id);
+		utl::erase_unordered(lights, index);
+	}
+
+	count = (u32)(random(0.1f) * 50);
+
+	for (u32 i{ 0 }; i < count; ++i)
+	{
+		if (!disabledLights.size()) break;
+
+		const u32 index{ (u32)(random() * (disabledLights.size() - 1)) };
+		graphics::light light{ disabledLights[index] };
+		const gameEntity::entityId id{ light.getEntityID() };
+		graphics::removeLight(light.getID(), light.getLightSetKey());
+		removeGameEntity(id);
+		utl::erase_unordered(disabledLights, index);
+	}
+
+	count = (u32)(random(0.1f) * 100);
+
+	for (u32 i{ 0 }; i < count; ++i)
+	{
+		if (!disabledLights.size()) break;
+
+		const u32 index{ (u32)(random() * (disabledLights.size() - 1)) };
+		graphics::light light{ disabledLights[index] };
+		light.setEnabled(true);
+		utl::erase_unordered(disabledLights, index);
+		lights.emplace_back(light);
+	}
+
+	constexpr f32 scale1{ 1 };
+	constexpr math::v3 scale{ 1.f * scale1, 0.5f * scale1, 1.f * scale1 };
+	count = (u32)(random(0.1f) * 50);
+
+	for (u32 i{ 0 }; i < count; ++i)
+	{
+		math::v3 p1{ (random() * 2 - 1.f) * 13.f * scale.x, random() * 2 * 13.f * scale.y, (random() * 2 - 1.f) * 13.f * scale.z };
+		math::v3 p2{ (random() * 2 - 1.f) * 13.f * scale.x, random() * 2 * 13.f * scale.y, (random() * 2 - 1.f) * 13.f * scale.z };
+		createLight(p1, { random() * 3.14f, random() * 3.14f, random() * 3.14f }, random() > 0.5f ? graphics::light::spot : graphics::light::point, leftSet);
+		createLight(p2, { random() * 3.14f, random() * 3.14f, random() * 3.14f }, random() > 0.5f ? graphics::light::spot : graphics::light::point, rightSet);
+	}
+#endif
 }

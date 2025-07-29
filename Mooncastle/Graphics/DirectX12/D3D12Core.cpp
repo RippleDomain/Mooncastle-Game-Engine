@@ -10,7 +10,7 @@
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
 
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 606; }
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 616; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
 
 using namespace Microsoft::WRL;
@@ -231,7 +231,8 @@ namespace mooncastle::graphics::d3D12::core
 
         D3D_FEATURE_LEVEL getMaxFeatureLevel(IDXGIAdapter4* adapter)
         {
-            constexpr D3D_FEATURE_LEVEL featureLevels[4]{
+            constexpr D3D_FEATURE_LEVEL featureLevels[4]
+            {
                 D3D_FEATURE_LEVEL_11_0,
                 D3D_FEATURE_LEVEL_11_1,
                 D3D_FEATURE_LEVEL_12_0,
@@ -375,6 +376,7 @@ namespace mooncastle::graphics::d3D12::core
         {
             ComPtr<ID3D12InfoQueue> infoQueue;
             DXCall(mainDevice->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+
             infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
             infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
             infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
@@ -569,9 +571,12 @@ namespace mooncastle::graphics::d3D12::core
         d3DX::D3D12ResourceBarrier& barriers{ resourceBarriers };
         
         //Records commands.
-        ID3D12DescriptorHeap *const heaps[]{ srvDescriptorHeap.getHeap() };
-
-        commandList->SetDescriptorHeaps(1, &heaps[0]);
+        ID3D12DescriptorHeap* const heaps[]
+        {
+            srvDescriptorHeap.getHeap()
+            //samplerDescriptorHeap.getHeap()
+        };
+        commandList->SetDescriptorHeaps(_countof(heaps), heaps);
         commandList->RSSetViewports(1, &surface.getViewport());
         commandList->RSSetScissorRects(1, &surface.getScissorRect());
 

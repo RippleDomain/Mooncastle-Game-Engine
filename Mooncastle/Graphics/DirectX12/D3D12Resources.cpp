@@ -174,6 +174,40 @@ namespace mooncastle::graphics::d3D12
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// STRUCTURED BUFFER
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    structuredBuffer::structuredBuffer(const D3D12BufferInitInfo& info) : buffer{ info, false }
+    {
+        assert(info.size && info.alignment);
+        assert(info.alignment > 0);
+
+        NAME_D3D12_OBJECT_INDEXED(getBuffer(), info.size, L"Structured Buffer - Size");
+
+        assert(info.flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+        uav = core::getUAVHeap().allocate();
+        uavShaderVisible = core::getSRVHeap().allocate();
+
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
+        desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        desc.Format = DXGI_FORMAT_R32_UINT;
+        desc.Buffer.CounterOffsetInBytes = 0;
+        desc.Buffer.FirstElement = 0;
+        desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+        desc.Buffer.NumElements = buffer.getSize() / sizeof(u32);
+
+        core::device()->CreateUnorderedAccessView(getBuffer(), nullptr, &desc, uav.cpu);
+        core::device()->CopyDescriptorsSimple(1, uavShaderVisible.cpu, uav.cpu, core::getSRVHeap().getType());
+    }
+
+    void structuredBuffer::release()
+    {
+        core::getSRVHeap().free(uavShaderVisible);
+        core::getUAVHeap().free(uav);
+        buffer.release();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// D3D12 TEXTURE
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     D3D12Texture::D3D12Texture(D3D12TextureInitInfo info)

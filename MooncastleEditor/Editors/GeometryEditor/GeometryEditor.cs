@@ -112,8 +112,8 @@ namespace MooncastleEditor.Editors
                 {
                     _cameraPosition = value;
                     CameraDirection = new Vector3D(-value.X, -value.Y, -value.Z);
-                    OnPropertyChanged(nameof(OffsetCameraPosition));
                     OnPropertyChanged(nameof(CameraPosition));
+                    OnPropertyChanged(nameof(OffsetCameraPosition));
                 }
             }
         }
@@ -127,8 +127,8 @@ namespace MooncastleEditor.Editors
                 if (_cameraTarget != value)
                 {
                     _cameraTarget = value;
-                    OnPropertyChanged(nameof(OffsetCameraPosition));
                     OnPropertyChanged(nameof(CameraTarget));
+                    OnPropertyChanged(nameof(OffsetCameraPosition));
                 }
             }
         }

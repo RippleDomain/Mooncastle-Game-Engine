@@ -16,6 +16,7 @@ namespace mooncastle::graphics::d3D12::ppfx
 				globalShaderData,
 				rootConstants,
 				frustums,
+				lightGridOpaque,
 				count
 			};
 		};
@@ -33,6 +34,7 @@ namespace mooncastle::graphics::d3D12::ppfx
 			parameters[idx::globalShaderData].asCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 			parameters[idx::rootConstants].asConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 			parameters[idx::frustums].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
+			parameters[idx::lightGridOpaque].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 
 			d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], _countof(parameters) };
 			rootSignature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
@@ -89,6 +91,7 @@ namespace mooncastle::graphics::d3D12::ppfx
 		commandList->SetGraphicsRootConstantBufferView(idx::globalShaderData, d3D12Info.globalShaderData);
 		commandList->SetGraphicsRoot32BitConstant(idx::rootConstants, gPass::getMainBuffer().getSRV().index, 0);
 		commandList->SetGraphicsRootShaderResourceView(idx::frustums, culling::getFrustums(lightCullingID, frameIndex));
+		commandList->SetGraphicsRootShaderResourceView(idx::lightGridOpaque, culling::getLightGridOpaque(lightCullingID, frameIndex));
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		commandList->OMSetRenderTargets(1, &targetRTV, 1, nullptr);
 		commandList->DrawInstanced(3, 1, 0, 0);

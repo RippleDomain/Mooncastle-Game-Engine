@@ -76,6 +76,7 @@ timeIt timer{};
 bool resized{ false };
 bool isRestarting{ false };
 
+//---------Forward declarations---------//
 void removeCameraSurface(cameraSurface& surface);
 bool testInitialize();
 void testShutdown();
@@ -87,6 +88,9 @@ void generateLights();
 void removeLights();
 
 void getRenderItems(id::idType* items, u32 count);
+
+void testLights(f32 dt);
+//--------------------------------------//
 
 LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -231,7 +235,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity({ 13.76f, 3.f, -1.1f }, { -0.117f, -2.1f, 0.f }, "cameraScript");
+	surface.entity = createOneGameEntity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, "cameraScript");
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -369,7 +373,9 @@ void engineTest::run()
 
 	timer.begin();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	script::update(timer.dtAverage());
+	const f32 dt{ timer.dtAverage() };
+	script::update(dt);
+	//testLights(dt);
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
@@ -385,7 +391,7 @@ void engineTest::run()
 			info.renderItemCount = 3;
 			info.thresholds = &thresholds[0];
 			info.lightSetKey = lightSetKey;
-			info.averageFrameTime = timer.dtAverage();
+			info.averageFrameTime = dt;
 			info.cameraID = surfaces[i].camera.getId();
 
 			assert(_countof(thresholds) >= info.renderItemCount);
