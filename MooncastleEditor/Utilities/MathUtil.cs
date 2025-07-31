@@ -25,6 +25,11 @@ namespace MooncastleEditor.Utilities
             return Math.Abs(a - b) < Epsilon;
         }
 
+        public static bool IsTheSameAs(this double a, double b)
+        {
+            return Math.Abs(a - b) < Epsilon;
+        }
+
         public static bool IsTheSameAs(this float? a, float? b)
         {
             if (!a.HasValue || !b.HasValue)

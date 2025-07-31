@@ -37,6 +37,7 @@
 
   <ItemGroup>
     <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
+    <Resource Include="Resources\TextureEditor\chess.png" />
   </ItemGroup>
 
   <ItemGroup>
