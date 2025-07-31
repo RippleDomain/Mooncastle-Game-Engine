@@ -255,6 +255,16 @@ namespace mooncastle::graphics
 		return idToGet;
 	}
 
+	void createLightSet(u64 lightSetKey)
+	{
+		gfx.light.createLightSet(lightSetKey);
+	}
+
+	void removeLightSet(u64 lightSetKey)
+	{
+		gfx.light.removeLightSet(lightSetKey);
+	}
+
 	light createLight(lightInitInfo info)
 	{
 		return gfx.light.create(info);

@@ -252,6 +252,8 @@ namespace mooncastle::graphics
     camera createCamera(cameraInitInfo info);
     void removeCamera(cameraId id);
 
+	void createLightSet(u64 lightSetKey);
+	void removeLightSet(u64 lightSetKey);
     light createLight(lightInitInfo info);
     void removeLight(lightId id, u64 lightSetKey);
 

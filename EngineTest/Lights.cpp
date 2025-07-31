@@ -32,7 +32,7 @@ namespace
 		info.entityID = entityId;
 		info.type = type;
 		info.lightSetKey = lightSetKey;
-		info.intensity = 1.f;
+		info.intensity = 10.f;
 
 		info.color = { random(0.2f), random(0.2f), random(0.2f) };
 
@@ -75,6 +75,9 @@ namespace
 
 void generateLights()
 {
+	graphics::createLightSet(leftSet);
+	graphics::createLightSet(rightSet);
+
 	//LEFT SET
 	graphics::lightInitInfo info{};
 
@@ -150,8 +153,19 @@ void removeLights()
 		graphics::removeLight(light.getID(), light.getLightSetKey());
 		removeGameEntity(id);
 	}
+	
+	for (auto& light : disabledLights)
+	{
+		const gameEntity::entityId id{ light.getEntityID() };
+		graphics::removeLight(light.getID(), light.getLightSetKey());
+		removeGameEntity(id);
+	}
 
 	lights.clear();
+	disabledLights.clear();
+
+	graphics::removeLightSet(leftSet);
+	graphics::removeLightSet(rightSet);
 }
 
 void testLights(f32 dt)

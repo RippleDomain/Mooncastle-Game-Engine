@@ -42,6 +42,8 @@ namespace mooncastle::graphics
 
         struct
         {
+            void(*createLightSet)(u64);
+            void(*removeLightSet)(u64);
             light(*create)(lightInitInfo);
             void(*remove)(lightId, u64);
             void(*setParameter)(lightId, u64, lightParameter::parameter, const void *const, u32);

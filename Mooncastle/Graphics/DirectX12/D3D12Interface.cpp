@@ -25,6 +25,8 @@ namespace mooncastle::graphics::d3D12
 		pi.camera.setParameter = camera::setParameter;
 		pi.camera.getParameter = camera::getParameter;
 
+		pi.light.createLightSet = light::createLightSet;
+		pi.light.removeLightSet = light::removeLightSet;
 		pi.light.create = light::create;
 		pi.light.remove = light::remove;
 		pi.light.setParameter = light::setParameter;

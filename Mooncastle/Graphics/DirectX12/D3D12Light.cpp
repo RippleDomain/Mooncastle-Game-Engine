@@ -999,17 +999,7 @@ namespace mooncastle::graphics::d3D12::light
 
     void shutdown()
     {
-        assert([] 
-        {
-            bool hasLights{ false };
-
-            for (const auto& it : lightSets)
-            {
-                hasLights |= it.second.hasLights();
-            }
-
-            return !hasLights;
-        }());
+        assert(lightSets.empty());
 
         for (u32 i{ 0 }; i < frameBufferCount; ++i)
         {
@@ -1017,8 +1007,22 @@ namespace mooncastle::graphics::d3D12::light
         }
     }
 
+    void createLightSet(u64 lightSetKey)
+    {
+        assert(lightSets.count(lightSetKey));
+        lightSets[lightSetKey] = {};
+    }
+
+    void removeLightSet(u64 lightSetKey)
+    {
+        assert(lightSets.count(lightSetKey));
+        assert(!lightSets[lightSetKey].hasLights());
+        lightSets.erase(lightSetKey);
+    }
+
     graphics::light create(lightInitInfo info)
     {
+		assert(lightSets.count(info.lightSetKey));
 		assert(id::isValid(info.entityID));
 		return lightSets[info.lightSetKey].add(info);
     }
@@ -1088,13 +1092,13 @@ namespace mooncastle::graphics::d3D12::light
 
     u32 getNonCullableLightCount(u64 lightSetKey)
     {
-        //assert(lightSets.count(lightSetKey));
+        assert(lightSets.count(lightSetKey));
         return lightSets[lightSetKey].getNonCullableLightCount();
     }
 
     u32 getCullableLightCount(u64 lightSetKey)
     {
-        //assert(lightSets.count(lightSetKey));
+        assert(lightSets.count(lightSetKey));
         return lightSets[lightSetKey].getCullableLightCount();
     }
 }

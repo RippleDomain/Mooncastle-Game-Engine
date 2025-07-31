@@ -19,6 +19,19 @@ namespace mooncastle::content
 		};
 	};
 
+	struct textureFlags 
+	{
+		enum flags : u32 
+		{
+			isHDR = 0x01,
+			hasAlpha = 0x02,
+			isPremultipliedAlpha = 0x04,
+			isImportedAsNormalMap = 0x08,
+			isCubeMap = 0x10,
+			isVolumeMap = 0x20,
+		};
+	};
+
 	typedef struct compiledShader
 	{
 		static constexpr u32 hashLength{ 16 };
