@@ -177,7 +177,7 @@ namespace MooncastleEditor.DllWrappers
                 ((TextureFlags)data.Info.Flags).HasFlag(TextureFlags.IsVolumeMap));
         }
 
-        private static List<List<List<Slice>>> SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
+        public static List<List<List<Slice>>> SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
         {
             Debug.Assert(data.Length > 0 && arraySize > 0);
             Debug.Assert(mipLevels > 0 && mipLevels < Texture.MaxMIPLevels);
@@ -236,6 +236,34 @@ namespace MooncastleEditor.DllWrappers
             Marshal.Copy(data.Icon, icon, 0, data.IconSize);
 
             return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
+        }
+
+        public static byte[] SlicesToBinary(List<List<List<Slice>>> slices)
+        {
+            Debug.Assert(slices?.Any() == true && slices.First()?.Any() == true);
+
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            foreach (var arraySlice in slices)
+            {
+                foreach (var mipLevel in arraySlice)
+                {
+                    foreach (var slice in mipLevel)
+                    {
+                        writer.Write(slice.Width);
+                        writer.Write(slice.Height);
+                        writer.Write(slice.RowPitch);
+                        writer.Write(slice.SlicePitch);
+                        writer.Write(slice.RawContent);
+                    }
+                }
+            }
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream)?.ToArray();
+            Debug.Assert(data?.Length > 0);
+
+            return data;
         }
 
         private static void GetTextureDataInfo(Texture texture, TextureData data)

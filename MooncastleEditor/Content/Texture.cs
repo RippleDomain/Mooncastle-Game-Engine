@@ -324,7 +324,7 @@ namespace MooncastleEditor.Content
 
     class Texture : Asset
     {
-        public const int MaxMIPLevels = 14;
+        public static int MaxMIPLevels => 14;
 
         public TextureImportSettings TextureImportSettings { get; } = new();
 
@@ -472,11 +472,12 @@ namespace MooncastleEditor.Content
             try
             {
                 Logger.Log(MessageType.Info, $"Importing image file {file}");
+                TextureImportSettings.Sources.Add(file);
 
                 (var slices, var icon) = ContentToolsAPI.Import(this);
                 Debug.Assert(slices.Any() && slices.First().Any() && slices.First().First().Any());
 
-                if (Slices.Any() && Slices.First().Any() && Slices.First().First().Any())
+                if (slices.Any() && slices.First().Any() && slices.First().First().Any())
                 {
                     Slices = slices;
                 }
@@ -511,7 +512,40 @@ namespace MooncastleEditor.Content
 
         public override bool Load(string file)
         {
-            throw new NotImplementedException();
+            Debug.Assert(File.Exists(file));
+            Debug.Assert(Path.GetExtension(file).ToLower() == AssetFileExtension);
+
+            try
+            {
+                using var reader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read));
+
+                ReadAssetFileHeader(reader);
+                TextureImportSettings.FromBinary(reader);
+
+                Width = reader.ReadInt32();
+                Height = reader.ReadInt32();
+                ArraySize = reader.ReadInt32();
+                Flags = (TextureFlags)reader.ReadInt32();
+                MipLevels = reader.ReadInt32();
+                Format = (DXGI_FORMAT)reader.ReadInt32();
+
+                var compressedLength = reader.ReadInt32();
+                Debug.Assert(compressedLength > 0);
+                var compressed = reader.ReadBytes(compressedLength);
+
+                DecompressContent(compressed);
+                HasValidDimensions(Width, Height, file);
+                FullPath = file;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Logger.Log(MessageType.Error, $"Failed to load texture asset from file {file}");
+            }
+
+            return false;
         }
 
         public override byte[] PackForEngine()
@@ -521,7 +555,59 @@ namespace MooncastleEditor.Content
 
         public override IEnumerable<string> Save(string file)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (TryGetAssetInfo(file) is AssetInfo info && info.Type == Type)
+                {
+                    Guid = info.Guid;
+                }
+
+                var compressed = CompressContent();
+                Debug.Assert(compressed?.Length > 0);
+                Hash = ContentHelper.ComputeHash(compressed);
+
+                using var writer = new BinaryWriter(File.Open(file, FileMode.Create, FileAccess.Write));
+
+                WriteAssetFileHeader(writer);
+                TextureImportSettings.ToBinary(writer);
+
+                writer.Write(Width);
+                writer.Write(Height);
+                writer.Write(ArraySize);
+                writer.Write((int)Flags);
+                writer.Write(MipLevels);
+                writer.Write((int)Format);
+                writer.Write(compressed.Length);
+                writer.Write(compressed);
+
+                FullPath = file;
+                Logger.Log(MessageType.Info, $"Saved texture to {file}");
+
+                var savedFiles = new List<string>() { file };
+
+                return savedFiles;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Logger.Log(MessageType.Error, $"Failed to save texture to {file}");
+            }
+
+            return new List<string>();
+        }
+
+        private byte[] CompressContent()
+        {
+            Debug.Assert(Slices.First().Any() && Slices.First().Count == MipLevels);
+            var data = ContentToolsAPI.SlicesToBinary(Slices);
+
+            return CompressionHelper.Compress(data);
+        }
+
+        private void DecompressContent(byte[] compressed)
+        {
+            var decompressed = CompressionHelper.Decompress(compressed);
+            Slices = ContentToolsAPI.SlicesFromBinary(decompressed, ArraySize, MipLevels, IsVolumeMap);
         }
 
         public Texture() : base(AssetType.Texture) { }

@@ -249,10 +249,12 @@ namespace MooncastleEditor.Content
                     case AssetType.Audio: break;
                     case AssetType.Material: break;
                     case AssetType.Mesh:
-                        editor = OpenEditorPanel<GeometryEditorView>(info, info.Guid, "GeometryEditor");
+                        editor = OpenEditorPanel<GeometryEditorView>(info, info.Guid, "Geometry Editor");
                         break;
                     case AssetType.Skeleton: break;
-                    case AssetType.Texture: break;
+                    case AssetType.Texture:
+                        editor = OpenEditorPanel<TextureEditorView>(info, info.Guid, "Texture Editor");
+                        break;
                 }
             }
             catch (Exception ex)
@@ -268,7 +270,7 @@ namespace MooncastleEditor.Content
             //First look for a window that's alread open and is displaying the same asset.
             foreach (Window window in Application.Current.Windows)
             {
-                if (window.Content is FrameworkElement content && content.DataContext is IAssetEditor editor && editor.Asset.Guid == info.Guid)
+                if (window.Content is FrameworkElement content && content.DataContext is IAssetEditor editor && editor.AssetGuid == info.Guid)
                 {
                     window.Activate();
 
@@ -277,10 +279,16 @@ namespace MooncastleEditor.Content
             }
 
             //If not already open in an asset editor, we create a new window and load the asset.
-            var newEditor = new T();
-            Debug.Assert(newEditor.DataContext is IAssetEditor);
-
+            var newEditor = CreateEditorWindow<T>(title);
             (newEditor.DataContext as IAssetEditor).SetAsset(info);
+            return newEditor.DataContext as IAssetEditor;
+        }
+
+        private static FrameworkElement CreateEditorWindow<T>(string title) where T : FrameworkElement, new()
+        {
+            var newEditor = new T();
+
+            Debug.Assert(newEditor.DataContext is IAssetEditor);
 
             var win = new Window()
             {
@@ -293,7 +301,7 @@ namespace MooncastleEditor.Content
 
             win.Show();
 
-            return newEditor.DataContext as IAssetEditor;
+            return newEditor;
         }
 
         private void OnContent_Item_KeyDown(object sender, KeyEventArgs e)
