@@ -84,7 +84,7 @@ namespace MooncastleEditor.GameProject
     {
         private static readonly string _appDataPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\MooncastleEditor\";
         private static readonly string _projectDataPath;
-        private static ObservableCollection<ProjectData> _projects = new ObservableCollection<ProjectData>();
+        private static ObservableCollection<ProjectData> _projects = new();
         public static ReadOnlyObservableCollection<ProjectData> Projects { get; }
 
         private static void ReadProjectData()

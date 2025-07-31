@@ -3,6 +3,7 @@
 #include "Utilities/IOStream.h"
 
 #include <DirectXTex.h>
+#include <dxgi1_6.h>
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -47,7 +48,6 @@ namespace mooncastle::tools
             u32 sourceCount;        //Number of file paths.
             u32 dimension;
             u32 mipLevels;
-            u32 arraySize;
             f32 alphaThreshold;
             u32 preferBC7;
             u32 outputFormat;
@@ -85,44 +85,30 @@ namespace mooncastle::tools
         std::mutex deviceCreationMutex;
         utl::vector<D3D11Device> d3D11Devices;
 
-        bool getDXGIFactory(IDXGIFactory1** factory)
+        utl::vector<ComPtr<IDXGIAdapter>> getAdaptersByPerformance()
         {
-            if (!factory) return false;
-
-            *factory = nullptr;
-
             using PFNCreateDXGIFactory1 = HRESULT(WINAPI*)(REFIID, void**);
-            static PFNCreateDXGIFactory1 createDXGIFactory1 = nullptr;
+            static PFNCreateDXGIFactory1 createDXGIFactory1{ nullptr };
 
             if (!createDXGIFactory1)
             {
-                HMODULE dxgi_module = LoadLibrary(L"dxgi.dll");
-                if (!dxgi_module) return false;
+                HMODULE dxgi_module{ LoadLibrary(L"dxgi.dll") };
+                if (!dxgi_module) return {};
 
-                createDXGIFactory1 = (PFNCreateDXGIFactory1)(void*)GetProcAddress(dxgi_module, "CreateDXGIFactory1");
-                if (!createDXGIFactory1) return false;
+                createDXGIFactory1 = (PFNCreateDXGIFactory1)((void*)GetProcAddress(dxgi_module, "CreateDXGIFactory1"));
+                if (!createDXGIFactory1) return {};
             }
 
-            return SUCCEEDED(createDXGIFactory1(IID_PPV_ARGS(factory)));
-        }
-
-        void createD3D11Device()
-        {
-            if (d3D11Devices.size()) return;
-
+            ComPtr<IDXGIFactory7> factory;
             utl::vector<ComPtr<IDXGIAdapter>> adapters;
-            ComPtr<IDXGIFactory1> factory;
 
-            if (getDXGIFactory(factory.GetAddressOf()))
+            if (SUCCEEDED(createDXGIFactory1(IID_PPV_ARGS(factory.GetAddressOf()))))
             {
-                constexpr u32 amdID{ 0x1002 };
-                constexpr u32 nvidiaID{ 0x10de };
-                [[maybe_unused]] constexpr u32 intelID{ 0x8086 };
                 constexpr u32 warpID{ 0x1414 };
 
                 ComPtr<IDXGIAdapter> adapter;
 
-                for (u32 i{ 0 }; factory->EnumAdapters(i, adapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; ++i)
+                for (u32 i{ 0 }; factory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND; ++i)
                 {
                     if (!adapter) continue;
 
@@ -131,15 +117,18 @@ namespace mooncastle::tools
 
                     if (desc.VendorId != warpID) adapters.emplace_back(adapter);
 
-                    //Assume AMD and NVIDIA adapters are discrete and bubble them up when found.
-                    if ((desc.VendorId == amdID || desc.VendorId == nvidiaID) && adapters.size() > 1)
-                    {
-                        adapters.back().Swap(adapters.front());
-                    }
-
                     adapter.Reset();
                 }
             }
+
+            return adapters;
+        }
+
+        void createD3D11Device()
+        {
+            if (d3D11Devices.size()) return;
+
+			utl::vector<ComPtr<IDXGIAdapter>> adapters{ getAdaptersByPerformance() };
 
             static PFN_D3D11_CREATE_DEVICE d3D11CreateDevice{ nullptr };
             if (!d3D11CreateDevice)
@@ -228,16 +217,20 @@ namespace mooncastle::tools
             return images;
         }
 
-        void copyIcon(const ScratchImage& scratch, textureData *const data)
+        void copyIcon(const Image& bcImage, textureData *const data)
         {
-            const Image *const images{ scratch.GetImages() };
-            const u32 imageCount{ (u32)scratch.GetImageCount() };
+            ScratchImage scratch;
+            if (FAILED(Decompress(bcImage, DXGI_FORMAT_UNKNOWN, scratch)))
+            {
+                return;
+            }
 
-            assert(images && imageCount);
+            assert(scratch.GetImages());
+            const Image& image{ scratch.GetImages()[0] };
 
-            const Image& image{ images[0] };
+            //4 x u32 for width, height, rowPitch and slicePitch.
             data->iconSize = (u32)(sizeof(u32) * 4 + image.slicePitch);
-            data->icon = (u8 *const)CoTaskMemRealloc(data->icon, data->iconSize);
+            data->icon = (u8*const)CoTaskMemRealloc(data->icon, data->iconSize);
 
             assert(data->icon);
 
@@ -255,13 +248,11 @@ namespace mooncastle::tools
 
             assert(fileExists(fileName));
 
-            ScratchImage scratch;
-
             if (!fileExists(fileName))
             {
                 data->info.importError = importError::fileNotFound;
 
-                return scratch;
+                return {};
             }
 
             data->info.importError = importError::load;
@@ -276,6 +267,7 @@ namespace mooncastle::tools
 
             const std::wstring wFile{ toWString(fileName) };
             const wchar_t *const file{ wFile.c_str() };
+            ScratchImage scratch;
 
             //Tries one of WIC formats first (e.g. BMP, JPEG, PNG, etc.).
             wicFlags |= WIC_FLAGS_FORCE_RGB;
@@ -411,31 +403,23 @@ namespace mooncastle::tools
 
 			//Scope for working scratch image.
             {
-                ScratchImage working_scratch{};
+                ScratchImage workingScratch{};
 
                 if (settings.dimension == textureDimension::texture1D || settings.dimension == textureDimension::texture2D)
                 {
                     const bool allow_1d{ settings.dimension == textureDimension::texture1D };
-
-                    if (arraySize > 1)
-                    {
-                        hr = working_scratch.InitializeArrayFromImages(images.data(), images.size(), allow_1d);
-                    }
-                    else
-                    {
-                        assert(arraySize == 1 && images.size() == 1);
-                        hr = working_scratch.InitializeFromImage(images[0], allow_1d);
-                    }
+                    assert(arraySize >= 1 && images.size() >= 1);
+                    hr = workingScratch.InitializeArrayFromImages(images.data(), images.size(), allow_1d);
                 }
                 else if (settings.dimension == textureDimension::textureCube)
                 {
-                    assert(arraySize % 6 == 0);
-                    hr = working_scratch.InitializeCubeFromImages(images.data(), images.size());
+                    assert((arraySize % 6) == 0);
+                    hr = workingScratch.InitializeCubeFromImages(images.data(), images.size());
                 }
                 else
                 {
                     assert(settings.dimension == textureDimension::texture3D);
-                    hr = working_scratch.Initialize3DFromImages(images.data(), images.size());
+                    hr = workingScratch.Initialize3DFromImages(images.data(), images.size());
                 }
 
                 if (FAILED(hr))
@@ -444,7 +428,7 @@ namespace mooncastle::tools
                     return {};
                 }
 
-                scratch = std::move(working_scratch);
+                scratch = std::move(workingScratch);
             }
 
             if (settings.mipLevels != 1)
@@ -483,28 +467,28 @@ namespace mooncastle::tools
             using namespace mooncastle::content;
 
             const DXGI_FORMAT imageFormat{ image->format };
-            textureImportSettings& settings{ data->importSettings };
+            DXGI_FORMAT outputFormat{ (DXGI_FORMAT)data->importSettings.outputFormat };
 
             //Determine the best block compressed format if import settings don't explicitly specify a format.
-            if (settings.outputFormat != DXGI_FORMAT_UNKNOWN)
+            if (outputFormat != DXGI_FORMAT_UNKNOWN)
             {
                 goto done;
             }
 
-            if (data->info.flags & textureFlags::isHDR || imageFormat == DXGI_FORMAT_BC6H_UF16 || imageFormat == DXGI_FORMAT_BC6H_SF16)
+            if ((data->info.flags & textureFlags::isHDR) || imageFormat == DXGI_FORMAT_BC6H_UF16 || imageFormat == DXGI_FORMAT_BC6H_SF16)
             {
-                settings.outputFormat = DXGI_FORMAT_BC6H_UF16;
+                outputFormat = DXGI_FORMAT_BC6H_UF16;
             }
             //If the source image is gray scale or a single channel block compressed format (BC4), then output format will be BC4.
             else if (imageFormat == DXGI_FORMAT_R8_UNORM || imageFormat == DXGI_FORMAT_BC4_UNORM || imageFormat == DXGI_FORMAT_BC4_SNORM)
             {
-                settings.outputFormat = DXGI_FORMAT_BC4_UNORM;
+                outputFormat = DXGI_FORMAT_BC4_UNORM;
             }
             //Tests if the source image is a normal map and if so, use BC5 format for the output.
             else if (isNormalMap(image) || imageFormat == DXGI_FORMAT_BC5_UNORM || imageFormat == DXGI_FORMAT_BC5_SNORM)
             {
                 data->info.flags |= textureFlags::isImportedAsNormalMap;
-                settings.outputFormat = DXGI_FORMAT_BC5_UNORM;
+                outputFormat = DXGI_FORMAT_BC5_UNORM;
 
                 if (IsSRGB(imageFormat))
                 {
@@ -514,14 +498,15 @@ namespace mooncastle::tools
             //We exhausted all options. Use an RGBA block compressed format.
             else
             {
-                settings.outputFormat = settings.preferBC7 ? DXGI_FORMAT_BC7_UNORM : DXGI_FORMAT_BC3_UNORM;
+                outputFormat = data->importSettings.preferBC7 ? DXGI_FORMAT_BC7_UNORM :
+                    scratch.IsAlphaAllOpaque() ? DXGI_FORMAT_BC1_UNORM : DXGI_FORMAT_BC3_UNORM;
             }
 
         done:
-            assert(IsCompressed((DXGI_FORMAT)settings.outputFormat));
-            if (HasAlpha((DXGI_FORMAT)settings.outputFormat)) data->info.flags |= textureFlags::hasAlpha;
+            assert(IsCompressed(outputFormat));
+            if (HasAlpha(outputFormat)) data->info.flags |= textureFlags::hasAlpha;
 
-            return IsSRGB(image->format) ? MakeSRGB((DXGI_FORMAT)settings.outputFormat) : (DXGI_FORMAT)settings.outputFormat;
+            return IsSRGB(imageFormat) ? MakeSRGB(outputFormat) : outputFormat;
         }
 
         bool canUseGPU(DXGI_FORMAT format)
@@ -727,13 +712,14 @@ namespace mooncastle::tools
 
         if (settings.compress)
         {
-            /*Makes a copy of the first uncompressed image for the editor to generate an icon from.
-            This is only done for compressed imports. If not compressed, the editor can pick the first image from the returned subresources.*/
-            copyIcon(scratch, data);
-
-            ScratchImage bcScratch{ /*compressImage(data, scratch)*/ };
+            ScratchImage bcScratch{ compressImage(data, scratch) };
 
             if (data->info.importError) return;
+
+            //Decompress the first image to be used for the icon.
+            assert(bcScratch.GetImages());
+
+            copyIcon(bcScratch.GetImages()[0], data);
 
             scratch = std::move(bcScratch);
         }

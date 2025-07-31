@@ -45,7 +45,7 @@ namespace MooncastleEditor.Content
 
     class Mesh : ViewModelBase
     {
-        public static int PositionSize = sizeof(float) * 3;
+        public static int PositionSize => sizeof(float) * 3;
 
         private int _elementSize;
         public int  ElementSize
@@ -171,7 +171,7 @@ namespace MooncastleEditor.Content
         public ObservableCollection<MeshLOD> LODs { get; } = new ObservableCollection<MeshLOD>();
     }
 
-    class GeometryImportSettings : ViewModelBase
+    class GeometryImportSettings : ViewModelBase, IAssetImportSettings
     {
         private bool _calculateNormals;
         public bool CalculateNormals
@@ -290,11 +290,11 @@ namespace MooncastleEditor.Content
 
     class Geometry : Asset
     {
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
 
-        private readonly List<LODGroup> _lodGroups = new List<LODGroup>();
+        private readonly List<LODGroup> _lodGroups = new();
 
-        public GeometryImportSettings ImportSettings { get; } = new GeometryImportSettings();
+        public GeometryImportSettings ImportSettings { get; } = new();
 
         public LODGroup GetLODGroup(int lodGroup = 0)
         {
@@ -410,36 +410,27 @@ namespace MooncastleEditor.Content
             lod.Meshes.Add(mesh);
         }
 
-        public override void Import(string file)
+        public override bool Import(string file)
         {
             Debug.Assert(File.Exists(file));
             Debug.Assert(!string.IsNullOrEmpty(FullPath));
 
             var ext = Path.GetExtension(file).ToLower();
-            SourcePath = file;
 
-            try
+            if (ext == ".fbx")
             {
-                if (ext == ".fbx")
-                {
-                    ImportFbx(file);
-                }
+                return ImportFbx(file);
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                var msg = $"Failed to read {file} for import.";
-                Debug.WriteLine(msg);
-                Logger.Log(MessageType.Error, msg);
-            }
+
+            return false;
         }
 
-        private void ImportFbx(string file)
+        private bool ImportFbx(string file)
         {
             Logger.Log(MessageType.Info, $"Importing FBX file {file}");
             var tempPath = Application.Current.Dispatcher.Invoke(() => Project.Current.TempFolder);
 
-            if (string.IsNullOrEmpty(tempPath)) return;
+            if (string.IsNullOrEmpty(tempPath)) return false;
 
             lock (_lock)
             {
@@ -448,10 +439,30 @@ namespace MooncastleEditor.Content
 
             var tempFile = $"{tempPath}{ContentHelper.GetRandomString()}.fbx";
             File.Copy(file, tempFile, true);
-            ContentToolsAPI.ImportFbx(tempFile, this);
+            bool result = false;
+
+            try
+            {
+                ContentToolsAPI.ImportFbx(tempFile, this);
+                result = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                var msg = $"Failed to read {file} for import";
+                Debug.WriteLine(msg);
+                Logger.Log(MessageType.Error, msg);
+            }
+
+            if (ImportSettings.ImportEmbeddedTextures)
+            {
+                //TODO
+            }
+
+            return result;
         }
 
-        public override void Load(string file)
+        public override bool Load(string file)
         {
             Debug.Assert(File.Exists(file));
             Debug.Assert(Path.GetExtension(file).ToLower() == AssetFileExtension);
@@ -475,7 +486,7 @@ namespace MooncastleEditor.Content
 
                 using (var reader = new BinaryReader(new MemoryStream(data)))
                 {
-                    LODGroup lodGroup = new LODGroup();
+                    LODGroup lodGroup = new();
                     lodGroup.Name = reader.ReadString();
                     var lodCount = reader.ReadInt32();
 
@@ -488,13 +499,17 @@ namespace MooncastleEditor.Content
                     _lodGroups.Add(lodGroup);
                 }
 
-                PackForEngine();
+                //PackForEngine();
+
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
                 Logger.Log(MessageType.Error, $"Failed to load geometry asset from file: {file}");
             }
+
+            return false;
         }
 
         public override IEnumerable<string> Save(string file)
@@ -551,6 +566,8 @@ namespace MooncastleEditor.Content
                     Logger.Log(MessageType.Info, $"Saved geometry to {meshFileName}");
                     savedFiles.Add(meshFileName);
                 }
+
+                FullPath = file;
             }
             catch (Exception ex)
             {
@@ -673,26 +690,18 @@ namespace MooncastleEditor.Content
             return lod;
         }
 
-        private byte[] GenerateIcon(MeshLOD meshLOD)
+        private static byte[] GenerateIcon(MeshLOD meshLOD)
         {
             var width = ContentInfo.IconWidth * 4;
-
-            using var memStream = new MemoryStream();
-            BitmapSource bmp = null;
+            byte[] icon = null;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(meshLOD, null), width, width);
-                bmp = new TransformedBitmap(bmp, new ScaleTransform(0.25, 0.25, 0.5, 0.5));
-
-                memStream.SetLength(0);
-
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bmp));
-                encoder.Save(memStream);
+                var bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(meshLOD, null), width, width);
+                icon = BitmapHelper.GenerateThumbnail(bmp, ContentInfo.IconWidth, ContentInfo.IconWidth);
             });           
 
-            return memStream.ToArray();
+            return icon;
         }
 
         public Geometry() : base(AssetType.Mesh) { }

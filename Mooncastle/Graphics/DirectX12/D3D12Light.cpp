@@ -1009,7 +1009,7 @@ namespace mooncastle::graphics::d3D12::light
 
     void createLightSet(u64 lightSetKey)
     {
-        assert(lightSets.count(lightSetKey));
+        assert(!lightSets.count(lightSetKey));
         lightSets[lightSetKey] = {};
     }
 

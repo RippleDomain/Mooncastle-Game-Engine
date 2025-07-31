@@ -17,7 +17,7 @@ namespace MooncastleEditor.EngineAPIStructs
     {
         public Vector3 Position;
         public Vector3 Rotation;
-        public Vector3 Scale = new Vector3(1f, 1f, 1f);
+        public Vector3 Scale = new(1f, 1f, 1f);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -29,8 +29,8 @@ namespace MooncastleEditor.EngineAPIStructs
     [StructLayout(LayoutKind.Sequential)]
     class GameEntityDescriptor
     {
-        public TransformComponent Transform = new TransformComponent();
-        public ScriptComponent Script = new ScriptComponent();
+        public TransformComponent Transform = new();
+        public ScriptComponent Script = new();
     }
 }
 
@@ -64,7 +64,7 @@ namespace MooncastleEditor.DllWrappers
             private static extern int CreateGameEntity(GameEntityDescriptor entityDescriptor);
             public static int CreateGameEntity(GameEntity entity)
             {
-                GameEntityDescriptor descriptor = new GameEntityDescriptor();
+                GameEntityDescriptor descriptor = new();
 
                 //Transform
                 {

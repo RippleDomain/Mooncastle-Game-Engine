@@ -64,7 +64,7 @@ namespace MooncastleEditor.GameProject
         }
 
         [DataMember(Name = nameof(Scenes))]
-        private readonly ObservableCollection<Scene> _scenes = new ObservableCollection<Scene>();
+        private readonly ObservableCollection<Scene> _scenes = new();
         public ReadOnlyObservableCollection<Scene> Scenes { get; private set; }
 
         private Scene _sceneOnScreen;

@@ -23,9 +23,9 @@ namespace MooncastleEditor.GameDev
 
     static class VisualStudio
     {
-        private static readonly ManualResetEventSlim _resetEvent = new ManualResetEventSlim(false);
+        private static readonly ManualResetEventSlim _resetEvent = new(false);
         private static readonly string _programID = "VisualStudio.DTE.17.0";
-        private static readonly object _lock = new object();
+        private static readonly object _lock = new();
 
         private static readonly string[] _buildConfigNames = new string[] { "Debug", "DebugEditor", "Release", "ReleaseEditor" };
         public static EnvDTE80.DTE2 _vsInstance = null;

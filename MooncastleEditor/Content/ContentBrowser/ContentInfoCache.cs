@@ -10,10 +10,10 @@ namespace MooncastleEditor.Content
 {
     static class ContentInfoCache
     {
-        private static readonly object _lock = new object();
+        private static readonly object _lock = new();
 
         private static string _cacheFilePath = string.Empty;
-        private static readonly Dictionary<string, ContentInfo> _contentInfoCahce = new Dictionary<string, ContentInfo>();
+        private static readonly Dictionary<string, ContentInfo> _contentInfoCahce = new();
 
         private static bool _isDirty;
 

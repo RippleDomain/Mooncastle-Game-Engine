@@ -27,7 +27,7 @@ namespace MooncastleEditor.Content
     /// </summary>
     public partial class PrimitiveMeshDialog : Window
     {
-        private static readonly List<ImageBrush> _textures = new List<ImageBrush>();
+        private static readonly List<ImageBrush> _textures = new();
 
         private void OnPrimitiveType_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePrimitive(); 
         private void OnSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdatePrimitive();
@@ -90,9 +90,9 @@ namespace MooncastleEditor.Content
         {
             var uris = new List<Uri>
             {
-                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
-                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
-                new Uri("pack://application:,,,/Resources/PrimitiveMeshView/chess.png")
+                new("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
+                new("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
+                new("pack://application:,,,/Resources/PrimitiveMeshView/chess.png")
             };
 
             _textures.Clear();

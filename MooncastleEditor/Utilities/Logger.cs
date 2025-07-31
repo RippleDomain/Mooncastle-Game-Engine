@@ -43,7 +43,7 @@ namespace MooncastleEditor.Utilities
     {
         private static int _messageFilter = (int)(MessageType.Info | MessageType.Warning | MessageType.Error);
 
-        private readonly static ObservableCollection<LogMessage> _messages = new ObservableCollection<LogMessage>();
+        private readonly static ObservableCollection<LogMessage> _messages = new();
         public static ReadOnlyObservableCollection<LogMessage> Messages
         { get; } = new ReadOnlyObservableCollection<LogMessage>(_messages);
 
