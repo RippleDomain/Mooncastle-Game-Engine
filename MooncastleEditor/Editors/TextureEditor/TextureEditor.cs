@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.Content;
+using MooncastleEditor.DllWrappers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -77,8 +78,62 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        public BitmapSource SelectedSliceBitmap => _sliceBitmaps.ElementAtOrDefault(0)?.ElementAtOrDefault(0)?.ElementAtOrDefault(0);
-        public Slice SelectedSlice => Texture?.Slices?.ElementAtOrDefault(0)?.ElementAtOrDefault(0)?.ElementAtOrDefault(0);
+        public int MaxMipIndex => _sliceBitmaps.Any() && _sliceBitmaps.First().Any() ? _sliceBitmaps.First().Count - 1 : 0;
+        public int MaxArrayIndex => _sliceBitmaps.Any() ? _sliceBitmaps.Count - 1 : 0;
+        public int MaxDepthIndex => _sliceBitmaps.Any() && _sliceBitmaps.First().Any() && _sliceBitmaps.First().First().Any() ?
+            _sliceBitmaps.ElementAtOrDefault(ArrayIndex).ElementAtOrDefault(MipIndex).Count - 1 : 0;
+
+        private int _arrayIndex;
+        public int ArrayIndex
+        {
+            get => Math.Min(MaxArrayIndex, _arrayIndex);
+            set
+            {
+                value = Math.Min(value, MaxArrayIndex);
+                if (_arrayIndex != value)
+                {
+                    _arrayIndex = value;
+                    OnPropertyChanged(nameof(ArrayIndex));
+                    SetSelectedBitmap();
+                }
+            }
+        }
+
+        private int _mipIndex;
+        public int MipIndex
+        {
+            get => Math.Min(MaxMipIndex, _mipIndex);
+            set
+            {
+                value = Math.Min(value, MaxMipIndex);
+                if (_mipIndex != value)
+                {
+                    _mipIndex = value;
+                    OnPropertyChanged(nameof(MipIndex));
+                    OnPropertyChanged(nameof(MaxDepthIndex));
+                    SetSelectedBitmap();
+                }
+            }
+        }
+
+        private int _depthIndex;
+        public int DepthIndex
+        {
+            get => Math.Min(MaxDepthIndex, _depthIndex);
+            set
+            {
+                value = Math.Min(value, MaxDepthIndex);
+                if (_depthIndex != value)
+                {
+                    _depthIndex = value;
+                    OnPropertyChanged(nameof(DepthIndex));
+                    SetSelectedBitmap();
+                }
+            }
+        }
+
+        public BitmapSource SelectedSliceBitmap => _sliceBitmaps.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
+        public Slice SelectedSlice => Texture?.Slices?.ElementAtOrDefault(ArrayIndex)?.ElementAtOrDefault(MipIndex)?.ElementAtOrDefault(DepthIndex);
 
         private void SetSelectedBitmap()
         {
@@ -121,7 +176,7 @@ namespace MooncastleEditor.Editors
         {
             try
             {
-                await Task.Run(() => _slices = /*texture.ImportSettings.Compress ? ContentToolsAPI.Decompress(texture) :*/ texture.Slices);
+                await Task.Run(() => _slices = texture.TextureImportSettings.Compress ? ContentToolsAPI.Decompress(texture) : texture.Slices);
 
                 Debug.Assert(_slices?.Any() == true && _slices.First()?.Any() == true);
                 GenerateSliceBitmaps(texture.IsNormalMap);
@@ -154,6 +209,10 @@ namespace MooncastleEditor.Editors
 
                 _sliceBitmaps.Add(mipmapsBitmaps);
             }
+
+            OnPropertyChanged(nameof(MaxMipIndex));
+            OnPropertyChanged(nameof(MaxArrayIndex));
+            OnPropertyChanged(nameof(MaxDepthIndex));
         }
     }
 }

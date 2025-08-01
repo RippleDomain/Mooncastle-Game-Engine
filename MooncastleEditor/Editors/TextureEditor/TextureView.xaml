@@ -14,7 +14,7 @@
     <Grid>
         <Grid
             x:Name="backgroundGrid"
-            Background="Transparent"
+            Background="{StaticResource TiledGridBackground}"
             ClipToBounds="True"
             MouseRightButtonDown="OnGrid_Mouse_RBD"
             MouseRightButtonUp="OnGrid_Mouse_RBU"

@@ -201,10 +201,12 @@ namespace MooncastleEditor.DllWrappers
             for (var i = 0; i < arraySize; ++i)
             {
                 var arraySlice = new List<List<Slice>>();
+
                 for (var j = 0; j < mipLevels; ++j)
                 {
                     var mipSlice = new List<Slice>();
-                    for (var k = 0; k < depthPerMipLevel[i]; ++k)
+
+                    for (var k = 0; k < depthPerMipLevel[j]; ++k)
                     {
                         var slice = new Slice();
                         slice.Width = reader.ReadInt32();
@@ -266,6 +268,14 @@ namespace MooncastleEditor.DllWrappers
             return data;
         }
 
+        private static void SetSubresourceData(List<List<List<Slice>>> slices, TextureData data)
+        {
+            var subresourceData = SlicesToBinary(slices);
+            data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
+            data.SubresourceSize = subresourceData.Length;
+            Marshal.Copy(subresourceData, 0, data.SubresourceData, data.SubresourceSize);
+        }
+
         private static void GetTextureDataInfo(Texture texture, TextureData data)
         {
             var info = data.Info;
@@ -291,6 +301,39 @@ namespace MooncastleEditor.DllWrappers
         }
 
         [DllImport(_toolsDLL)]
+        private static extern void DecompressMipmaps([In, Out] TextureData data);
+
+        public static List<List<List<Slice>>> Decompress(Texture texture)
+        {
+            Debug.Assert(texture.TextureImportSettings.Compress);
+            using var textureData = new TextureData();
+
+            try
+            {
+                GetTextureDataInfo(texture, textureData);
+                textureData.ImportSettings.FromContentSettings(texture);
+                SetSubresourceData(texture.Slices, textureData);
+
+                DecompressMipmaps(textureData);
+
+                if (textureData.Info.ImportError != 0)
+                {
+                    Logger.Log(MessageType.Error, $"Error: {EnumExtensions.GetDescription((TextureImportError)textureData.Info.ImportError)}");
+                    throw new Exception($"Error while trying to decompress mipmaps. Error code {textureData.Info.ImportError}");
+                }
+                
+                return GetSlices(textureData);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(MessageType.Error, $"Failed to decompress mipmaps from {texture.FileName}");
+                Debug.WriteLine(ex.Message);
+
+                return new();
+            }
+        }
+
+        [DllImport(_toolsDLL)]
         private static extern void Import([In, Out] TextureData data);
 
         public static (List<List<List<Slice>>> slices, Slice icon) Import(Texture texture)
@@ -300,7 +343,6 @@ namespace MooncastleEditor.DllWrappers
 
             try
             {
-                GetTextureDataInfo(texture, textureData);
                 textureData.ImportSettings.FromContentSettings(texture);
 
                 Import(textureData);

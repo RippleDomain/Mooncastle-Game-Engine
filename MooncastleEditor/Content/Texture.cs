@@ -309,7 +309,7 @@ namespace MooncastleEditor.Content
             AlphaThreshold = 0.5f;
             PreferBC7 = true;
             FormatIndex = 0;
-            Compress = false;
+            Compress = true;
         }
     }
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MooncastleEditor.Editors
 {
@@ -67,11 +68,24 @@ namespace MooncastleEditor.Editors
             var newPos = new Point(center.X * scale / oldScaleFactor, center.Y * scale / oldScaleFactor);
             var offset = (center - newPos) / scale;
 
+            var vp = textureBackground.Viewport;
+            var rect = new Rect(vp.X, vp.Y, vp.Width * oldScaleFactor / scale, vp.Height * oldScaleFactor / scale);
+            textureBackground.Viewport = rect;
+
             vm.PanOffset = new(vm.PanOffset.X + offset.X, vm.PanOffset.Y + offset.Y);
         }
 
         private void OnPanOffsetPropertyChanged(TextureEditor editor)
         {
+            if (backgroundGrid.Background is TileBrush brush)
+            {
+                var offset = editor.PanOffset - _oldPanOffset;
+                var viewport = brush.Viewport;
+                viewport.X += offset.X;
+                viewport.Y += offset.Y;
+                brush.Viewport = viewport;
+            }
+
             _oldPanOffset = editor.PanOffset;
         }
 

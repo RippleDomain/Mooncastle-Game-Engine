@@ -8,10 +8,137 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <Style BasedOn="{StaticResource LightTextBlockStyle}" TargetType="{x:Type TextBlock}" />
+    </UserControl.Resources>
     <UserControl.DataContext>
         <ed:TextureEditor />
     </UserControl.DataContext>
-    <Grid>
-        <ed:TextureView x:Name="textureView" />
-    </Grid>
+    <DockPanel d:IsEnabled="True" Background="{DynamicResource Editor.Window.GrayBrush2}">
+        <DockPanel.Style>
+            <Style TargetType="{x:Type DockPanel}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Texture}" Value="{x:Null}">
+                        <Setter Property="IsEnabled" Value="False" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </DockPanel.Style>
+        <Border
+            Height="32"
+            Margin="0,0,0,1"
+            VerticalAlignment="Top"
+            Background="{DynamicResource Editor.Window.GrayBrush3}"
+            DockPanel.Dock="Top">
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="10"
+                    Opacity="0.3"
+                    ShadowDepth="0" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock
+                    Margin="5,0"
+                    Text="Layer:"
+                    Visibility="{Binding Path=Visibility, ElementName=arraySlider}" />
+                <Slider
+                    x:Name="arraySlider"
+                    Width="200"
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    d:Visibility="Visible"
+                    Interval="1"
+                    IsSnapToTickEnabled="True"
+                    Maximum="{Binding MaxArrayIndex}"
+                    Minimum="0"
+                    TickPlacement="BottomRight"
+                    Value="{Binding ArrayIndex}">
+                    <Slider.Style>
+                        <Style TargetType="{x:Type Slider}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.IsVolumeMap}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding MaxArrayIndex}" Value="0">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Slider.Style>
+                </Slider>
+                <TextBlock
+                    Margin="5,0"
+                    Text="Depth:"
+                    Visibility="{Binding Path=Visibility, ElementName=depthSlider}" />
+                <Slider
+                    x:Name="depthSlider"
+                    Width="200"
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    d:Visibility="Visible"
+                    Interval="1"
+                    IsSnapToTickEnabled="True"
+                    Maximum="{Binding MaxDepthIndex}"
+                    Minimum="0"
+                    TickPlacement="BottomRight"
+                    Value="{Binding DepthIndex}">
+                    <Slider.Style>
+                        <Style TargetType="{x:Type Slider}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.IsVolumeMap}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding MaxDepthIndex}" Value="0">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Slider.Style>
+                </Slider>
+                <TextBlock
+                    Margin="5,0"
+                    Text="Mip:"
+                    Visibility="{Binding Path=Visibility, ElementName=mipSlider}" />
+                <Slider
+                    x:Name="mipSlider"
+                    Width="200"
+                    VerticalAlignment="Center"
+                    d:Visibility="Visible"
+                    Interval="1"
+                    IsMoveToPointEnabled="True"
+                    IsSnapToTickEnabled="True"
+                    Maximum="{Binding MaxMipIndex}"
+                    Minimum="0"
+                    TickPlacement="BottomRight"
+                    Value="{Binding MipIndex}">
+                    <Slider.Style>
+                        <Style TargetType="{x:Type Slider}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MaxMipIndex}" Value="0">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Slider.Style>
+                </Slider>
+
+            </StackPanel>
+        </Border>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition MinWidth="250" MaxWidth="400" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <GridSplitter
+                Width="5"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="{DynamicResource Editor.Window.GrayBrush1}" />
+            <ed:TextureView x:Name="textureView" Grid.Column="1" />
+        </Grid>
+    </DockPanel>
 </UserControl>
