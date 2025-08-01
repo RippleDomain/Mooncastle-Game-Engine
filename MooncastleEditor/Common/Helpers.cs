@@ -31,7 +31,7 @@ namespace MooncastleEditor
     {
         public static T FindVisualParent<T>(this DependencyObject depObject) where T : DependencyObject
         {
-            if (!(depObject is Visual)) return null;
+            if (depObject is not Visual) return null;
 
             var parent = VisualTreeHelper.GetParent(depObject);
 
@@ -85,11 +85,19 @@ namespace MooncastleEditor
 
         public static bool IsOlder(this DateTime date, DateTime other) => date < other;
 
+        public static Uri GetPackUri(string relativePath, Type type)
+        {
+            var assemblyShortName = type.Assembly.ToString().Split(',')[0];
+            var packUriString = $"pack://application:,,,/{assemblyShortName};component/{relativePath}";
+
+            return new(packUriString);
+        }
+
         public static string CorrectFileName(string fileName)
         {
             Debug.Assert(!string.IsNullOrEmpty(fileName));
 
-            var path = new StringBuilder(fileName.Substring(0, fileName.LastIndexOf(Path.DirectorySeparatorChar) + 1));
+            var path = new StringBuilder(fileName[..(fileName.LastIndexOf(Path.DirectorySeparatorChar) + 1)]);
             var file = new StringBuilder(fileName[(fileName.LastIndexOf(Path.DirectorySeparatorChar) + 1)..]);
 
             foreach (var c in Path.GetInvalidPathChars())
@@ -278,9 +286,7 @@ namespace MooncastleEditor
                 //Swaps the R and B channels: RGB format -> BGR format
                 for (int i = 0; i < data.Length; i += bytesPerPixel)
                 {
-                    var r = bgrData[i + 2];
-                    bgrData[i + 2] = bgrData[i];
-                    bgrData[i] = r;
+                    (bgrData[i], bgrData[i + 2]) = (bgrData[i + 2], bgrData[i]);
                 }
             }
             else if (bytesPerPixel == 2)

@@ -123,7 +123,7 @@ namespace MooncastleEditor.Utilities
         }
     }
 
-    class DataSizeToStringConverter : IValueConverter
+    public class DataSizeToStringConverter : IValueConverter
     {
         static readonly string[] _sizeSuffixes = { "B", "KB", "MB", "TB", "PB", "ZB", "YB" };
 

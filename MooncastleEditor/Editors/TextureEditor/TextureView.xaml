@@ -8,8 +8,6 @@
     d:DataContext="{d:DesignInstance Type=ed:TextureEditor}"
     d:DesignHeight="450"
     d:DesignWidth="800"
-    FocusVisualStyle="{x:Null}"
-    Focusable="True"
     mc:Ignorable="d">
     <Grid>
         <Grid
@@ -45,8 +43,124 @@
                     x:Name="textureImage"
                     Canvas.Left="{Binding PanOffset.X}"
                     Canvas.Top="{Binding PanOffset.Y}"
-                    Source="{Binding SelectedSliceBitmap}" />
+                    Source="{Binding SelectedSliceBitmap}">
+                    <Image.Effect>
+                        <ed:ChannelSelector Channels="{Binding Channels}" Stride="{Binding Stride}" />
+                    </Image.Effect>
+                </Image>
             </Canvas>
         </Grid>
+        <Border
+            x:Name="zoomLabel"
+            Margin="5"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            d:Opacity="1"
+            Background="#50000000"
+            CornerRadius="5"
+            IsHitTestVisible="False"
+            Opacity="0">
+            <TextBlock
+                Margin="10,5"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                d:Text="ZOOM 50%"
+                FontFamily="Bahnschrift condensed"
+                FontSize="32"
+                Foreground="{DynamicResource Editor.FontBrush}"
+                Text="{Binding ScaleFactor, StringFormat=ZOOM {0:p0}}" />
+        </Border>
+        <!--  STATE LABEL  -->
+        <Border
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            d:Visibility="Visible"
+            Background="#50000000"
+            CornerRadius="5"
+            IsHitTestVisible="False">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Done}">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0.0"
+                                            Duration="0:0:2" />
+                                        <ObjectAnimationUsingKeyFrames
+                                            BeginTime="0:0:0"
+                                            Storyboard.TargetProperty="Visibility"
+                                            Duration="0:0:2">
+                                            <DiscreteObjectKeyFrame KeyTime="0:0:2" Value="{x:Static Visibility.Collapsed}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                        <ObjectAnimationUsingKeyFrames
+                                            BeginTime="0:0:0"
+                                            Storyboard.TargetProperty="Visibility"
+                                            Duration="0:0:0.1">
+                                            <DiscreteObjectKeyFrame KeyTime="0:0:0.1" Value="{x:Static Visibility.Visible}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock
+                Margin="10,5"
+                d:Text="LOADING..."
+                FontFamily="Bahnschrift condensed"
+                FontSize="32">
+                <TextBlock.Style>
+                    <Style BasedOn="{StaticResource LightTextBlockStyle}" TargetType="{x:Type TextBlock}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Done}">
+                                <Setter Property="Text" Value="DONE." />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Importing}">
+                                <Setter Property="Text" Value="IMPORTING..." />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Processing}">
+                                <Setter Property="Text" Value="PROCESSING..." />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Loading}">
+                                <Setter Property="Text" Value="LOADING..." />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="{x:Static ed:AssetEditorState.Saving}">
+                                <Setter Property="Text" Value="SAVING..." />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+                <TextBlock.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation
+                                    AutoReverse="True"
+                                    RepeatBehavior="Forever"
+                                    Storyboard.TargetProperty="Opacity"
+                                    From="1.0"
+                                    To="0.0"
+                                    Duration="0:0:1" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </TextBlock.Triggers>
+            </TextBlock>
+        </Border>
     </Grid>
 </UserControl>

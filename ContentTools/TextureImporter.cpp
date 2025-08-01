@@ -640,7 +640,7 @@ namespace mooncastle::tools
         const textureImportSettings& settings{ data->importSettings };
         assert(settings.sources && settings.sourceCount);
 
-        utl::vector<ScratchImage> scratch_images;
+        utl::vector<ScratchImage> scratchImages;
         utl::vector<Image> images;
 
         u32 width{ 0 };
@@ -652,10 +652,10 @@ namespace mooncastle::tools
 
         for (u32 i{ 0 }; i < settings.sourceCount; ++i)
         {
-            scratch_images.emplace_back(loadFromFile(data, files[i].c_str()));
+            scratchImages.emplace_back(loadFromFile(data, files[i].c_str()));
             if (data->info.importError) return;
 
-            const ScratchImage& scratch{ scratch_images.back() };
+            const ScratchImage& scratch{ scratchImages.back() };
             const TexMetadata& metaData{ scratch.GetMetadata() };
 
             if (i == 0)

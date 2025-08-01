@@ -36,6 +36,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\TextureEditor\ChannelShader.cso" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
     <Resource Include="Resources\TextureEditor\chess.png" />
   </ItemGroup>
