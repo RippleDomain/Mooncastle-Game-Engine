@@ -28,6 +28,7 @@ namespace mooncastle::tools
                 sizeMismatch,
                 formatMismatch,
                 fileNotFound,
+                sixImagesNeeded
             };
         };
 
@@ -85,19 +86,20 @@ namespace mooncastle::tools
         std::mutex deviceCreationMutex;
         utl::vector<D3D11Device> d3D11Devices;
 
+        HMODULE dxgiModule{ nullptr };
+        HMODULE d3D11Module{ nullptr };
+
         utl::vector<ComPtr<IDXGIAdapter>> getAdaptersByPerformance()
         {
-            using PFNCreateDXGIFactory1 = HRESULT(WINAPI*)(REFIID, void**);
-            static PFNCreateDXGIFactory1 createDXGIFactory1{ nullptr };
-
-            if (!createDXGIFactory1)
+            if (!dxgiModule)
             {
-                HMODULE dxgi_module{ LoadLibrary(L"dxgi.dll") };
-                if (!dxgi_module) return {};
-
-                createDXGIFactory1 = (PFNCreateDXGIFactory1)((void*)GetProcAddress(dxgi_module, "CreateDXGIFactory1"));
-                if (!createDXGIFactory1) return {};
+                dxgiModule = LoadLibrary(L"dxgi.dll");
+                if (!dxgiModule) return {};
             }
+
+            using PFN_CreateDXGIFactory1 = HRESULT(WINAPI*)(REFIID, void**);
+            const PFN_CreateDXGIFactory1 createDXGIFactory1{ (PFN_CreateDXGIFactory1)((void*)GetProcAddress(dxgiModule, "CreateDXGIFactory1")) };
+            if (!createDXGIFactory1) return {};
 
             ComPtr<IDXGIFactory7> factory;
             utl::vector<ComPtr<IDXGIAdapter>> adapters;
@@ -128,36 +130,34 @@ namespace mooncastle::tools
         {
             if (d3D11Devices.size()) return;
 
-			utl::vector<ComPtr<IDXGIAdapter>> adapters{ getAdaptersByPerformance() };
-
-            static PFN_D3D11_CREATE_DEVICE d3D11CreateDevice{ nullptr };
-            if (!d3D11CreateDevice)
+            if (!d3D11Module)
             {
-                HMODULE d3D11Module{ LoadLibrary(L"d3d11.dll") };
+                d3D11Module = LoadLibrary(L"d3d11.dll");
                 if (!d3D11Module) return;
-
-                d3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)((void*)GetProcAddress(d3D11Module, "D3D11CreateDevice"));
-                if (!d3D11CreateDevice) return;
             }
 
+            const PFN_D3D11_CREATE_DEVICE d3D11CreateDevice{ (PFN_D3D11_CREATE_DEVICE)((void*)GetProcAddress(d3D11Module, "D3D11CreateDevice")) };
+            if (!d3D11CreateDevice) return;
+
             u32 createDeviceFlags{ 0 };
+
 #ifdef _DEBUG
             createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
+            utl::vector<ComPtr<IDXGIAdapter>> adapters{ getAdaptersByPerformance() };
             utl::vector<ComPtr<ID3D11Device>> devices(adapters.size(), nullptr);
-            constexpr D3D_FEATURE_LEVEL featureLevels[]{ D3D_FEATURE_LEVEL_11_0 };
+            constexpr D3D_FEATURE_LEVEL featureLevels[]{ D3D_FEATURE_LEVEL_11_1, };
 
             for (u32 i{ 0 }; i < adapters.size(); ++i)
             {
                 ID3D11Device** device{ &devices[i] };
-                D3D_FEATURE_LEVEL featureLevel;
+                D3D_FEATURE_LEVEL feature_level;
 
-                [[maybe_unused]] HRESULT hr{ d3D11CreateDevice(adapters[i].Get(), 
-                    adapters[i] ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
-                    nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
-                    D3D11_SDK_VERSION, device, &featureLevel, nullptr) };
-
+                [[maybe_unused]]
+                HRESULT hr{ d3D11CreateDevice(adapters[i].Get(), adapters[i] ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
+                                               nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
+                                               D3D11_SDK_VERSION, device, &feature_level, nullptr) };
                 assert(SUCCEEDED(hr));
             }
 
@@ -349,6 +349,7 @@ namespace mooncastle::tools
             setOrClearFlag(info.flags, textureFlags::isPremultipliedAlpha, metadata.IsPMAlpha());
             setOrClearFlag(info.flags, textureFlags::isCubeMap, metadata.IsCubemap());
             setOrClearFlag(info.flags, textureFlags::isVolumeMap, metadata.IsVolumemap());
+            setOrClearFlag(info.flags, textureFlags::isSRGB, IsSRGB(format));
         }
 
         void copySubresources(const ScratchImage& scratch, textureData *const data)
@@ -413,7 +414,12 @@ namespace mooncastle::tools
                 }
                 else if (settings.dimension == textureDimension::textureCube)
                 {
-                    assert((arraySize % 6) == 0);
+                    if (arraySize % 6)
+                    {
+                        data->info.importError = importError::sixImagesNeeded;
+                        return {};
+                    }
+
                     hr = workingScratch.InitializeCubeFromImages(images.data(), images.size());
                 }
                 else
@@ -593,6 +599,18 @@ namespace mooncastle::tools
     void ShutDownTextureTools()
     {
         d3D11Devices.clear();
+
+        if (dxgiModule)
+        {
+            FreeLibrary(dxgiModule);
+            dxgiModule = nullptr;
+        }
+
+        if (d3D11Module)
+        {
+            FreeLibrary(d3D11Module);
+            d3D11Module = nullptr;
+        }
     }
 
     EDITOR_INTERFACE void DecompressMipmaps(textureData *const data)

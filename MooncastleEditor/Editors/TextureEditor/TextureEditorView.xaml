@@ -20,6 +20,7 @@
     </UserControl.CommandBindings>
     <UserControl.Resources>
         <Style BasedOn="{StaticResource LightTextBlockStyle}" TargetType="{x:Type TextBlock}" />
+        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
     </UserControl.Resources>
     <UserControl.DataContext>
         <ed:TextureEditor />
@@ -97,7 +98,8 @@
                     VerticalContentAlignment="Stretch"
                     Command="{Binding SetChannelCommand}"
                     CommandParameter="3"
-                    IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}">
+                    IsChecked="{Binding IsAlphaChannelSelected, Mode=OneWay}"
+                    Visibility="{Binding Texture.HasAlpha, Converter={StaticResource booleanToVisibilityConverter}}">
                     <Rectangle
                         Width="8"
                         Margin="0,3,0,0"
@@ -214,7 +216,6 @@
                         </Style>
                     </Slider.Style>
                 </Slider>
-
             </StackPanel>
         </Border>
         <Grid>
@@ -229,6 +230,57 @@
                 VerticalAlignment="Stretch"
                 Background="{DynamicResource Editor.Window.GrayBrush1}" />
             <ed:TextureView x:Name="textureView" Grid.Column="1" />
+            <Border
+                Grid.Column="1"
+                Margin="10"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Background="#40000000"
+                BorderBrush="Black"
+                BorderThickness="2"
+                CornerRadius="10">
+                <Border.Style>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="Opacity" Value="0.3" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Path=IsExpanded, ElementName=expanderHelp}" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Expander
+                    x:Name="expanderHelp"
+                    d:IsExpanded="True"
+                    ExpandDirection="Up">
+                    <Expander.Header>
+                        <TextBlock
+                            Margin="-3,0,5,0"
+                            FontFamily="Arial"
+                            FontSize="20"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="?" />
+                    </Expander.Header>
+                    <StackPanel Margin="10" Opacity="0.8">
+                        <StackPanel.Resources>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Foreground" Value="{DynamicResource Editor.OrangeBrush}" />
+                            </Style>
+                        </StackPanel.Resources>
+                        <TextBlock Text="RMB+drag: pan" />
+                        <TextBlock Text="Mouse wheel: zoom in/out" />
+                        <TextBlock Text="Home: center image" />
+                        <TextBlock Text="Ctrl+Plus: zoom in" />
+                        <TextBlock Text="Ctrl+Minus: zoom out" />
+                        <TextBlock Text="Ctrl+0: zoom to actual size" />
+                        <TextBlock Text="Alt+0: zoom to fit" />
+                    </StackPanel>
+                </Expander>
+            </Border>
         </Grid>
     </DockPanel>
 </UserControl>

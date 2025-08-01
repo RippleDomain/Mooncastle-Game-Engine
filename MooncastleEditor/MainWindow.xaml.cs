@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.Content;
+using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameProject;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -22,12 +23,6 @@ namespace MooncastleEditor
     {
         public static string MooncastlePath { get; private set; }
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            Loaded += MainWindowLoaded;
-            Closing += OnMainWindowClosing;
-        }
         private void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
             Loaded -= MainWindowLoaded;
@@ -77,6 +72,7 @@ namespace MooncastleEditor
                 Closing -= OnMainWindowClosing;
                 Project.Current?.Unload();
                 DataContext = null;
+                ContentToolsAPI.ShutDownContentTools();
             }
         }
 
@@ -97,6 +93,13 @@ namespace MooncastleEditor
                 ContentWatcher.Reset(project.ContentPath, project.Path);
                 DataContext = project;
             }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            Loaded += MainWindowLoaded;
+            Closing += OnMainWindowClosing;
         }
     }
 }

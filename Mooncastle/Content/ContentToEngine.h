@@ -29,6 +29,7 @@ namespace mooncastle::content
 			isImportedAsNormalMap = 0x08,
 			isCubeMap = 0x10,
 			isVolumeMap = 0x20,
+			isSRGB = 0x40,
 		};
 	};
 

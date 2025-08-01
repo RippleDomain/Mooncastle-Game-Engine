@@ -19,35 +19,24 @@
             MouseWheel="OnGrid_Mouse_Wheel"
             PreviewMouseMove="OnGrid_Mouse_Move">
             <Grid.LayoutTransform>
-                <ScaleTransform ScaleX="{Binding ScaleFactor}" ScaleY="{Binding ScaleFactor}" />
+                <ScaleTransform />
             </Grid.LayoutTransform>
             <Canvas IsHitTestVisible="False">
-                <Rectangle
-                    Canvas.Left="{Binding PanOffset.X}"
-                    Canvas.Top="{Binding PanOffset.Y}"
-                    Width="{Binding Path=ActualWidth, ElementName=textureImage}"
-                    Height="{Binding Path=ActualHeight, ElementName=textureImage}">
-                    <Rectangle.Fill>
+                <Border x:Name="imageBorder">
+                    <Border.Background>
                         <ImageBrush
                             x:Name="textureBackground"
                             ImageSource="/MooncastleEditor;component/Resources/TextureEditor/chess.png"
                             TileMode="Tile"
                             Viewport="0,0,64,64"
                             ViewportUnits="Absolute" />
-                    </Rectangle.Fill>
-                </Rectangle>
-            </Canvas>
-
-            <Canvas IsHitTestVisible="False">
-                <Image
-                    x:Name="textureImage"
-                    Canvas.Left="{Binding PanOffset.X}"
-                    Canvas.Top="{Binding PanOffset.Y}"
-                    Source="{Binding SelectedSliceBitmap}">
-                    <Image.Effect>
-                        <ed:ChannelSelector Channels="{Binding Channels}" Stride="{Binding Stride}" />
-                    </Image.Effect>
-                </Image>
+                    </Border.Background>
+                    <Image x:Name="textureImage" Source="{Binding SelectedSliceBitmap}">
+                        <Image.Effect>
+                            <ed:ChannelSelector Channels="{Binding Channels}" Stride="{Binding Stride}" />
+                        </Image.Effect>
+                    </Image>
+                </Border>
             </Canvas>
         </Grid>
         <Border
@@ -67,10 +56,9 @@
                 d:Text="ZOOM 50%"
                 FontFamily="Bahnschrift condensed"
                 FontSize="32"
-                Foreground="{DynamicResource Editor.FontBrush}"
-                Text="{Binding ScaleFactor, StringFormat=ZOOM {0:p0}}" />
+                Foreground="{StaticResource Editor.FontBrush}"
+                Text="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, StringFormat=ZOOM {0:p0}}" />
         </Border>
-        <!--  STATE LABEL  -->
         <Border
             HorizontalAlignment="Center"
             VerticalAlignment="Center"

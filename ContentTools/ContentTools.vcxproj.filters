@@ -12,6 +12,7 @@
     <ClCompile Include="FBXImporter.cpp" />
     <ClCompile Include="TextureImporter.cpp" />
     <ClCompile Include="NormalMapIdentifier.cpp" />
+    <ClCompile Include="ContentTools.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

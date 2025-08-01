@@ -27,7 +27,7 @@ namespace MooncastleEditor.Editors
         public AssetEditorState State
         {
             get => _state;
-            set
+            private set
             {
                 if (_state != value)
                 {
@@ -38,34 +38,6 @@ namespace MooncastleEditor.Editors
         }
 
         public Guid AssetGuid { get; private set; }
-
-        private Point _panOffset;
-        public Point PanOffset
-        {
-            get => _panOffset;
-            set
-            {
-                if (_panOffset != value)
-                {
-                    _panOffset = value;
-                    OnPropertyChanged(nameof(PanOffset));
-                }
-            }
-        }
-
-        private double _scaleFactor = 1.0;
-        public double ScaleFactor
-        {
-            get => _scaleFactor;
-            set
-            {
-                if (_scaleFactor != value)
-                {
-                    _scaleFactor = value;
-                    OnPropertyChanged(nameof(ScaleFactor));
-                }
-            }
-        }
 
         private bool _isRedChannelSelected = true;
         public bool IsRedChannelSelected
@@ -187,6 +159,7 @@ namespace MooncastleEditor.Editors
                 if (_mipIndex != value)
                 {
                     _mipIndex = value;
+                    DepthIndex = _depthIndex;
                     OnPropertyChanged(nameof(MipIndex));
                     OnPropertyChanged(nameof(MaxDepthIndex));
                     SetSelectedBitmap();
@@ -229,7 +202,7 @@ namespace MooncastleEditor.Editors
             OnPropertyChanged(nameof(Stride));
         }
 
-        private void OnSetAllChannelsCommand(string commandParam)
+        private void OnSetAllChannelsCommand(object commandParam)
         {
             _isRedChannelSelected = true;
             _isGreenChannelSelected = true;

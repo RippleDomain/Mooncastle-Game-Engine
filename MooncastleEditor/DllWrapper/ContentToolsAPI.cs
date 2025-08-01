@@ -36,6 +36,8 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         FormatMismatch,
         [Description("Source image file not found")]
         FileNotFound,
+        [Description("Number of images required for cube-maps is a multiple of 6")]
+        SixImagesNeeded
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -162,6 +164,9 @@ namespace MooncastleEditor.DllWrappers
     static class ContentToolsAPI
     {
         private const string _toolsDLL = "ContentTools.dll";
+
+        [DllImport(_toolsDLL)]
+        public static extern void ShutDownContentTools();
 
         #region Texture
 
