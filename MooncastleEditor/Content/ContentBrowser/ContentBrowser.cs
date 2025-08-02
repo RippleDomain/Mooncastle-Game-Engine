@@ -1,7 +1,7 @@
 ﻿using MooncastleEditor;
 using MooncastleEditor.Content;
-using MooncastleEditor.Utilities;
 using MooncastleEditor.GameProject;
+using MooncastleEditor.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,19 +10,96 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace MooncastleEditor.Content
 {
-    sealed class ContentInfo
+    sealed class ContentInfo : ViewModelBase
     {
         public static int IconWidth => 90;
         public byte[] Icon { get; }
         public byte[] IconSmall { get; }
-        public string FullPath { get; }
+        public string FullPath { get; private set; }
         public string FileName => Path.GetFileNameWithoutExtension(FullPath);
         public bool IsDirectory { get; }
-        public DateTime DateModified { get; }
+        public DateTime DateModified { get; private set; }
         public long? Size { get; }
+
+        public ICommand RenameCommand { get; private set; }
+
+        private void Rename(string newName)
+        {
+            if (string.IsNullOrEmpty(newName.Trim())) return;
+
+            var extension = IsDirectory ? string.Empty : Asset.AssetFileExtension;
+            var path = $@"{Path.GetDirectoryName(FullPath)}{Path.DirectorySeparatorChar}{newName}{extension}";
+
+            if (!Validate(path, newName)) return;
+
+            try
+            {
+                if (IsDirectory)
+                {
+                    Directory.Move(FullPath, path);
+                }
+                else
+                {
+                    File.Move(FullPath, path);
+                }
+
+                FullPath = path;
+                var info = new FileInfo(FullPath);
+                DateModified = info.LastWriteTime;
+
+                OnPropertyChanged(nameof(FullPath));
+                OnPropertyChanged(nameof(DateModified));
+            }
+            catch (Exception ex) { Debug.WriteLine(ex.Message); }
+        }
+
+        private bool Validate(string path, string newFileName)
+        {
+            var fileName = Path.GetFileName(path);
+            var directoryName = IsDirectory ? path : Path.GetDirectoryName(path);
+            var errorMessage = string.Empty;
+
+            if (!string.IsNullOrEmpty(Path.GetDirectoryName(newFileName)))
+            {
+                errorMessage = "File and folder names may not include sub-directories.";
+            }
+
+            if (!IsDirectory)
+            {
+                if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                {
+                    errorMessage = "Invalid character(s) used in file name.";
+                }
+
+                if (File.Exists(path))
+                {
+                    errorMessage = "A file already exists with the same name.";
+                }
+            }
+            else
+            {
+                if (Directory.Exists(path))
+                {
+                    errorMessage = "A directory already exists with the same name.";
+                }
+            }
+
+            if (directoryName.IndexOfAny(Path.GetInvalidPathChars()) != -1)
+            {
+                errorMessage = "Invalid character(s) used in path name.";
+            }
+
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            return string.IsNullOrEmpty(errorMessage);
+        }
 
         public ContentInfo(string fullPath, byte[] icon = null, byte[] smallIcon = null, DateTime? lastModified = null)
         {
@@ -35,6 +112,8 @@ namespace MooncastleEditor.Content
             Icon = icon;
             IconSmall = smallIcon ?? icon;
             FullPath = fullPath;
+
+            RenameCommand = new RelayCommand<string>(x => Rename(x));
         }
     }
 
@@ -101,7 +180,6 @@ namespace MooncastleEditor.Content
 
                 foreach (var file in Directory.GetFiles(path, $"*{Asset.AssetFileExtension}"))
                 {
-                    var fileinfo = new FileInfo(file);
                     folderContent.Add(ContentInfoCache.Add(file));
                 }
             }

@@ -22,11 +22,11 @@
         </Grid.RowDefinitions>
         <local:ContentBrowserView
             x:Name="contentBrowserView"
-            AllowDrop="False"
+            AllowImport="False"
             FileAccess="Write"
             MouseDoubleClick="OnContentBrowser_Mouse_DoubleClick"
             SelectionMode="Single" />
-        <Border Grid.Row="1" Background="{StaticResource Editor.Window.GrayBrush3}">
+        <Border Grid.Row="1" Background="{DynamicResource Editor.Window.GrayBrush3}">
             <StackPanel>
                 <DockPanel Margin="10">
                     <TextBlock Style="{StaticResource LightTextBlockStyle}" Text="File name:" />

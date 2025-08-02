@@ -56,7 +56,7 @@
                 d:Text="ZOOM 50%"
                 FontFamily="Bahnschrift condensed"
                 FontSize="32"
-                Foreground="{StaticResource Editor.FontBrush}"
+                Foreground="{DynamicResource Editor.FontBrush}"
                 Text="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, StringFormat=ZOOM {0:p0}}" />
         </Border>
         <Border

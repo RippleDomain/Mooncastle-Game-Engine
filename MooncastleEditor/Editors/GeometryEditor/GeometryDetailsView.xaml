@@ -44,10 +44,10 @@
                                     </StackPanel>
                                     <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center">
                                         <CheckBox Click="OnHighlight_CheckBox_Click" IsChecked="{Binding IsHighlighted, Mode=OneWay}">
-                                            <Run Foreground="{StaticResource Editor.FontBrush}" Text="Highlight" />
+                                            <Run Foreground="{DynamicResource Editor.FontBrush}" Text="Highlight" />
                                         </CheckBox>
                                         <CheckBox Click="OnIsolate_CheckBox_Click" IsChecked="{Binding IsIsolated, Mode=OneWay}">
-                                            <Run Foreground="{StaticResource Editor.FontBrush}" Text="Isolate" />
+                                            <Run Foreground="{DynamicResource Editor.FontBrush}" Text="Isolate" />
                                         </CheckBox>
                                     </StackPanel>
                                 </Grid>

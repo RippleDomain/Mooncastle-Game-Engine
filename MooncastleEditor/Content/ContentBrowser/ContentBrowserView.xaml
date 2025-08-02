@@ -32,7 +32,7 @@
             <Setter Property="Width" Value="18" />
             <Setter Property="Height" Value="{Binding Path=ActualHeight, RelativeSource={RelativeSource TemplatedParent}}" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}" />
+            <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush4}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
@@ -59,7 +59,7 @@
                     <ControlTemplate TargetType="{x:Type GridViewColumnHeader}">
                         <Grid SnapsToDevicePixels="true">
                             <Border
-                                Name="HeaderBorder"
+                                x:Name="HeaderBorder"
                                 Padding="{TemplateBinding Padding}"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
@@ -117,7 +117,7 @@
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type GridViewColumnHeader}">
                                 <Border
-                                    Name="HeaderBorder"
+                                    x:Name="HeaderBorder"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="0" />
@@ -201,11 +201,21 @@
                                 Margin="5,0"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource SmallIconStyle}" />
-                            <TextBlock
-                                Margin="5,2,0,2"
-                                VerticalAlignment="Center"
-                                Text="{Binding FileName}"
-                                TextTrimming="CharacterEllipsis" />
+                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                <TextBlock
+                                    Margin="5,2,0,2"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding FileName}"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBox
+                                    Margin="0,-2"
+                                    Padding="2,0,0,0"
+                                    HorizontalAlignment="Stretch"
+                                    Style="{StaticResource TextBoxStyle_WithRename}"
+                                    Tag="{Binding RenameCommand}"
+                                    Text="{Binding FileName, UpdateSourceTrigger=Explicit, Mode=OneWay}"
+                                    Visibility="Collapsed" />
+                            </Grid>
                         </DockPanel>
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
@@ -237,18 +247,34 @@
                 Width="96"
                 Margin="-4,0,0,0"
                 HorizontalAlignment="Center">
-                <Image
-                    Width="90"
-                    HorizontalAlignment="Center"
-                    Style="{StaticResource LargeIconStyle}" />
-                <TextBlock
-                    MaxHeight="60"
-                    Margin="2,0"
-                    HorizontalAlignment="Center"
-                    Foreground="{StaticResource Editor.FontBrush}"
-                    Text="{Binding FileName}"
-                    TextTrimming="CharacterEllipsis"
-                    TextWrapping="Wrap" />
+                <Border MinHeight="{StaticResource AssetIconWidth}">
+                    <Image
+                        Width="{StaticResource AssetIconWidth}"
+                        Height="{StaticResource AssetIconWidth}"
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource LargeIconStyle}" />
+                </Border>
+                <Grid>
+                    <TextBlock
+                        MaxHeight="60"
+                        Margin="2,0"
+                        HorizontalAlignment="Center"
+                        Foreground="{DynamicResource Editor.FontBrush}"
+                        Text="{Binding FileName}"
+                        TextAlignment="Center"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="Wrap" />
+                    <TextBox
+                        Margin="0,-2"
+                        Padding="0"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Style="{StaticResource TextBoxStyle_WithRename}"
+                        Tag="{Binding RenameCommand}"
+                        Text="{Binding FileName, UpdateSourceTrigger=Explicit, Mode=OneWay}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </Grid>
             </StackPanel>
         </DataTemplate>
         <local:PlainView x:Key="tileView" ItemTemplate="{StaticResource tileTemplate}">
@@ -294,6 +320,14 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <ContextMenu x:Key="contextMenu">
+            <MenuItem Header="New">
+                <MenuItem Click="OnCreateNewFolder" Header="Folder" />
+                <Separator />
+                <MenuItem Header="Texture" />
+                <MenuItem Header="Material" />
+            </MenuItem>
+        </ContextMenu>
     </UserControl.Resources>
     <Grid Background="{DynamicResource Editor.Window.GrayBrush2}">
         <Grid.RowDefinitions>
@@ -303,18 +337,19 @@
         <ListView
             x:Name="folderListView"
             Grid.Row="1"
-            Drop="OnFolderContent_ListView_Drop"
+            ContextMenu="{StaticResource contextMenu}"
             IsTextSearchEnabled="True"
             ItemsSource="{Binding FolderContent}"
-            SelectionChanged="OnFolderContent_ListView_SelectionChanged"
             TextSearch.TextPath="FileName">
             <ListView.Style>
                 <Style TargetType="{x:Type ListView}">
-                    <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush2}" />
+                    <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush2}" />
                     <Setter Property="ListBox.BorderThickness" Value="0" />
-                    <Setter Property="AllowDrop" Value="{Binding Path=AllowDrop, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
+                    <Setter Property="AllowDrop" Value="{Binding Path=AllowImport, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
                     <Setter Property="View" Value="{StaticResource gridView}" />
                     <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
+                    <EventSetter Event="DragEnter" Handler="OnFolderContent_ListView_DragEnter" />
+                    <EventSetter Event="SelectionChanged" Handler="OnFolderContent_ListView_SelectionChanged" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
                             <Setter Property="View" Value="{StaticResource tileView}" />
@@ -323,6 +358,179 @@
                 </Style>
             </ListView.Style>
         </ListView>
+        <Border
+            x:Name="dropBorder"
+            Grid.Row="1"
+            d:Visibility="Visible"
+            AllowDrop="{Binding Path=AllowDrop, ElementName=folderListView}"
+            Background="Transparent"
+            DragLeave="OnDropBorder_DragLeave"
+            Drop="OnDropBorder_Drop"
+            Visibility="Collapsed">
+            <Grid>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Border
+                        x:Name="filesDrop"
+                        Grid.Row="0"
+                        Background="Transparent" />
+                    <Border
+                        x:Name="cfgDrop"
+                        Grid.Row="1"
+                        Background="Transparent" />
+                </Grid>
+                <Border
+                    Background="#66000000"
+                    BorderBrush="{StaticResource Editor.OrangeBrush}"
+                    BorderThickness="2"
+                    CornerRadius="50"
+                    IsHitTestVisible="False"
+                    SnapsToDevicePixels="True"
+                    UseLayoutRounding="True">
+                    <Border
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="#cc000000"
+                        BorderBrush="{StaticResource Editor.OrangeBrush}"
+                        BorderThickness="2"
+                        CornerRadius="20">
+                        <StackPanel>
+                            <Border
+                                x:Name="filesBorder"
+                                Width="250"
+                                HorizontalAlignment="Center"
+                                Background="Transparent"
+                                CornerRadius="16,16,0,0">
+                                <TextBlock
+                                    x:Name="filesText"
+                                    Margin="20"
+                                    HorizontalAlignment="Center"
+                                    FontFamily="Bahnschrift condensed"
+                                    FontSize="24"
+                                    Foreground="{StaticResource Editor.FontBrush}"
+                                    Text="Import Individual Files" />
+                            </Border>
+                            <Border
+                                x:Name="cfgBorder"
+                                Width="250"
+                                HorizontalAlignment="Center"
+                                Background="Transparent"
+                                CornerRadius="0,0,16,16">
+                                <TextBlock
+                                    x:Name="cfgText"
+                                    Margin="20"
+                                    HorizontalAlignment="Center"
+                                    FontFamily="Bahnschrift condensed"
+                                    FontSize="24"
+                                    Foreground="{StaticResource Editor.FontBrush}"
+                                    Text="Configure Import Settings" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Border>
+            </Grid>
+            <Border.Triggers>
+                <EventTrigger RoutedEvent="DragEnter" SourceName="filesDrop">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation
+                                Storyboard.TargetName="filesBorder"
+                                Storyboard.TargetProperty="Background.Color"
+                                From="Transparent"
+                                To="{StaticResource Editor.OrangeColor}"
+                                Duration="0:0:0.2" />
+                            <DoubleAnimation
+                                Storyboard.TargetName="filesBorder"
+                                Storyboard.TargetProperty="Background.Opacity"
+                                From="0"
+                                To="0.6"
+                                Duration="0:0:0.2" />
+                            <ColorAnimation
+                                Storyboard.TargetName="filesText"
+                                Storyboard.TargetProperty="Foreground.Color"
+                                From="{StaticResource Editor.FontColor}"
+                                To="White"
+                                Duration="0:0:0.2" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="DragLeave" SourceName="filesDrop">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation
+                                Storyboard.TargetName="filesBorder"
+                                Storyboard.TargetProperty="Background.Color"
+                                From="{StaticResource Editor.OrangeColor}"
+                                To="Transparent"
+                                Duration="0:0:0.2" />
+                            <DoubleAnimation
+                                Storyboard.TargetName="filesBorder"
+                                Storyboard.TargetProperty="Background.Opacity"
+                                From="0.6"
+                                To="0"
+                                Duration="0:0:0.2" />
+                            <ColorAnimation
+                                Storyboard.TargetName="filesText"
+                                Storyboard.TargetProperty="Foreground.Color"
+                                From="White"
+                                To="{StaticResource Editor.FontColor}"
+                                Duration="0:0:0.2" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="DragEnter" SourceName="cfgDrop">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation
+                                Storyboard.TargetName="cfgBorder"
+                                Storyboard.TargetProperty="Background.Color"
+                                From="Transparent"
+                                To="{StaticResource Editor.OrangeColor}"
+                                Duration="0:0:0.2" />
+                            <DoubleAnimation
+                                Storyboard.TargetName="cfgBorder"
+                                Storyboard.TargetProperty="Background.Opacity"
+                                From="0"
+                                To="0.6"
+                                Duration="0:0:0.2" />
+                            <ColorAnimation
+                                Storyboard.TargetName="cfgText"
+                                Storyboard.TargetProperty="Foreground.Color"
+                                From="{StaticResource Editor.FontColor}"
+                                To="White"
+                                Duration="0:0:0.2" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="DragLeave" SourceName="cfgDrop">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation
+                                Storyboard.TargetName="cfgBorder"
+                                Storyboard.TargetProperty="Background.Color"
+                                From="{StaticResource Editor.OrangeColor}"
+                                To="Transparent"
+                                Duration="0:0:0.2" />
+                            <DoubleAnimation
+                                Storyboard.TargetName="cfgBorder"
+                                Storyboard.TargetProperty="Background.Opacity"
+                                From="0.6"
+                                To="0"
+                                Duration="0:0:0.2" />
+                            <ColorAnimation
+                                Storyboard.TargetName="cfgText"
+                                Storyboard.TargetProperty="Foreground.Color"
+                                From="White"
+                                To="{StaticResource Editor.FontColor}"
+                                Duration="0:0:0.2" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Border.Triggers>
+        </Border>
         <Border VerticalAlignment="Top" Background="{DynamicResource Editor.Window.GrayBrush3}">
             <Border.Effect>
                 <DropShadowEffect
@@ -397,7 +605,7 @@
                         <Style x:Key="{x:Type Path}" TargetType="{x:Type Path}">
                             <Setter Property="Margin" Value="0,3,0,0" />
                             <Setter Property="Data" Value="M0,0 L1.5,0 L4.5,3 L1.5,6 L0,6 L3,3 z" />
-                            <Setter Property="Fill" Value="{StaticResource Editor.FontBrush}" />
+                            <Setter Property="Fill" Value="{DynamicResource Editor.FontBrush}" />
                             <Setter Property="HorizontalAlignment" Value="Center" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                         </Style>
