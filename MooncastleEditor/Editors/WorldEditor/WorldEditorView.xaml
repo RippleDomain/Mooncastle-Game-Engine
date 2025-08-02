@@ -177,7 +177,9 @@
                     <c:ContentBrowserView
                         Grid.Column="2"
                         Margin="5,0,0,0"
-                        AllowImport="True" />
+                        AllowImport="True"
+                        IsVisibleChanged="OnContentBrowser_IsVisibleChanged"
+                        Loaded="OnContentBrowser_Loaded" />
                 </Grid>
             </Grid>
             <GridSplitter

@@ -19,6 +19,24 @@ namespace MooncastleEditor.Content
     /// </summary>
     public partial class ConfigureImportSettingsWindow : Window
     {
+        internal static void AddDroppedFiles(ConfigureImportSettings dataContext, ListBox listBox, DragEventArgs e)
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            if (files?.Length > 0)
+            {
+                var destinationFolder = listBox.HasItems ?
+                    (listBox.Items[^1] as AssetProxy).DestinationFolder : dataContext.LastDestinationFolder;
+
+                dataContext.AddFiles(files, destinationFolder);
+            }
+        }
+
+        private void OnTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ImportingItemCollection.SetItemFilter((AssetType)(tabControl.SelectedItem as TabItem)?.Tag);
+        }
+
         public ConfigureImportSettingsWindow()
         {
             InitializeComponent();
@@ -31,19 +49,6 @@ namespace MooncastleEditor.Content
                 vm.TextureImportSettingsConfigurator.TextureProxies.Any() ? 1 :
                 vm.AudioImportSettingsConfigurator.AudioProxies.Any() ? 2 : 0;
             };
-        }
-
-        internal static void AddDroppedFiles(ConfigureImportSettings dataContext, ListBox listBox, DragEventArgs e)
-        {
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-
-            if (files?.Length > 0)
-            {
-                var destinationFolder = listBox.HasItems ?
-                    (listBox.Items[^1] as AssetProxy).DestinationFolder : dataContext.LastDestinationFolder;
-
-                dataContext.AddFiles(files, destinationFolder);
-            }
         }
     }
 }

@@ -117,8 +117,6 @@ namespace MooncastleEditor.Content
 
             folderListView.AddHandler(Thumb.DragDeltaEvent, new DragDeltaEventHandler(Thumb_DragDelta), true);
             folderListView.Items.SortDescriptions.Add(new SortDescription(_sortedProperty, _sortDirection));
-
-            GeneratePathStackButtons();
         }
 
         private void Thumb_DragDelta(object sender, DragDeltaEventArgs e)
@@ -377,7 +375,7 @@ namespace MooncastleEditor.Content
             OnDropBorder_DragLeave(sender, e);
         }
 
-        private static void OpenImportSettingsConfigurator(string[] files, string selectedFolder)
+        private static void OpenImportSettingsConfigurator(string[] files, string selectedFolder, bool forceOpen = false)
         {
             ConfigureImportSettings settingsConfigurator = null;
 
@@ -403,11 +401,14 @@ namespace MooncastleEditor.Content
             {
                 settingsConfigurator = (files?.Length > 0) ? new(files, selectedFolder) : new(selectedFolder);
 
-                new ConfigureImportSettingsWindow()
+                if (settingsConfigurator.FileCount > 0)
                 {
-                    DataContext = settingsConfigurator,
-                    Owner = Application.Current.MainWindow,
-                }.Show();
+                    new ConfigureImportSettingsWindow()
+                    {
+                        DataContext = settingsConfigurator,
+                        Owner = Application.Current.MainWindow,
+                    }.Show();
+                }
             }
         }
 

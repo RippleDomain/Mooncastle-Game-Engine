@@ -12,7 +12,10 @@
     d:DesignWidth="800"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <mooncastle:IndexOfConverter x:Key="indexOfConverter" />
+        <AlternationConverter x:Key="alternationConverter">
+            <SolidColorBrush Color="Transparent" />
+            <SolidColorBrush Color="{StaticResource Editor.Window.GrayColor1}" />
+        </AlternationConverter>
         <utl:DataSizeToStringConverter x:Key="dataSizeToStringConverter" />
         <Style
             x:Key="{x:Type TextBlock}"
@@ -23,7 +26,7 @@
             BasedOn="{StaticResource ListBoxItemStyle}"
             TargetType="{x:Type ListBoxItem}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush1}" />
+            <Setter Property="Background" Value="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource Self}, Converter={StaticResource alternationConverter}}" />
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
                     <Setter Property="Background" Value="Transparent" />
@@ -70,7 +73,7 @@
                     x:Name="geometryListBox"
                     HorizontalContentAlignment="Stretch"
                     AllowDrop="True"
-                    AlternationCount="2"
+                    AlternationCount="{Binding GeometryProxies.Count}"
                     BorderBrush="{DynamicResource Editor.OrangeBrush}"
                     Drop="OnListBox_Drop"
                     ItemContainerStyle="{StaticResource AlternateColorListBoxItemStyle}"
@@ -143,14 +146,10 @@
                                     <RowDefinition />
                                     <RowDefinition />
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource indexOfConverter}" StringFormat="{}{0}. ">
-                                            <Binding Path="." />
-                                            <Binding ElementName="geometryListBox" Path="DataContext.GeometryProxies" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    Text="{Binding Path=(ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, StringFormat='{}{0}. '}" />
                                 <TextBlock
                                     Grid.Row="0"
                                     Grid.Column="1"
@@ -258,15 +257,54 @@
                     FontSize="16"
                     Text="{Binding FileInfo.Name, StringFormat='Import settings for {0}'}"
                     TextTrimming="CharacterEllipsis" />
-                <StackPanel
-                    x:Name="PLACEHODLDER"
+                <local:GeometryImportSettingsView
                     Grid.Row="1"
-                    Height="128"
                     Margin="10,0,10,28"
-                    Background="DarkMagenta">
-                    <TextBlock Text="THIS IS A PLACEHOLDER FOR" />
-                    <TextBlock Text="GEOMETRY IMPORT SETTINGS." />
-                </StackPanel>
+                    DataContext="{Binding ImportSettings}" />
+                <Border
+                    x:Name="lockBorder"
+                    Grid.Row="1"
+                    Margin="5,-5,5,23"
+                    Background="#50000000"
+                    BorderBrush="{StaticResource Editor.OrangeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    ToolTip="Import settings are locked when multiple sources are selected.&#13;Current settings can be applied to the selection."
+                    ToolTipService.InitialShowDelay="100">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Path=SelectedItems.Count, ElementName=geometryListBox}" Value="1">
+                                    <Setter Property="Visibility" Value="Hidden" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border
+                        Width="16"
+                        Height="12"
+                        Margin="5,10"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Background="{StaticResource Editor.OrangeBrush}"
+                        CornerRadius="3"
+                        Opacity="0.6">
+                        <Border
+                            Width="10"
+                            Height="18"
+                            Margin="0,-10,0,0"
+                            BorderBrush="{StaticResource Editor.OrangeBrush}"
+                            BorderThickness="2,2,2,0"
+                            CornerRadius="3,3,0,0">
+                            <Rectangle
+                                Width="3"
+                                Height="5"
+                                Margin="0,8,0,0"
+                                Fill="{StaticResource Editor.Window.GrayBrush2}" />
+                        </Border>
+                    </Border>
+                </Border>
                 <StackPanel
                     Grid.Row="2"
                     Margin="10,0"
@@ -275,7 +313,8 @@
                     <Button
                         Width="150"
                         Click="OnApplyToSelection_Button_Click"
-                        Content="Apply to Selection" />
+                        Content="Apply to Selection"
+                        Visibility="{Binding Path=Visibility, ElementName=lockBorder}" />
                     <Button
                         Width="150"
                         Margin="0,8"
@@ -283,6 +322,10 @@
                         Content="Apply to All" />
                     <Button Width="150" Content="Set as Default" />
                 </StackPanel>
+                <local:ChangeDestinationFolder
+                    Grid.Row="3"
+                    Margin="10,20,10,10"
+                    VerticalAlignment="Top" />
             </Grid>
         </Border>
         <GridSplitter
@@ -292,15 +335,18 @@
             VerticalAlignment="Stretch"
             Background="Transparent" />
         <Grid Grid.Column="2" Background="{DynamicResource Editor.Window.GrayBrush3}">
+            <Button
+                Margin="10"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Click="OnClearImportingItems_Button_Click"
+                Content="Clear" />
             <DockPanel Margin="10">
                 <TextBlock
                     DockPanel.Dock="Top"
                     FontSize="16"
                     Text="Imported files" />
-                <Border
-                    x:Name="ANOTHER_PLACEHOLDER"
-                    Margin="0,10,0,0"
-                    Background="{DynamicResource Editor.Window.GrayBrush2}" />
+                <local:ImportingItemsView Margin="0,10,10,0" />
             </DockPanel>
         </Grid>
     </Grid>

@@ -17,7 +17,8 @@
         <TabControl
             x:Name="tabControl"
             Background="Transparent"
-            BorderThickness="0">
+            BorderThickness="0"
+            SelectionChanged="OnTabControl_SelectionChanged">
             <TabItem
                 MinWidth="96"
                 Header="Geometry"
