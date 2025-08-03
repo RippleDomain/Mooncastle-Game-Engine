@@ -428,6 +428,15 @@ namespace mooncastle::graphics
 		gfx.resources.removeMaterial(id);
 	}
 
+	id::idType addTexture(const u8 *const data)
+	{
+		return gfx.resources.addTexture(data);
+	}
+	void removeTexture(id::idType id)
+	{
+		gfx.resources.removeTexture(id);
+	}
+
 	id::idType addRenderItem(id::idType entityID, id::idType geometryContentID, u32 materialCount, const id::idType* const materialIDs)
 	{
 		return gfx.resources.addRenderItem(entityID, geometryContentID, materialCount, materialIDs);

@@ -524,7 +524,7 @@ namespace MooncastleEditor.Content
                     _lodGroups.Add(lodGroup);
                 }
 
-                //PackForEngine();
+                PackForEngine();
 
                 return true;
             }

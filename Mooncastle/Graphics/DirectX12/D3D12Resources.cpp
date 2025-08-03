@@ -227,14 +227,14 @@ namespace mooncastle::graphics::d3D12
             assert(!info.heap);
             resource = info.resource;
         }
-        else if (info.heap && info.desc)
+        else if (info.heap)
         {
-            assert(!info.resource);
+            assert(info.desc);
             DXCall(device->CreatePlacedResource(info.heap, info.allocationInfo.Offset, info.desc, info.initialState, clearValue, IID_PPV_ARGS(&resource)));
         }
-        else if (info.desc)
+        else
         {
-            assert(!info.heap && !info.resource);
+            assert(info.desc);
             DXCall(device->CreateCommittedResource(&d3DX::heapProperties.defaultHeap, D3D12_HEAP_FLAG_NONE, info.desc, info.initialState, clearValue, IID_PPV_ARGS(&resource)));
         }
 

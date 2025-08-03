@@ -2,6 +2,7 @@
 #include "D3D12Core.h"
 #include "Utilities/IOStream.h"
 #include "D3D12GPass.h"
+#include "D3D12Upload.h"
 #include "Content\ContentToEngine.h"
 
 namespace mooncastle::graphics::d3D12::content
@@ -37,6 +38,7 @@ namespace mooncastle::graphics::d3D12::content
 		std::mutex										 submeshMutex{};
 														 
 		utl::freeList<D3D12Texture>						 textures{};
+		utl::freeList<u32>							     descriptorIndices;
 		std::mutex										 textureMutex{};
 														 
 		utl::vector<ID3D12RootSignature*>				 rootSignatures{};
@@ -391,6 +393,185 @@ namespace mooncastle::graphics::d3D12::content
 
 			return idPair;
 		}
+
+		D3D12Texture createResourceFromTextureData(const u8 *const data)
+		{
+			assert(data);
+
+			utl::blobStreamReader blob{ data };
+			const u32 width{ blob.read<u32>() };
+			const u32 height{ blob.read<u32>() };
+			u32 depth{ 1 };
+			u32 arraySize{ blob.read<u32>() };
+			const u32 flags{ blob.read<u32>() };
+			const u32 mipLevels{ blob.read<u32>() };
+			const DXGI_FORMAT format{ (DXGI_FORMAT)blob.read<u32>() };
+			const bool is3D{ (flags & mooncastle::content::textureFlags::isVolumeMap) != 0 };
+
+			assert(mipLevels <= D3D12Texture::maxMIPLevel);
+
+			u32 depthPerMIPLevel[D3D12Texture::maxMIPLevel]{};
+
+			for (u32 i{ 0 }; i < D3D12Texture::maxMIPLevel; ++i)
+			{
+				depthPerMIPLevel[i] = 1;
+			}
+
+			if (is3D)
+			{
+				depth = arraySize;
+				arraySize = 1;
+				u32 depthPerMIP{ depth };
+
+				for (u32 i{ 0 }; i < mipLevels; ++i)
+				{
+					depthPerMIPLevel[i] = depthPerMIP;
+					depthPerMIP = std::max(depthPerMIP >> 1, (u32)1);
+				}
+			}
+
+			utl::vector<D3D12_SUBRESOURCE_DATA> subresources{};
+
+			for (u32 i{ 0 }; i < arraySize; ++i)
+			{
+				for (u32 j{ 0 }; j < mipLevels; ++j)
+				{
+					blob.skip(2 * sizeof(u32)); //Skips the width and height variables.
+
+					const u32 rowPitch{ blob.read<u32>() };
+					const u32 slicePitch{ blob.read<u32>() };
+
+					subresources.emplace_back(D3D12_SUBRESOURCE_DATA
+					{
+						blob.getPosition(),
+						rowPitch,
+						slicePitch
+					});
+
+					blob.skip(slicePitch);
+
+					//Skips the rest of the slices fo 3d textures with depth > 1.
+					for (u32 k{ 1 }; k < depthPerMIPLevel[j]; ++k)
+					{
+						blob.skip(4 * sizeof(u32) + slicePitch);
+					}
+				}
+			}
+
+			D3D12_RESOURCE_DESC desc{};
+
+			desc.Dimension = is3D ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			desc.Alignment = 0;
+			desc.Width = width;
+			desc.Height = height;
+			desc.DepthOrArraySize = is3D ? (u16)depth : (u16)arraySize;
+			desc.MipLevels = (u16)mipLevels;
+			desc.Format = format;
+			desc.SampleDesc = { 1,0 };
+			desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+			assert(!(flags & mooncastle::content::textureFlags::isCubeMap && (arraySize % 6)));
+			const u32 subresource_count{ arraySize * mipLevels };
+			assert(subresource_count);
+
+			//Consider using heap allocation for this since an incredibly large texture may cause a stack overflow.
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts
+			{ (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * subresource_count) };
+
+			u32 *const rowCount{ (u32 *const)_alloca(sizeof(u32) * subresource_count) };
+			u64 *const rowSizes{ (u64 *const)_alloca(sizeof(u64) * subresource_count) };
+			u64 sizeRequired{ 0 };
+
+			ID3D12Device* device{ core::device() };
+
+			device->GetCopyableFootprints(&desc, 0, subresource_count, 0, layouts, rowCount, rowSizes, &sizeRequired);
+
+			assert(sizeRequired);
+			upload::D3D12UploadContext context{ (u32)sizeRequired };
+			u8 *const cpuAddress{ (u8 *const)context.getCPUAddress() };
+
+			for (u32 subresourceIndex{ 0 }; subresourceIndex < subresource_count; ++subresourceIndex)
+			{
+				const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& layout{ layouts[subresourceIndex] };
+				const u32 subresourceHeight{ rowCount[subresourceIndex] };
+				const u32 subresourceDepth{ layout.Footprint.Depth };
+				const D3D12_SUBRESOURCE_DATA& subresource{ subresources[subresourceIndex] };
+
+				const D3D12_MEMCPY_DEST copyDestination
+				{
+					cpuAddress + layout.Offset,
+					layout.Footprint.RowPitch,
+					layout.Footprint.RowPitch * subresourceHeight
+				};
+
+				for (u32 depthIndex{ 0 }; depthIndex < subresourceDepth; ++depthIndex)
+				{
+					u8 *const sourceSlice{ (u8 *const)subresource.pData + subresource.SlicePitch * depthIndex };
+					u8 *const destinationSlice{ (u8 *const)copyDestination.pData + copyDestination.SlicePitch * depthIndex };
+
+					for (u32 rowIndex{ 0 }; rowIndex < subresourceHeight; ++rowIndex)
+					{
+						memcpy(destinationSlice + copyDestination.RowPitch * rowIndex, sourceSlice + subresource.RowPitch * rowIndex, rowSizes[subresourceIndex]);
+					}
+				}
+			}
+
+			ID3D12Resource* resource{ nullptr };
+			DXCall(device->CreateCommittedResource(&d3DX::heapProperties.defaultHeap, D3D12_HEAP_FLAG_NONE, &desc,
+				D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)));
+
+			ID3D12Resource* uploadBuffer{ context.getUploadBuffer() };
+			for (u32 i{ 0 }; i < subresource_count; ++i)
+			{
+				D3D12_TEXTURE_COPY_LOCATION source{};
+				source.pResource = uploadBuffer;
+				source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+				source.PlacedFootprint = layouts[i];
+
+				D3D12_TEXTURE_COPY_LOCATION destination{};
+				destination.pResource = resource;
+				destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+				destination.SubresourceIndex = i;
+
+				context.getCommandList()->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+			}
+
+			context.endUpload();
+
+			assert(resource);
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDescription{};
+			D3D12TextureInitInfo info{};
+			info.resource = resource;
+
+			if (flags & mooncastle::content::textureFlags::isCubeMap)
+			{
+				assert(arraySize % 6 == 0);
+
+				srvDescription.Format = format;
+				srvDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+				if (arraySize > 6)
+				{
+					srvDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+					srvDescription.TextureCubeArray.MostDetailedMip = 0;
+					srvDescription.TextureCubeArray.MipLevels = mipLevels;
+					srvDescription.TextureCubeArray.NumCubes = arraySize / 6;
+				}
+				else
+				{
+					srvDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+					srvDescription.TextureCube.MostDetailedMip = 0;
+					srvDescription.TextureCube.MipLevels = mipLevels;
+					srvDescription.TextureCube.ResourceMinLODClamp = 0.0f;
+				}
+
+				info.srvDesc = &srvDescription;
+			}
+
+			return D3D12Texture{ info };
+		}
 	}
 
 	bool initialize()
@@ -407,8 +588,6 @@ namespace mooncastle::graphics::d3D12::content
 		for (auto& item : rootSignatures)
 		{
 			core::release(item);
-			materialMap.clear();
-			rootSignatures.clear();
 		}
 
 		materialMap.clear();
@@ -520,6 +699,36 @@ namespace mooncastle::graphics::d3D12::content
 
 	namespace texture
 	{
+		/*Expects data to contain :
+		struct
+		{
+		    u32 width, height, arraySize (or depth), flags, mipLevels, format,
+		 
+		    struct 
+			  {
+		        u32 width, height, rowPitch, slicePitch,
+		        u8 image[slicePitch],
+		    } images[]
+		} texture*/
+		id::idType add(const u8* const data)
+		{
+			assert(data);
+			D3D12Texture texture{ createResourceFromTextureData(data) };
+
+			std::lock_guard lock{ textureMutex };
+			const id::idType id{ textures.add(std::move(texture)) };
+			descriptorIndices.add(textures[id].getSRV().index);
+
+			return id;
+		}
+
+		void remove(id::idType id)
+		{
+			std::lock_guard lock{ textureMutex };
+			textures.remove(id);
+			descriptorIndices.remove(id);
+		}
+
 		void getDescriptorIndices(const id::idType* const textureIDs, u32 idCount, u32* const indices)
 		{
 			assert(textureIDs && idCount && indices);
@@ -528,7 +737,7 @@ namespace mooncastle::graphics::d3D12::content
 
 			for (u32 i{ 0 }; i < idCount; ++i)
 			{
-				indices[i] = textures[i].getSRV().index;
+				indices[i] = descriptorIndices[textureIDs[i]];
 			}
 		}
 	}

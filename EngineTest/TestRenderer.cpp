@@ -294,7 +294,7 @@ bool testInitialize()
 	//Loads the test model.
 	std::unique_ptr<u8[]> model;
 	u64 size{ 0 };
-	if (!readFile("..\\..\\x64\\model.model", model, size)) return false;
+	if (!readFile("..\\..\\x64\\excaliburModel.model", model, size)) return false;
 	modelID = content::createResource(model.get(), content::assetType::mesh);
 	if (!id::isValid(modelID)) return false;
 
@@ -381,14 +381,14 @@ void engineTest::run()
 	{
 		if (surfaces[i].surface.surface.isValid())
 		{
-			f32 thresholds[3]{};
+			f32 thresholds[4]{};
 
-			id::idType renderItems[3]{};
-			getRenderItems(&renderItems[0], 3);
+			id::idType renderItems[4]{};
+			getRenderItems(&renderItems[0], 4);
 
 			graphics::frameInfo info{};
 			info.renderItemIDs = &renderItems[0];
-			info.renderItemCount = 3;
+			info.renderItemCount = 4;
 			info.thresholds = &thresholds[0];
 			info.lightSetKey = lightSetKey;
 			info.averageFrameTime = dt;

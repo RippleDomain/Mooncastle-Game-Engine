@@ -36,7 +36,7 @@ namespace mooncastle::content
 
 			u32 lodFromThreshold(f32 threshold)
 			{
-				assert(threshold > 0);
+				assert(threshold >= 0);
 
 				if (lodCount == 1) return 0;
 
@@ -45,7 +45,6 @@ namespace mooncastle::content
 					if (thresholds[i] <= threshold) return i;
 				}
 
-				assert(false);
 				return 0;
 			}
 
@@ -222,7 +221,49 @@ namespace mooncastle::content
 			return (((uintptr_t)pointer) >> shiftBits) & (uintptr_t)id::invalidId;
 		}
 
-		id::idType createGeometryResource(const void* const data)
+		/*Expects data to contain:
+		struct
+		{
+			u32 lodCount,
+
+		    struct 
+			{
+				f32 lodThreshold,
+		        u32 submeshCount,
+		        u32 sizeOfSubmeshes,
+
+		        struct 
+				{
+		            u32 elementSize, u32 vertexCount,
+		            u32 indexCount, u32 elementsType, u32 primitiveTopology
+		            u8 positions[sizeof(f32) * 3 * vertexCount],     //sizeof(positions) must be a multiple of 4 bytes. Pad if needed.
+		            u8 elements[sizeof(elementSize) * vertexCount], //sizeof(elements) must be a multiple of 4 bytes. Pad if needed.
+		            u8 indices[indexSize * indexCount]
+		        } submeshes[submeshCount]
+		    } meshLods[lodCount]
+		} geometry;
+		
+		Output format:
+
+		If geometry has more than one LOD or submesh:
+		struct 
+		{
+		    u32 lodCount,
+		    f32 thresholds[lodCount]
+
+		    struct 
+			{
+		        u16 offset,
+		        u16 count
+		    } lodOffsets[lodCount],
+
+		    id::idType gpuIDs[totalNumberOfSubmeshes]
+		} geometryHierarchy
+		
+		If geometry has a single LOD and submesh:
+		
+		(gpuID << 32) | 0x01*/
+		[[nodiscard]] id::idType createGeometryResource(const void* const data)
 		{
 			assert(data);
 
@@ -266,7 +307,7 @@ namespace mooncastle::content
 				id::idType			shaderIDs[shaderType::count];
 				id::idType			textureIDs;
 		} materialInitInfo*/
-		id::idType createMaterialResource(const void* const data)
+		[[nodiscard]] id::idType createMaterialResource(const void* const data)
 		{
 			assert(data);
 			return graphics::addMaterial(*(const graphics::materialInitInfo* const)data);
@@ -275,6 +316,28 @@ namespace mooncastle::content
 		void destroyMaterialResource(id::idType id)
 		{
 			graphics::removeMaterial(id);
+		}
+
+		/*Expects data to contain:
+		struct 
+		{
+		    u32 width, height, arraySize (or depth), flags, mipLevels, format,
+
+		    struct 
+			{
+		        u32 width, height, rowPitch, slicePitch,
+		        u8 image[slicePitch],
+		    } images[]
+		} texture*/
+		[[nodiscard]] id::idType createTextureResource(const void *const data)
+		{
+			assert(data);
+			return graphics::addTexture((const u8 *const)data);
+		}
+
+		void destroyTextureResource(id::idType id)
+		{
+			graphics::removeTexture(id);
 		}
 	}
 
@@ -295,7 +358,9 @@ namespace mooncastle::content
 			id = createGeometryResource(data);
 			break;
 		case assetType::skeleton: break;
-		case assetType::texture: break;
+		case assetType::texture: 
+			id = createTextureResource(data);
+			break;
 		}
 
 		assert(id::isValid(id));
@@ -319,7 +384,9 @@ namespace mooncastle::content
 			destroyGeometryResource(id);
 			break;
 		case assetType::skeleton: break;
-		case assetType::texture: break;
+		case assetType::texture: 
+			destroyTextureResource(id);
+			break;
 		default:
 			assert(false);
 			break;

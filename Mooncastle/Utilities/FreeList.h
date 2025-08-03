@@ -5,7 +5,7 @@
 namespace mooncastle::utl 
 {
 #if USE_STL_VECTOR
-#pragma message("WARNING: Using utl::freeList with std::vector results in duplicate calls to the class constructor!")
+#pragma message("WARNING: Using utl::freeList with std::vector results in duplicate calls to the class destructor!")
 #endif
 
 	template<typename T>
@@ -42,7 +42,7 @@ namespace mooncastle::utl
 			else
 			{
 				id = nextFreeIndex;
-				assert(id < array.size() && alreadyRemoved(id));
+				assert(id < array.size() && alreadyRemoved(id, true));
 				nextFreeIndex = *(const u32* const)std::addressof(array[id]);
 				new (std::addressof(array[id])) T(std::forward<params>(p)...);
 			}
@@ -53,7 +53,7 @@ namespace mooncastle::utl
 
 		constexpr void remove(u32 id)
 		{
-			assert(id < array.size() && !alreadyRemoved(id));
+			assert(id < array.size() && !alreadyRemoved(id, false));
 
 			T& item{ array[id] };
 			item.~T();
@@ -70,7 +70,7 @@ namespace mooncastle::utl
 
 		constexpr u32 getCapacity() const
 		{
-			return array.size();
+			return (u32)array.size();
 		}
 
 		constexpr bool isEmpty() const
@@ -80,18 +80,18 @@ namespace mooncastle::utl
 
 		[[nodiscard]] constexpr T& operator[](u32 id)
 		{
-			assert(id < array.size() && !alreadyRemoved(id));
+			assert(id < array.size() && !alreadyRemoved(id, false));
 			return array[id];
 		}
 
 		[[nodiscard]] constexpr const T& operator[](u32 id) const
 		{
-			assert(id < array.size() && !alreadyRemoved(id));
+			assert(id < array.size() && !alreadyRemoved(id, false));
 			return array[id];
 		}
 
 	private:
-		constexpr bool alreadyRemoved(u32 id) const
+		constexpr bool alreadyRemoved(u32 id, bool returnValueWhenSizeOfTEquals4) const
 		{
 			//When sizeof(T) == sizeof(u32) we cannot test if the item was already removed.
 			if constexpr (sizeof(T) > sizeof(u32))
@@ -104,7 +104,7 @@ namespace mooncastle::utl
 			}
 			else
 			{
-				return true;
+				return returnValueWhenSizeOfTEquals4;
 			}
 		}
 

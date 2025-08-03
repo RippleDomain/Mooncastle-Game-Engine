@@ -17,21 +17,41 @@ namespace
 	id::idType labModelID{ id::invalidId };
 	id::idType fanModelID{ id::invalidId };
 	id::idType planeModelID{ id::invalidId };
+	id::idType excaliburModelID{ id::invalidId };
 
 	id::idType labItemID{ id::invalidId };
 	id::idType fanItemID{ id::invalidId };
 	id::idType planeItemID{ id::invalidId };
+	id::idType excaliburItemID{ id::invalidId };
 
 	gameEntity::entityId labEntityID{ id::invalidId };
 	gameEntity::entityId fanEntityID{ id::invalidId };
 	gameEntity::entityId planeEntityID{ id::invalidId };
+	gameEntity::entityId excaliburEntityID{ id::invalidId };
+
+	struct textureUsage
+	{
+		enum usage : u32 
+		{
+			ambientOcclusion = 0,
+			baseColor,
+			emissive,
+			metal,
+			roughness,
+			normal,
+			count
+		};
+	};
+
+	id::idType textureIDs[textureUsage::count];
 
 	id::idType vertexShaderId{ id::invalidId };
 	id::idType pixelShaderId{ id::invalidId };
-	id::idType materialId{ id::invalidId };
+	id::idType defaultMaterialID{ id::invalidId };
 
 	std::unordered_map<id::idType, gameEntity::entityId> renderItemMap;
 
+	//Loading the test model.
 	[[nodiscard]] id::idType loadModel(const char* path)
 	{
 		std::unique_ptr<u8[]> model;
@@ -42,6 +62,19 @@ namespace
 		assert(id::isValid(modelID));
 
 		return modelID;
+	}
+
+	//Loading the test texture.
+	[[nodiscard]] id::idType loadTexture(const char* path)
+	{
+		std::unique_ptr<u8[]> texture;
+		u64 size{ 0 };
+		readFile(path, texture, size);
+
+		const id::idType textureID = content::createResource(texture.get(), content::assetType::texture);
+		assert(id::isValid(textureID));
+
+		return textureID;
 	}
 
 	void loadShaders()
@@ -98,7 +131,7 @@ namespace
 		info.shaderIDs[graphics::shaderType::pixel] = pixelShaderId;
 		info.type = graphics::materialType::opaque;
 
-		materialId = content::createResource(&info, content::assetType::material);
+		defaultMaterialID = content::createResource(&info, content::assetType::material);
 	}
 
 	void removeItem(gameEntity::entityId entityID, id::idType itemID, id::idType modelID)
@@ -123,30 +156,52 @@ namespace
 
 void createRenderItems()
 {
-	auto first = std::thread{ [] { planeModelID = loadModel("..\\..\\x64\\plane_model.model"); } };
-	auto second = std::thread{ [] { labModelID = loadModel("..\\..\\x64\\lab_model.model"); } };
-	auto third = std::thread{ [] { fanModelID = loadModel("..\\..\\x64\\fan_model.model"); } };
-	auto fourth = std::thread{ [] { loadShaders(); } };
+	assert(std::filesystem::exists("..\\..\\x64\\labModel.model"));
+	assert(std::filesystem::exists("..\\..\\x64\\fanModel.model"));
+	assert(std::filesystem::exists("..\\..\\x64\\planeModel.model"));
+	assert(std::filesystem::exists("..\\..\\x64\\excaliburModel.model"));
+
+	memset(&textureIDs[0], 0xff, sizeof(id::idType) * _countof(textureIDs));
+
+	std::thread threads[]
+	{
+		std::thread{ [] { textureIDs[textureUsage::ambientOcclusion] = loadTexture("..\\..\\x64\\excaliburAO.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::baseColor] = loadTexture("..\\..\\x64\\excaliburBaseColor.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::emissive] = loadTexture("..\\..\\x64\\excaliburEmissive.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::metal] = loadTexture("..\\..\\x64\\excaliburMetal.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::roughness] = loadTexture("..\\..\\x64\\excaliburRoughness.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::normal] = loadTexture("..\\..\\x64\\excaliburNormal.texture"); }},
+
+		std::thread{ [] { labModelID = loadModel("..\\..\\x64\\labModel.model"); } },
+		std::thread{ [] { fanModelID = loadModel("..\\..\\x64\\fanModel.model"); } },
+		std::thread{ [] { planeModelID = loadModel("..\\..\\x64\\planeModel.model"); } },
+		std::thread{ [] { excaliburModelID = loadModel("..\\..\\x64\\excaliburModel.model"); } },
+		std::thread{ [] { loadShaders(); } }
+	};
+
+	for (auto& thread : threads)
+	{
+		thread.join();
+	}
 
 	labEntityID = createOneGameEntity({}, {}, nullptr).getId();
-	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
 	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.47f }, {}, "fanScript").getId();
-
-	first.join();
-	second.join();
-	third.join();
-	fourth.join();
+	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
+	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, nullptr).getId();
 
 	createMaterial();
-	id::idType materials[]{ materialId };
+	id::idType materials[]{ defaultMaterialID };
+	id::idType excaliburMaterials[]{ defaultMaterialID };
 
 	planeItemID = graphics::addRenderItem(planeEntityID, planeModelID, _countof(materials), &materials[0]);
 	labItemID = graphics::addRenderItem(labEntityID, labModelID, _countof(materials), &materials[0]);
 	fanItemID = graphics::addRenderItem(fanEntityID, fanModelID, _countof(materials), &materials[0]);
+	excaliburItemID = graphics::addRenderItem(excaliburEntityID, excaliburModelID, _countof(excaliburMaterials), &excaliburMaterials[0]);
 
 	renderItemMap[planeItemID] = planeEntityID;
 	renderItemMap[labItemID] = labEntityID;
 	renderItemMap[fanItemID] = fanEntityID;
+	renderItemMap[excaliburItemID] = excaliburEntityID;
 }
 
 void destroyRenderItems()
@@ -154,11 +209,30 @@ void destroyRenderItems()
 	removeItem(planeEntityID, planeItemID, planeModelID);
 	removeItem(labEntityID, labItemID, labModelID);
 	removeItem(fanEntityID, fanItemID, fanModelID);
+	removeItem(excaliburEntityID, excaliburItemID, excaliburModelID);
 
-	//Remove material.
-	if (id::isValid(materialId))
+	//Remove materials.
+	if (id::isValid(defaultMaterialID))
 	{
-		content::destroyResource(materialId, content::assetType::material);
+		content::destroyResource(defaultMaterialID, content::assetType::material);
+	}
+
+	//Remove textures.
+	for (id::idType id : textureIDs)
+	{
+		if (id::isValid(id))
+		{
+			content::destroyResource(id, content::assetType::texture);
+		}
+	}
+
+	//Remove textures.
+	for (id::idType id : textureIDs)
+	{
+		if (id::isValid(id))
+		{
+			content::destroyResource(id, content::assetType::texture);
+		}
 	}
 
 	//Removes shaders and textures.
@@ -174,8 +248,9 @@ void destroyRenderItems()
 
 void getRenderItems(id::idType* items, [[maybe_unused]] u32 count)
 {
-	assert(count == 3);
+	assert(count == 4);
 	items[0] = planeItemID;
 	items[1] = labItemID;
 	items[2] = fanItemID;
+	items[3] = excaliburItemID;
 }

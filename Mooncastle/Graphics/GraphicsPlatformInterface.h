@@ -28,6 +28,9 @@ namespace mooncastle::graphics
             id::idType(*addMaterial)(materialInitInfo);
             void (*removeMaterial)(id::idType);
 
+            id::idType(*addTexture)(const u8 *const);
+            void (*removeTexture)(id::idType);
+
             id::idType(*addRenderItem)(id::idType, id::idType, u32, const id::idType* const);
             void(*removeRenderItem)(id::idType);
         } resources;

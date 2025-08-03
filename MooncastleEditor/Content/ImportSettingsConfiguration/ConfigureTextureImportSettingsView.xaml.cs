@@ -49,7 +49,6 @@ namespace MooncastleEditor.Content
             ImportingItemCollection.Clear(AssetType.Texture);
         }
 
-        //TEST
         private void ImageSource(object sender, ListBox source, Action<TextureProxy, List<TextureProxy>> action)
         {
             var target = (sender as FrameworkElement)?.DataContext as TextureProxy;

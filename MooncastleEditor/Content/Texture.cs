@@ -176,6 +176,7 @@ namespace MooncastleEditor.Content
         TextureCube
     }
 
+    [Flags]
     enum TextureFlags : int
     {
         IsHdr = 0x01,
@@ -470,7 +471,7 @@ namespace MooncastleEditor.Content
             }
             else if (arrayOrDepth > MaxArraySize)
             {
-                Logger.Log(MessageType.Error, $"2D texture dimensions greater than {MaxArraySize}! (file: {file})");
+                Logger.Log(MessageType.Error, $"2D texture array size greater than {MaxArraySize}! (file: {file})");
                 result = false;
             }
 
@@ -561,6 +562,8 @@ namespace MooncastleEditor.Content
                 HasValidDimensions(Width, Height, ArraySize, IsVolumeMap, file);
                 FullPath = file;
 
+                PackForEngine();
+
                 return true;
             }
             catch (Exception ex)
@@ -574,7 +577,43 @@ namespace MooncastleEditor.Content
 
         public override byte[] PackForEngine()
         {
-            throw new NotImplementedException();
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            writer.Write(Width);
+            writer.Write(Height);
+            writer.Write(ArraySize);
+            writer.Write((int)Flags);
+            writer.Write(MipLevels);
+            writer.Write((int)Format);
+
+            Debug.Assert(Slices?.Any() == true);
+
+            foreach (var arraySlice in Slices)
+            {
+                foreach (var mipLevel in arraySlice)
+                {
+                    foreach (var slice in mipLevel)
+                    {
+                        writer.Write(slice.Width);
+                        writer.Write(slice.Height);
+                        writer.Write(slice.RowPitch);
+                        writer.Write(slice.SlicePitch);
+                        writer.Write(slice.RawContent);
+                    }
+                }
+            }
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream)?.ToArray();
+
+            Debug.Assert(data?.Length > 0);
+
+            using (var fs = new FileStream(@"..\..\x64\texture.img", FileMode.Create))
+            {
+                fs.Write(data, 0, data.Length);
+            }
+
+            return data;
         }
 
         public override IEnumerable<string> Save(string file)

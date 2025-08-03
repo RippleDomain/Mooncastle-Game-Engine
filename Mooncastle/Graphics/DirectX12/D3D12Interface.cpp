@@ -36,6 +36,8 @@ namespace mooncastle::graphics::d3D12
 		pi.resources.removeSubmesh = content::submesh::remove;
 		pi.resources.addMaterial = content::material::add;
 		pi.resources.removeMaterial = content::material::remove;
+		pi.resources.addTexture = content::texture::add;
+		pi.resources.removeTexture = content::texture::remove;
 		pi.resources.addRenderItem = content::renderItem::add;
 		pi.resources.removeRenderItem = content::renderItem::remove;
 
