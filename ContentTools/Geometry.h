@@ -153,6 +153,7 @@ namespace mooncastle::tools
 		std::string            name;
 		utl::vector<lodGroup>  lodGroups;
 	};
+
 	struct geometryImportSettings 
 	{
 		f32 smoothingAngle;
@@ -161,6 +162,7 @@ namespace mooncastle::tools
 		u8  reverseHandedness;
 		u8  importEmbeddedTextures;
 		u8  importAnimations;
+		u8  coalesceMeshes;
 	};
 
 	struct sceneData 
@@ -170,6 +172,7 @@ namespace mooncastle::tools
 		geometryImportSettings   settings;
 	};
 
-	void processScene(scene& scene, const geometryImportSettings& settings);
+	void processScene(scene& scene, const geometryImportSettings& settings, progression *const progression);
 	void packData(const scene& scene, sceneData& data);
+	bool coalesceMeshes(const lodGroup& lod, mesh& combinedMesh, progression *const progression);
 }

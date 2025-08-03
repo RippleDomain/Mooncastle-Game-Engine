@@ -295,8 +295,9 @@ namespace mooncastle::tools
 
 		creators[info->type](scene, *info);
 
-		data->settings.calculateNormals = 1;
-		processScene(scene, data->settings);
+		progression progression{};
+
+		processScene(scene, data->settings, &progression);
 		packData(scene, *data);
 	}
 }

@@ -79,19 +79,48 @@ namespace mooncastle::tools
 
 		const i32 numNodes{ root->GetChildCount() };
 
-		for (i32 i = 0; i < numNodes; i++)
+		if (sceneData->settings.coalesceMeshes)
 		{
-			FbxNode* node{ root->GetChild(i) };
-
-			if (!node) continue;
-
 			lodGroup lod{};
-			getMeshes(node, lod.meshes, 0, -1.f);
+
+			for (i32 i{ 0 }; i < numNodes; ++i)
+			{
+				FbxNode* node{ root->GetChild(i) };
+				if (!node) continue;
+
+				getMeshes(node, lod.meshes, 0, -1.f);
+			}
 
 			if (lod.meshes.size())
 			{
 				lod.name = lod.meshes[0].name;
+				mesh combinedMesh{};
+
+				if (coalesceMeshes(lod, combinedMesh, currentProgression))
+				{
+					lod.meshes.clear();
+					lod.meshes.emplace_back(combinedMesh);
+				}
+
 				scene->lodGroups.emplace_back(lod);
+			}
+		}
+		else
+		{
+			for (i32 i{ 0 }; i < numNodes; ++i)
+			{
+				FbxNode* node{ root->GetChild(i) };
+
+				if (!node) continue;
+
+				lodGroup lod{};
+				getMeshes(node, lod.meshes, 0, -1.f);
+
+				if (lod.meshes.size())
+				{
+					lod.name = lod.meshes[0].name;
+					scene->lodGroups.emplace_back(lod);
+				}
 			}
 		}
 	}
@@ -155,6 +184,7 @@ namespace mooncastle::tools
 		if (getMeshData(fbxMesh, m))
 		{
 			meshes.emplace_back(m);
+			currentProgression->setCallback(currentProgression->getValue(), currentProgression->getMaxValue() + 1);
 		}
 	}
 
@@ -334,15 +364,16 @@ namespace mooncastle::tools
 		return true;
 	}
 
-	EDITOR_INTERFACE void ImportFbx(const char* file, sceneData* data)
+	EDITOR_INTERFACE void ImportFbx(const char* file, sceneData* data, progression::progressCallback callback)
 	{
 		assert(file && data);
 		scene scene{};
+		progression progression{ callback };
 
 		//Anything that involves the FBX SDK should be done in a single thread.
 		{
 			std::lock_guard lock{ fbxMutex };
-			FBXContext fbxContext{ file, &scene, data };
+			FBXContext fbxContext{ file, &scene, data, &progression};
 
 			if (fbxContext.isValid())
 			{
@@ -354,7 +385,7 @@ namespace mooncastle::tools
 			}
 		}
 
-		processScene(scene, data->settings);
+		processScene(scene, data->settings, &progression);
 		packData(scene, *data);
 	}
 }

@@ -257,6 +257,20 @@ namespace MooncastleEditor.Content
             }
         }
 
+        private bool _coalesceMeshes;
+        public bool CoalesceMeshes
+        {
+            get => _coalesceMeshes;
+            set
+            {
+                if (_coalesceMeshes != value)
+                {
+                    _coalesceMeshes = value;
+                    OnPropertyChanged(nameof(CoalesceMeshes));
+                }
+            }
+        }
+
         public GeometryImportSettings()
         {
             CalculateNormals = false;
@@ -265,6 +279,7 @@ namespace MooncastleEditor.Content
             ReverseHandedness = false;
             ImportEmbeddedTextures = true;
             ImportAnimations = true;
+            CoalesceMeshes = false;
         }
 
         public void ToBinary(BinaryWriter writer)
@@ -275,6 +290,7 @@ namespace MooncastleEditor.Content
             writer.Write(ReverseHandedness);
             writer.Write(ImportEmbeddedTextures);
             writer.Write(ImportAnimations);
+            writer.Write(CoalesceMeshes);
         }
 
         public void FromBinary(BinaryReader reader)
@@ -285,6 +301,7 @@ namespace MooncastleEditor.Content
             ReverseHandedness = reader.ReadBoolean();
             ImportEmbeddedTextures = reader.ReadBoolean();
             ImportAnimations = reader.ReadBoolean();
+            CoalesceMeshes = reader.ReadBoolean();
         }
     }
 

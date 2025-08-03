@@ -13,7 +13,8 @@ namespace mooncastle::tools
 	class FBXContext
 	{
 	public:
-		FBXContext(const char* file, scene* newScene, sceneData* newData) :scene{ newScene }, sceneData{ newData }
+		FBXContext(const char* file, scene* newScene, sceneData* newData, progression *const newProgression)
+			: scene{ newScene }, sceneData{ newData }, currentProgression{ newProgression }
 		{
 			assert(file && scene && sceneData);
 
@@ -34,6 +35,7 @@ namespace mooncastle::tools
 		void getScene(FbxNode* root = nullptr);
 		constexpr bool isValid() const { return fbxManager && fbxScene; }
 		constexpr f32 getSceneScale() const { return sceneScale; }
+		constexpr progression* getProgression() const { return currentProgression; }
 
 	private:
 		bool initializeFBX();
@@ -47,6 +49,7 @@ namespace mooncastle::tools
 		sceneData*			sceneData{ nullptr };
 		FbxManager*			fbxManager{ nullptr };
 		FbxScene*			fbxScene{ nullptr };
+		progression*		currentProgression{ nullptr };
 		f32					sceneScale{ 1.0f };
 	};
 }

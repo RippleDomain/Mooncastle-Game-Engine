@@ -12,6 +12,35 @@
 #define EDITOR_INTERFACE extern "C" __declspec(dllexport)
 #endif
 
+class progression
+{
+public:
+    using progressCallback = void(*)(i32, i32);
+
+    progression() = default;
+
+    explicit progression(progressCallback newCallback) : callback{ newCallback }
+    {
+    }
+
+    DISABLE_COPY(progression);
+
+    void setCallback(u32 newValue, u32 newMaxValue)
+    {
+        value = newValue;
+        maxValue = newMaxValue;
+        if (callback) callback(newValue, newMaxValue);
+    }
+
+    [[nodiscard]] constexpr u32 getMaxValue() const { return maxValue; }
+    [[nodiscard]] constexpr u32 getValue() const { return value; }
+
+private:
+    progressCallback    callback{ nullptr };
+    u32                 value{ 0 };
+    u32                 maxValue{ 0 };
+};
+
 inline bool fileExists(const char* file)
 {
     const DWORD attr{ GetFileAttributesA(file) };

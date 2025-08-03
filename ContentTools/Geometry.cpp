@@ -353,27 +353,31 @@ namespace mooncastle::tools
             }
         }
 
-        void determineElementType(mesh& m)
+        elements::elementTypes::type determineElementType(const mesh& m)
         {
             using namespace elements;
+
+            elementTypes::type type{};
 
             if (m.normals.size())
             {
                 if (m.uvSets.size() && m.uvSets[0].size())
                 {
-                    m.elementType = elementTypes::staticNormalTexture;
+                    type = elementTypes::staticNormalTexture;
                 }
                 else
                 {
-                    m.elementType = elementTypes::staticNormal;
+                    type = elementTypes::staticNormal;
                 }
             }
             else if (m.colors.size())
             {
-                m.elementType = elementTypes::staticColor;
+                type = elementTypes::staticColor;
             }
 
             // TODO: Will expand for skeletal meshes.
+
+            return type;
         }
 
         void processVertices(mesh& m, const geometryImportSettings& settings)
@@ -391,7 +395,7 @@ namespace mooncastle::tools
                 processUvs(m);
             }
 
-            determineElementType(m);
+            m.elementType = determineElementType(m);
             packVertices(m);
         }
 
@@ -434,7 +438,7 @@ namespace mooncastle::tools
                 su32                 //Number of LODs
             };
 
-            for (auto& lod : scene.lodGroups)
+            for (const auto& lod : scene.lodGroups)
             {
                 u64 lodSize
                 {
@@ -442,7 +446,7 @@ namespace mooncastle::tools
                     su32                     //Number of meshes in this LOD
                 };
 
-                for (auto& m : lod.meshes)
+                for (const auto& m : lod.meshes)
                 {
                     lodSize += getMeshSize(m);
                 }
@@ -524,25 +528,25 @@ namespace mooncastle::tools
 
             for (u32 i{ 0 }; i < numPolys; ++i)
             {
-                const u32 mtl_idx{ m.materialIndices[i] };
+                const u32 mtlIndex{ m.materialIndices[i] };
 
-                if (mtl_idx != materialIndex) continue;
+                if (mtlIndex != materialIndex) continue;
 
                 const u32 index{ i * 3 };
 
                 for (u32 j = index; j < index + 3; ++j)
                 {
-                    const u32 v_idx{ m.rawIndices[j] };
+                    const u32 vIdx{ m.rawIndices[j] };
 
-                    if (vertexRef[v_idx] != u32_invalid_id)
+                    if (vertexRef[vIdx] != u32_invalid_id)
                     {
-                        submesh.rawIndices.emplace_back(vertexRef[v_idx]);
+                        submesh.rawIndices.emplace_back(vertexRef[vIdx]);
                     }
                     else
                     {
                         submesh.rawIndices.emplace_back((u32)submesh.positions.size());
-                        vertexRef[v_idx] = submesh.rawIndices.back();
-                        submesh.positions.emplace_back(m.positions[v_idx]);
+                        vertexRef[vIdx] = submesh.rawIndices.back();
+                        submesh.positions.emplace_back(m.positions[vIdx]);
                     }
                     
                     if (m.normals.size()) submesh.normals.emplace_back(m.normals[j]); 
@@ -563,13 +567,15 @@ namespace mooncastle::tools
             return !submesh.rawIndices.empty();
         }
 
-        void splitMeshesByMaterial(scene& scene)
+        void splitMeshesByMaterial(scene& scene, progression *const progression)
         {
+            assert(progression);
+
             for (auto& lod : scene.lodGroups)
             {
                 utl::vector<mesh> newMeshes;
 
-                for (auto& m : lod.meshes)
+                for (const auto& m : lod.meshes)
                 {
                     //If more than one material is used in this mesh, then split it into submeshes.
                     const u32 numMaterials{ (u32)m.materialUsed.size() };
@@ -579,9 +585,11 @@ namespace mooncastle::tools
                         for (u32 i{ 0 }; i < numMaterials; ++i)
                         {
                             mesh submesh{};
+
                             if (splitMeshesByMaterial(m.materialUsed[i], m, submesh))
                             {
                                 newMeshes.emplace_back(submesh);
+                                progression->setCallback(progression->getValue(), progression->getMaxValue() + 1);
                             }
                         }
                     }
@@ -594,17 +602,29 @@ namespace mooncastle::tools
                 newMeshes.swap(lod.meshes);
             }
         }
+
+        template <typename T> void appendToVectorPod(utl::vector<T>& destination, const utl::vector<T>& source)
+        {
+            if (source.empty()) return;
+
+            const u32 numElements{ (u32)destination.size() };
+            destination.resize(destination.size() + source.size());
+            memcpy(&destination[numElements], source.data(), source.size() * sizeof(T));
+        }
 	}
 
-	void processScene(scene& scene, const geometryImportSettings& settings)
+	void processScene(scene& scene, const geometryImportSettings& settings, progression *const progression)
 	{
-		splitMeshesByMaterial(scene);
+        assert(progression);
+
+		splitMeshesByMaterial(scene, progression);
 
         for (auto& lod : scene.lodGroups) 
         {
             for (auto& m : lod.meshes)
             {
                 processVertices(m, settings);
+                progression->setCallback(progression->getValue() + 1, progression->getMaxValue());
             }
         }
 	}
@@ -626,7 +646,7 @@ namespace mooncastle::tools
         //Number of LODs.
         blob.write((u32)scene.lodGroups.size());
 
-        for (auto& lod : scene.lodGroups)
+        for (const auto& lod : scene.lodGroups)
         {
             //LOD name.
             blob.write((u32)lod.name.size());
@@ -635,7 +655,7 @@ namespace mooncastle::tools
             //Number of meshes in this LOD.
             blob.write((u32)lod.meshes.size());
 
-            for (auto& m : lod.meshes)
+            for (const auto& m : lod.meshes)
             {
                 packMeshData(m, blob);
             }
@@ -643,4 +663,64 @@ namespace mooncastle::tools
 
         assert(sceneSize == blob.getOffset());
 	}
+
+    bool coalesceMeshes(const lodGroup& lod, mesh& combinedMesh, progression *const progression)
+    {
+        assert(lod.meshes.size());
+
+        const mesh& firstMesh{ lod.meshes[0] };
+        combinedMesh.name = firstMesh.name;
+        combinedMesh.elementType = determineElementType(firstMesh);
+        combinedMesh.lodThreshold = firstMesh.lodThreshold;
+        combinedMesh.lodId = firstMesh.lodId;
+        combinedMesh.uvSets.resize(firstMesh.uvSets.size());
+
+        for (u32 meshIndex{ 0 }; meshIndex < lod.meshes.size(); ++meshIndex)
+        {
+            const mesh& m{ lod.meshes[meshIndex] };
+
+            if (combinedMesh.elementType != determineElementType(m) ||
+                combinedMesh.uvSets.size() != m.uvSets.size() ||
+                combinedMesh.lodId != m.lodId ||
+                !math::isEqual(combinedMesh.lodThreshold, m.lodThreshold))
+            {
+                combinedMesh = {};
+
+                return false;
+            }
+
+            const u32 posCount{ (u32)combinedMesh.positions.size() };
+            const u32 rawIndexBase{ (u32)combinedMesh.rawIndices.size() };
+
+            appendToVectorPod(combinedMesh.positions, m.positions);
+            appendToVectorPod(combinedMesh.normals, m.normals);
+            appendToVectorPod(combinedMesh.tangents, m.tangents);
+            appendToVectorPod(combinedMesh.colors, m.colors);
+
+            for (u32 i{ 0 }; i < combinedMesh.uvSets.size(); ++i)
+            {
+                appendToVectorPod(combinedMesh.uvSets[i], m.uvSets[i]);
+            }
+
+            appendToVectorPod(combinedMesh.materialIndices, m.materialIndices);
+            appendToVectorPod(combinedMesh.rawIndices, m.rawIndices);
+
+            for (u32 i{ rawIndexBase }; i < combinedMesh.rawIndices.size(); ++i)
+            {
+                combinedMesh.rawIndices[i] += posCount;
+            }
+
+            progression->setCallback(progression->getValue(), progression->getMaxValue() > 1 ? progression->getMaxValue() - 1 : 1);
+        }
+
+        for (const u32 materialIndex : combinedMesh.materialIndices)
+        {
+            if (std::find(combinedMesh.materialUsed.begin(), combinedMesh.materialUsed.end(), materialIndex) == combinedMesh.materialUsed.end())
+            {
+                combinedMesh.materialUsed.emplace_back(materialIndex);
+            }
+        }
+
+        return true;
+    }
 }
