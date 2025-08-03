@@ -571,6 +571,8 @@ namespace mooncastle::tools
         {
             assert(progression);
 
+            progression->setCallback(0, 0);
+
             for (auto& lod : scene.lodGroups)
             {
                 utl::vector<mesh> newMeshes;
@@ -589,7 +591,6 @@ namespace mooncastle::tools
                             if (splitMeshesByMaterial(m.materialUsed[i], m, submesh))
                             {
                                 newMeshes.emplace_back(submesh);
-                                progression->setCallback(progression->getValue(), progression->getMaxValue() + 1);
                             }
                         }
                     }
@@ -599,6 +600,7 @@ namespace mooncastle::tools
                     }
                 }
 
+                progression->setCallback(progression->getValue(), progression->getMaxValue() + (u32)newMeshes.size());
                 newMeshes.swap(lod.meshes);
             }
         }
@@ -688,7 +690,11 @@ namespace mooncastle::tools
 
                 return false;
             }
+        }
 
+        for (u32 meshIndex{ 0 }; meshIndex < lod.meshes.size(); ++meshIndex)
+        {
+            const mesh& m{ lod.meshes[meshIndex] };
             const u32 posCount{ (u32)combinedMesh.positions.size() };
             const u32 rawIndexBase{ (u32)combinedMesh.rawIndices.size() };
 

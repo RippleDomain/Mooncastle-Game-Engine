@@ -16,7 +16,7 @@ namespace mooncastle::tools
 		FBXContext(const char* file, scene* newScene, sceneData* newData, progression *const newProgression)
 			: scene{ newScene }, sceneData{ newData }, currentProgression{ newProgression }
 		{
-			assert(file && scene && sceneData);
+			assert(file && scene && sceneData && currentProgression);
 
 			if (initializeFBX())
 			{

@@ -401,7 +401,7 @@ namespace MooncastleEditor.Content
             {
                 settingsConfigurator = (files?.Length > 0) ? new(files, selectedFolder) : new(selectedFolder);
 
-                if (settingsConfigurator.FileCount > 0)
+                if (forceOpen || settingsConfigurator.FileCount > 0)
                 {
                     new ConfigureImportSettingsWindow()
                     {
@@ -513,6 +513,12 @@ namespace MooncastleEditor.Content
             var fadeOut = new DoubleAnimation(1, 0, new Duration(TimeSpan.FromMilliseconds(100)));
             fadeOut.Completed += (_, _) => dropBorder.Visibility = Visibility.Collapsed;
             dropBorder.BeginAnimation(OpacityProperty, fadeOut);
+        }
+
+        private void OnOpenImportSettingsConfigurator_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as ContentBrowser;
+            OpenImportSettingsConfigurator(null, vm.SelectedFolder, true);
         }
     }
 }

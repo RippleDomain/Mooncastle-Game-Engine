@@ -379,10 +379,11 @@ namespace mooncastle::tools
 			{
 				fbxContext.getScene();
 			}
-			else
-			{
-				return;
-			}
+		}
+		
+		if (scene.lodGroups.empty())
+		{
+			return; //No meshes found in the FBX file.
 		}
 
 		processScene(scene, data->settings, &progression);

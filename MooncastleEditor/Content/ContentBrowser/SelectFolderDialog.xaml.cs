@@ -23,11 +23,9 @@ namespace MooncastleEditor.Content
 
             contentBrowserView.Loaded += (_, _) =>
             {
-                if (!Path.EndsInDirectorySeparator(startFolder))
-                {
-                    startFolder += Path.DirectorySeparatorChar;
-                }
-                if (startFolder?.Contains(Project.Current.ContentPath) == true)
+                var startPath = startFolder + Path.DirectorySeparatorChar;
+
+                if (startPath?.Contains(Project.Current.ContentPath) == true)
                 {
                     (contentBrowserView.DataContext as ContentBrowser).SelectedFolder = startFolder;
                 }

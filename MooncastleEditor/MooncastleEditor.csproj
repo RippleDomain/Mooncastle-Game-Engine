@@ -17,6 +17,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
     <Optimize>True</Optimize>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\ContentBrowser\openImportConfigs.png" />
+  </ItemGroup>
 	
   <ItemGroup>
     <Resource Include="Resources\ContentBrowser\listView.png" />

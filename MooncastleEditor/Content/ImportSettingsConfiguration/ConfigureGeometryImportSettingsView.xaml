@@ -346,7 +346,7 @@
                     DockPanel.Dock="Top"
                     FontSize="16"
                     Text="Imported files" />
-                <local:ImportingItemsView Margin="0,10,10,0" />
+                <local:ImportingItemsView Margin="0,10,0,0" />
             </DockPanel>
         </Grid>
     </Grid>
