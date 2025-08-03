@@ -493,7 +493,6 @@ namespace MooncastleEditor.Content
             try
             {
                 Logger.Log(MessageType.Info, $"Importing image file {file}");
-                TextureImportSettings.Sources.Add(file);
 
                 (var slices, var icon) = ContentToolsAPI.Import(this);
                 Debug.Assert(slices.Any() && slices.First().Any() && slices.First().First().Any());

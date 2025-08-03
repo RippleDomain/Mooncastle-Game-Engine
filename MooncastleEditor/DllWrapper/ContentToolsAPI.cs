@@ -386,7 +386,11 @@ namespace MooncastleEditor.DllWrappers
             {
                 sceneData.ImportSettings.FromContentSettings(geometry);
                 sceneDataGenerator(sceneData);
-                Debug.Assert(sceneData.Data != IntPtr.Zero && sceneData.DataSize > 0);
+                
+                if (sceneData.Data == IntPtr.Zero || sceneData.DataSize == 0)
+                {
+                    throw new Exception(failureMessage);
+                }
 
                 var data = new byte[sceneData.DataSize];
                 Marshal.Copy(sceneData.Data, data, 0, sceneData.DataSize);

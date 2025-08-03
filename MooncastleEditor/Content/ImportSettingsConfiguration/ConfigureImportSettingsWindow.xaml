@@ -28,7 +28,9 @@
             <TabItem
                 MinWidth="96"
                 Header="Texture"
-                Tag="{x:Static local:AssetType.Texture}" />
+                Tag="{x:Static local:AssetType.Texture}">
+                <local:ConfigureTextureImportSettingsView />
+            </TabItem>
             <TabItem
                 MinWidth="96"
                 Header="Audio"
