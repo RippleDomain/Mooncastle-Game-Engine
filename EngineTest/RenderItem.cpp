@@ -207,7 +207,7 @@ void createRenderItems()
 	labEntityID = createOneGameEntity({}, {}, nullptr).getId();
 	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.47f }, {}, "fanScript").getId();
 	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
-	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, nullptr /*"excaliburScript"*/).getId();
+	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, "excaliburScript").getId();
 
 	createMaterial();
 	id::idType materials[]{ defaultMaterialID };

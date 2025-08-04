@@ -1,12 +1,157 @@
 #include "Geometry.h"
 #include "Utilities/IOStream.h"
+#include "MikkTSpace/mikktspace.h"
 
 namespace mooncastle::tools
 {
 	namespace
 	{
-        using namespace math;
         using namespace DirectX;
+
+        i32 mikkGetFaceCount(const SMikkTSpaceContext* context)
+        {
+            const mesh& m{ *(mesh*)(context->m_pUserData) };
+            return (i32)m.indices.size() / 3;
+        }
+
+        i32 mikkGetFaceVertexCount([[maybe_unused]] const SMikkTSpaceContext* context, [[maybe_unused]] i32 faceIndex)
+        {
+            //Only triangle meshes are used.
+            return 3;
+        }
+
+        void mikkGetPosition(const SMikkTSpaceContext* context, f32 position[3], i32 faceIndex, i32 vertIndex)
+        {
+            const mesh& m{ *(mesh*)(context->m_pUserData) };
+            const u32 index{ m.indices[faceIndex * 3 + vertIndex] };
+            const math::v3& p{ m.vertices[index].position };
+
+            position[0] = p.x;
+            position[1] = p.y;
+            position[2] = p.z;
+        }
+
+        void mikkGetNormal(const SMikkTSpaceContext* context, f32 normal[3], i32 faceIndex, i32 vertIndex)
+        {
+            const mesh& m{ *(mesh*)(context->m_pUserData) };
+            const u32 index{ m.indices[faceIndex * 3 + vertIndex] };
+            const math::v3& n{ m.vertices[index].normal };
+
+            normal[0] = n.x;
+            normal[1] = n.y;
+            normal[2] = n.z;
+        }
+
+        void mikkGetTexCoords(const SMikkTSpaceContext* context, f32 texture[2], i32 faceIndex, i32 vertIndex)
+        {
+            const mesh& m{ *(mesh*)(context->m_pUserData) };
+            const u32 index{ m.indices[faceIndex * 3 + vertIndex] };
+            const math::v2& uv{ m.vertices[index].uv };
+
+            texture[0] = uv.x;
+            texture[1] = uv.y;
+        }
+
+        void mikkSetTSpaceSimple(const SMikkTSpaceContext* context, const f32 tangent[3], f32 sign, i32 faceIndex, i32 vertIndex)
+        {
+            mesh& m{ *(mesh*)(context->m_pUserData) };
+            const u32 index{ m.indices[faceIndex * 3 + vertIndex] };
+            math::v4& t{ m.vertices[index].tangent };
+
+            t.x = tangent[0];
+            t.y = tangent[1];
+            t.z = tangent[2];
+            t.w = sign;
+        }
+
+        void calculateMikkTSpace(mesh& m)
+        {
+            //Imported tangents are not used.
+            m.tangents.clear();
+
+            SMikkTSpaceInterface mikkInterface{};
+            mikkInterface.m_getNumFaces = mikkGetFaceCount;
+            mikkInterface.m_getNumVerticesOfFace = mikkGetFaceVertexCount;
+            mikkInterface.m_getPosition = mikkGetPosition;
+            mikkInterface.m_getNormal = mikkGetNormal;
+            mikkInterface.m_getTexCoord = mikkGetTexCoords;
+            mikkInterface.m_setTSpaceBasic = mikkSetTSpaceSimple;
+            mikkInterface.m_setTSpace = nullptr;
+
+            SMikkTSpaceContext mikkContext{};
+            mikkContext.m_pInterface = &mikkInterface;
+            mikkContext.m_pUserData = (void*)&m;
+
+            genTangSpaceDefault(&mikkContext);
+        }
+
+        void calculateTangents(mesh& m)
+        {
+            //Imported tangents are not used.
+            m.tangents.clear();
+
+            const u32 numIndices{ (u32)m.rawIndices.size() };
+            utl::vector<XMVECTOR> tangents(numIndices, XMVectorZero());
+            utl::vector<XMVECTOR> bitangents(numIndices, XMVectorZero());
+            utl::vector<XMVECTOR> positions(numIndices);
+
+            for (u32 i{ 0 }; i < numIndices; ++i)
+            {
+                positions[i] = XMLoadFloat3(&m.vertices[m.indices[i]].position);
+            }
+
+            for (u32 i{ 0 }; i < numIndices; i += 3)
+            {
+                const u32 i0{ i + 0 };
+                const u32 i1{ i + 1 };
+                const u32 i2{ i + 2 };
+
+                const XMVECTOR& position0{ positions[i0] };
+                const XMVECTOR& position1{ positions[i1] };
+                const XMVECTOR& position2{ positions[i2] };
+
+                const math::v2& uv0{ m.vertices[m.indices[i0]].uv };
+                const math::v2& uv1{ m.vertices[m.indices[i1]].uv };
+                const math::v2& uv2{ m.vertices[m.indices[i2]].uv };
+
+                const math::v2 deltaUV1{ uv1.x - uv0.x, uv1.y - uv0.y };
+                const math::v2 deltaUV2{ uv2.x - uv0.x, uv2.y - uv0.y };
+
+                const XMVECTOR deltaPosition1{ position1 - position0 };
+                const XMVECTOR deltaPosition2{ position2 - position0 };
+
+                f32 determinant{ deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x };
+                if (abs(determinant) < math::epsilon) determinant = math::epsilon;
+
+                const f32 inverseDeterminant{ 1.f / determinant };
+                const XMVECTOR tangent{ (deltaPosition1 * deltaUV2.y - deltaPosition2 * deltaUV1.y) * inverseDeterminant };
+                const XMVECTOR bitangent{ (deltaPosition2 * deltaUV1.x - deltaPosition1 * deltaUV2.x) * inverseDeterminant };
+
+                tangents[i0] += tangent;
+                tangents[i1] += tangent;
+                tangents[i2] += tangent;
+                bitangents[i0] += bitangent;
+                bitangents[i1] += bitangent;
+                bitangents[i2] += bitangent;
+            }
+
+            //Orthonormalize and calculate handedness.
+            for (u32 i{ 0 }; i < numIndices; ++i)
+            {
+                const XMVECTOR& tangent{ tangents[i] };
+                const XMVECTOR& bitangent{ bitangents[i] };
+                const XMVECTOR& normal{ XMLoadFloat3(&m.vertices[m.indices[i]].normal) };
+
+                math::v3 newTangent;
+                XMStoreFloat3(&newTangent, XMVector3Normalize(tangent - normal * XMVector3Dot(normal, tangent)));
+                f32 handedness;
+                XMStoreFloat(&handedness, XMVector3Dot(XMVector3Cross(tangent, bitangent), normal));
+
+                handedness = handedness > 0.f ? 1.f : -1.f;
+
+                m.vertices[m.indices[i]].tangent = { newTangent.x, newTangent.y, newTangent.z, handedness };
+            }
+        }
 
         void recalculateNormals(mesh& m)
         {
@@ -35,9 +180,9 @@ namespace mooncastle::tools
 
         void processNormals(mesh& m, f32 smoothingAngle)
         {
-            const f32 cosAlpha{ XMScalarCos(pi - smoothingAngle * pi / 180.f) };
-            const bool isHardEdge{ XMScalarNearEqual(smoothingAngle, 180.f, epsilon) };
-            const bool isSoftEdge{ XMScalarNearEqual(smoothingAngle, 0.f, epsilon) };
+            const f32 cosAlpha{ XMScalarCos(math::pi - smoothingAngle * math::pi / 180.f) };
+            const bool isHardEdge{ XMScalarNearEqual(smoothingAngle, 180.f, math::epsilon) };
+            const bool isSoftEdge{ XMScalarNearEqual(smoothingAngle, 0.f, math::epsilon) };
             const u32 numIndices{ (u32)m.rawIndices.size() };
             const u32 numVertices{ (u32)m.positions.size() };
             assert(numIndices && numVertices);
@@ -53,7 +198,7 @@ namespace mooncastle::tools
 
             for (u32 i{ 0 }; i < numVertices; ++i)
             {
-                auto& refs{ idxRef[i] };
+                utl::vector<u32>& refs{ idxRef[i] };
                 u32 numRefs{ (u32)refs.size() };
 
                 for (u32 j{ 0 }; j < numRefs; ++j)
@@ -97,7 +242,7 @@ namespace mooncastle::tools
             }
         }
 
-        void processUvs(mesh& m)
+        void processUVs(mesh& m)
         {
             utl::vector<vertex> oldVertices;
             oldVertices.swap(m.vertices);
@@ -117,7 +262,7 @@ namespace mooncastle::tools
 
             for (u32 i{ 0 }; i < numVertices; ++i)
             {
-                auto& refs{ idxRef[i] };
+                utl::vector<u32>& refs{ idxRef[i] };
                 u32 numRefs{ (u32)refs.size() };
                 for (u32 j{ 0 }; j < numRefs; ++j)
                 {
@@ -128,12 +273,69 @@ namespace mooncastle::tools
 
                     for (u32 k{ j + 1 }; k < numRefs; ++k)
                     {
-                        v2& uv1{ m.uvSets[0][refs[k]] };
-                        if (XMScalarNearEqual(v.uv.x, uv1.x, epsilon) &&
-                            XMScalarNearEqual(v.uv.y, uv1.y, epsilon))
+                        math::v2& uv1{ m.uvSets[0][refs[k]] };
+
+                        if (XMScalarNearEqual(v.uv.x, uv1.x, math::epsilon) && XMScalarNearEqual(v.uv.y, uv1.y, math::epsilon))
                         {
                             m.indices[refs[k]] = m.indices[refs[j]];
                             refs.erase(refs.begin() + k);
+
+                            --numRefs;
+                            --k;
+                        }
+                    }
+                }
+            }
+        }
+
+        void processTangents(mesh& m)
+        {
+            if (m.tangents.size() != m.positions.size())
+            {
+                return;
+            }
+
+            utl::vector<vertex> oldVertices;
+            oldVertices.swap(m.vertices);
+            utl::vector<u32> oldIndices(m.indices.size());
+            oldIndices.swap(m.indices);
+
+            const u32 numVertices{ (u32)oldVertices.size() };
+            const u32 numIndices{ (u32)oldIndices.size() };
+            assert(numVertices && numIndices);
+
+            utl::vector<utl::vector<u32>> indexRef(numVertices);
+
+            for (u32 i{ 0 }; i < numIndices; ++i)
+            {
+                indexRef[oldIndices[i]].emplace_back(i);
+            }
+
+            for (u32 i{ 0 }; i < numVertices; ++i)
+            {
+                utl::vector<u32>& refs{ indexRef[i] };
+                u32 numRefs{ (u32)refs.size() };
+
+                for (u32 j{ 0 }; j < numRefs; ++j)
+                {
+                    const math::v4& tj{ m.tangents[refs[j]] };
+                    vertex& v{ oldVertices[oldIndices[refs[j]]] };
+                    v.tangent = tj;
+                    m.indices[refs[j]] = (u32)m.vertices.size();
+                    m.vertices.emplace_back(v);
+
+                    XMVECTOR xmTJ{ XMLoadFloat4(&tj) };
+                    XMVECTOR xmEpsilon{ XMVectorReplicate(math::epsilon) };
+
+                    for (u32 k{ j + 1 }; k < numRefs; ++k)
+                    {
+                        XMVECTOR xmTangent{ XMLoadFloat4(&m.tangents[refs[k]]) };
+
+                        if (XMVector4NearEqual(xmTangent, xmTangent, xmEpsilon))
+                        {
+                            m.indices[refs[k]] = m.indices[refs[j]];
+                            refs.erase(refs.begin() + k);
+
                             --numRefs;
                             --k;
                         }
@@ -191,7 +393,7 @@ namespace mooncastle::tools
                 {
                     vertex& v{ m.vertices[i] };
                     tSigns[i] = (u8)((v.normal.z > 0.0f) << 1);
-                    normals[i] = { (u16)packFloat<16>(v.normal.x, -1.0f, 1.0f), (u16)packFloat<16>(v.normal.y, -1.0f, 1.0f) };
+                    normals[i] = { (u16)math::packFloat<16>(v.normal.x, -1.0f, 1.0f), (u16)math::packFloat<16>(v.normal.y, -1.0f, 1.0f) };
                 }
 
                 if (m.elementType & elements::elementTypes::staticNormalTexture)
@@ -200,8 +402,8 @@ namespace mooncastle::tools
                     for (u32 i{ 0 }; i < numVertices; i++)
                     {
                         vertex& v{ m.vertices[i] };
-                        tSigns[i] |= (u8)((v.tangent.w > 0.0f) && (v.tangent.z > 0.0f));
-                        tangents[i] = { (u16)packFloat<16>(v.tangent.x, -1.0f, 1.0f), (u16)packFloat<16>(v.tangent.y, -1.0f, 1.0f) };
+                        tSigns[i] |= (u8)((v.tangent.w > 0.0f) | ((v.tangent.z > 0.0f)) << 1);
+                        tangents[i] = { (u16)math::packFloat<16>(v.tangent.x, -1.0f, 1.0f), (u16)math::packFloat<16>(v.tangent.y, -1.0f, 1.0f) };
                     }
                 }
             }
@@ -215,9 +417,9 @@ namespace mooncastle::tools
                     //Pack joint weights (from [0.0, 1.0] to [0...255])
                     jointWeights[i] =
                     {
-                        (u8)packUnitFloat<8>(v.jointWeights.x),
-                        (u8)packUnitFloat<8>(v.jointWeights.y),
-                        (u8)packUnitFloat<8>(v.jointWeights.z)
+                        (u8)math::packUnitFloat<8>(v.jointWeights.x),
+                        (u8)math::packUnitFloat<8>(v.jointWeights.y),
+                        (u8)math::packUnitFloat<8>(v.jointWeights.z)
                     };
                     //w3 will be calculated in the shader since joint weights total to one(1).
                 }
@@ -392,7 +594,21 @@ namespace mooncastle::tools
 
             if (!m.uvSets.empty())
             {
-                processUvs(m);
+                processUVs(m);
+            }
+
+            if ((settings.calculateTangents || m.tangents.empty()) && !m.uvSets.empty())
+            {
+				calculateMikkTSpace(m);
+                //calculateTangents(m);
+            }
+
+            /*m.tangents contains values of the imported tangent vectors. It will be empty
+            if tangents were calculated. Therefore, processTangents is only called when
+            tangents are imported from the source file rather than being calculated.*/
+            if (!m.tangents.empty())
+            {
+                processTangents(m);
             }
 
             m.elementType = determineElementType(m);

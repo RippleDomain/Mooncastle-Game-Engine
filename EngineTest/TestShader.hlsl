@@ -5,7 +5,7 @@ struct VertexOut
     float4 HomogeneousPosition : SV_POSITION;
     float3 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL;
-    float3 WorldTangent : TANGENT;
+    float4 WorldTangent : TANGENT;
     float2 UV : TEXTURE;
 };
 
@@ -82,8 +82,8 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     VertexElement element = Elements[VertexIdx];
     float2 nXY = element.Normal * InvIntervals - 1.f;
     uint signs = (element.ColorTSign >> 24) & 0xff;
-    float nSign = float(signs & 0x02) - 1;
-    float3 normal = float3(nXY.x, nXY.y, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
+    float nSign = float((signs & 0x04) >> 1) - 1;
+    float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
 
     vsOut.HomogeneousPosition = mul(PerObjectBuffer.WorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
@@ -93,15 +93,22 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 
 #elif ELEMENTS_TYPE == ElementsTypeStaticNormalTexture
     VertexElement element = Elements[VertexIdx];
+    uint signs = element.ColorTSign >> 24;
+    float nSign = float((signs & 0x04) >> 1) - 1.f;
+    float tSign = float(signs & 0x02) - 1.f;
+    float hSign = float((signs & 0x01) << 1) - 1.f;
+    
     float2 nXY = element.Normal * InvIntervals - 1.f;
-    uint signs = (element.ColorTSign >> 24) & 0xff;
-    float nSign = float(signs & 0x02) - 1;
-    float3 normal = float3(nXY.x, nXY.y, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
+    float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
+
+    float2 tXY = element.Tangent * InvIntervals - 1.f;
+    float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
+    tangent = tangent - normal * dot(normal, tangent);
 
     vsOut.HomogeneousPosition = mul(PerObjectBuffer.WorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
-    vsOut.WorldNormal = mul(float4(normal, 0.f), PerObjectBuffer.InvWorld).xyz;
-    vsOut.WorldTangent = 0.f;
+    vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
+    vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), -hSign);
     vsOut.UV = float2(element.UV.x, 1.f - element.UV.y);
 
 #else
@@ -161,7 +168,7 @@ float3 PointLight(Surface S, float3 worldPosition, float3 V, LightParameters lig
     {
         const float dRcp = rsqrt(dSq);
         L *= dRcp;
-        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        const float attenuation = 1.f - smoothstep(0.1 * light.Range, light.Range, rcp(dRcp));
         color = CalculateLighting(S, L, V, light.Color * light.Intensity * attenuation);
     }
     
@@ -194,7 +201,7 @@ float3 Spotlight(Surface S, float3 worldPosition, float3 V, LightParameters ligh
     {
         const float dRcp = rsqrt(dSq);
         L *= dRcp;
-        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        const float attenuation = 1.f - smoothstep(0.1 * light.Range, light.Range, rcp(dRcp));
         const float CosAngleToLight = saturate(dot(-L, light.Direction));
         const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, CosAngleToLight);
         color = CalculateLighting(S, L, V, light.Color * light.Intensity * attenuation * angularAttenuation);
@@ -216,7 +223,7 @@ Surface GetSurface(VertexOut psIn)
 
     S.BaseColor = 1.f;
     S.Metallic = 0.f;
-    S.Normal = psIn.WorldNormal;
+    S.Normal = normalize(psIn.WorldNormal);
     S.PerceptualRoughness = 1.f;
     S.EmissiveColor = 0.f;
     S.EmissiveIntensity = 1.f;
@@ -231,7 +238,17 @@ Surface GetSurface(VertexOut psIn)
     S.PerceptualRoughness = Sample(4, LinearSampler, uv).r; //Roughness (separate)
     S.EmissiveIntensity = 1.f;
     float3 n = Sample(5, LinearSampler, uv).rgb;
-    S.Normal = psIn.WorldNormal;
+    
+    n = n * 2.f - 1.f;
+    n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
+
+    const float3 Normal = psIn.WorldNormal;
+    const float3 Tangent = psIn.WorldTangent.xyz;
+    const float3 Bitangent = cross(Normal, Tangent) * psIn.WorldTangent.w;
+    const float3x3 TBN = float3x3(Tangent, Bitangent, Normal);
+    
+    //Transform from tangent-space to world-space.
+    S.Normal = normalize(mul(n, TBN));
     
 #endif
     

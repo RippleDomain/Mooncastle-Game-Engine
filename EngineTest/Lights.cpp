@@ -32,7 +32,7 @@ namespace
 		info.entityID = entityId;
 		info.type = type;
 		info.lightSetKey = lightSetKey;
-		info.intensity = 10.f;
+		info.intensity = 1.f;
 
 		info.color = { random(0.2f), random(0.2f), random(0.2f) };
 

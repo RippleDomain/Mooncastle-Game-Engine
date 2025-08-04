@@ -78,7 +78,7 @@ namespace mooncastle::tools
 		struct skeletalNormal
 		{
 			u8   jointWeights[3]; //Normalized joint weights for up to 4 joints.
-			u8   tSign; //Bit 0: tangent handidness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1)
+			u8   tSign; //Bit 0: tangent handidness, bit 1: tangent.z sign, bit 2: normal.z sign (0 means -1, 1 means +1)
 			u16  jointIndices[4];
 			u16  normal[2];
 		};
@@ -86,7 +86,7 @@ namespace mooncastle::tools
 		struct skeletalNormalColor
 		{
 			u8   jointWeights[3]; //Normalized joint weights for up to 4 joints.
-			u8   tSign; //Bit 0: tangent handidness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1)
+			u8   tSign; //Bit 0: tangent handidness, bit 1: tangent.z sign, bit 2: normal.z sign (0 means -1, 1 means +1)
 			u16  jointIndices[4];
 			u16  normal[2];
 			u8   color[3];
@@ -96,7 +96,7 @@ namespace mooncastle::tools
 		struct skeletalNormalTexture
 		{
 			u8        jointWeights[3]; //Normalized joint weights for up to 4 joints.
-			u8        tSign; //Bit 0: tangent handidness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1)
+			u8   tSign; //Bit 0: tangent handidness, bit 1: tangent.z sign, bit 2: normal.z sign (0 means -1, 1 means +1)
 			u16       jointIndices[4];
 			u16       normal[2];
 			u16       tangent[2];
@@ -106,7 +106,7 @@ namespace mooncastle::tools
 		struct skeletalNormalTextureColor
 		{
 			u8        jointWeights[3]; //Normalized joint weights for up to 4 joints.
-			u8        tSign; //Bit 0: tangent handidness * (tangent.z sign), bit 1: normal.z sign (0 means -1, 1 means +1)
+			u8   tSign; //Bit 0: tangent handidness, bit 1: tangent.z sign, bit 2: normal.z sign (0 means -1, 1 means +1)
 			u16       jointIndices[4];
 			u16       normal[2];
 			u16       tangent[2];
