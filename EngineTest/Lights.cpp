@@ -121,9 +121,9 @@ void generateLights()
 
 	srand(37);
 
-	constexpr f32 scale1{ 1 };
+	constexpr f32 scale1{ 2 };
 	constexpr math::v3 scale{ 1.f * scale1, 0.5f * scale1, 1.f * scale1 };
-	constexpr i32 dim{ 20 };
+	constexpr i32 dim{ 10 };
 
 	for (i32 x{ -dim }; x < dim; ++x)
 	{

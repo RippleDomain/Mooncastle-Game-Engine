@@ -270,7 +270,18 @@ namespace mooncastle::graphics::d3D12::content
 				parameters[params::lightGrid].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
 				parameters[params::lightIndexList].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
 
-				rootSignature = d3DX::D3D12RootSignatureDescription{ &parameters[0], _countof(parameters), getRootSignatureFlags(flags) }.create();
+				const D3D12_STATIC_SAMPLER_DESC samplers[]
+				{
+					d3DX::staticSampler(d3DX::samplerState.staticPoint, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+					d3DX::staticSampler(d3DX::samplerState.staticLinear, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+					d3DX::staticSampler(d3DX::samplerState.staticAnisotropic, 2, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+				};
+
+				rootSignature = d3DX::D3D12RootSignatureDescription
+				{
+					&parameters[0], _countof(parameters), getRootSignatureFlags(flags),
+					&samplers[0], _countof(samplers)
+				}.create();
 			}
 			break;
 			}
@@ -436,8 +447,6 @@ namespace mooncastle::graphics::d3D12::content
 			{
 				for (u32 j{ 0 }; j < mipLevels; ++j)
 				{
-					blob.skip(2 * sizeof(u32)); //Skips the width and height variables.
-
 					const u32 rowPitch{ blob.read<u32>() };
 					const u32 slicePitch{ blob.read<u32>() };
 
@@ -448,13 +457,8 @@ namespace mooncastle::graphics::d3D12::content
 						slicePitch
 					});
 
-					blob.skip(slicePitch);
-
-					//Skips the rest of the slices fo 3d textures with depth > 1.
-					for (u32 k{ 1 }; k < depthPerMIPLevel[j]; ++k)
-					{
-						blob.skip(4 * sizeof(u32) + slicePitch);
-					}
+					//Skips the rest of the slices.
+					blob.skip(slicePitch * depthPerMIPLevel[j]);
 				}
 			}
 
@@ -472,26 +476,26 @@ namespace mooncastle::graphics::d3D12::content
 			desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 			assert(!(flags & mooncastle::content::textureFlags::isCubeMap && (arraySize % 6)));
-			const u32 subresource_count{ arraySize * mipLevels };
-			assert(subresource_count);
+			const u32 subresourceCount{ arraySize * mipLevels };
+			assert(subresourceCount);
 
-			//Consider using heap allocation for this since an incredibly large texture may cause a stack overflow.
-			D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts
-			{ (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * subresource_count) };
+			const u32 footprintDataSize{ (sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(u32) + sizeof(u64)) * subresourceCount };
+			std::unique_ptr<u8[]> footprintData{ std::make_unique<u8[]>(footprintDataSize) };
 
-			u32 *const rowCount{ (u32 *const)_alloca(sizeof(u32) * subresource_count) };
-			u64 *const rowSizes{ (u64 *const)_alloca(sizeof(u64) * subresource_count) };
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const layouts{ (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *const)footprintData.get() };
+			u32 *const rowCount{ (u32 *const)&layouts[subresourceCount] };
+			u64 *const rowSizes{ (u64 *const)&rowCount[subresourceCount] };
 			u64 sizeRequired{ 0 };
 
 			ID3D12Device* device{ core::device() };
 
-			device->GetCopyableFootprints(&desc, 0, subresource_count, 0, layouts, rowCount, rowSizes, &sizeRequired);
+			device->GetCopyableFootprints(&desc, 0, subresourceCount, 0, layouts, rowCount, rowSizes, &sizeRequired);
 
 			assert(sizeRequired);
 			upload::D3D12UploadContext context{ (u32)sizeRequired };
 			u8 *const cpuAddress{ (u8 *const)context.getCPUAddress() };
 
-			for (u32 subresourceIndex{ 0 }; subresourceIndex < subresource_count; ++subresourceIndex)
+			for (u32 subresourceIndex{ 0 }; subresourceIndex < subresourceCount; ++subresourceIndex)
 			{
 				const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& layout{ layouts[subresourceIndex] };
 				const u32 subresourceHeight{ rowCount[subresourceIndex] };
@@ -522,7 +526,7 @@ namespace mooncastle::graphics::d3D12::content
 				D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)));
 
 			ID3D12Resource* uploadBuffer{ context.getUploadBuffer() };
-			for (u32 i{ 0 }; i < subresource_count; ++i)
+			for (u32 i{ 0 }; i < subresourceCount; ++i)
 			{
 				D3D12_TEXTURE_COPY_LOCATION source{};
 				source.pResource = uploadBuffer;
@@ -706,8 +710,8 @@ namespace mooncastle::graphics::d3D12::content
 		 
 		    struct 
 			  {
-		        u32 width, height, rowPitch, slicePitch,
-		        u8 image[slicePitch],
+		        u32 rowPitch, slicePitch,
+		        u8 image[mipLevel][slicePitch * depthPerMIP],
 		    } images[]
 		} texture*/
 		id::idType add(const u8* const data)
@@ -772,19 +776,26 @@ namespace mooncastle::graphics::d3D12::content
 			materials.remove(id);
 		}
 
-		void getMaterials(const id::idType* const materialIDs, u32 materialCount, const materialsCache& cache)
+		void getMaterials(const id::idType* const materialIDs, u32 materialCount, const materialsCache& cache, u32& descriptorIndexCount)
 		{
 			assert(materialIDs && materialCount);
 			assert(cache.rootSignatures && cache.materialTypes);
 
 			std::lock_guard lock{ materialMutex };
 
+			u32 totalIndexCount{ 0 };
+
 			for (u32 i{ 0 }; i < materialCount; ++i)
 			{
 				const D3D12MaterialStream stream{ materials[materialIDs[i]].get() };
 				cache.rootSignatures[i] = rootSignatures[stream.getRootSigID()];
 				cache.materialTypes[i] = stream.getMaterialType();
+				cache.descriptorIndices[i] = stream.getDescriptorIndices();
+				cache.textureCount[i] = stream.getTextureCount();
+				totalIndexCount += stream.getTextureCount();
 			}
+
+			descriptorIndexCount = totalIndexCount;
 		}
 	}
 
@@ -818,11 +829,11 @@ namespace mooncastle::graphics::d3D12::content
 			items[0] = geometryContentID;
 			id::idType* const itemIDs{ &items[1] };
 
-			std::lock_guard lock{ renderItemMutex };
+			D3D12RenderItem *const d3D12Items{ (D3D12RenderItem *const)alloca(materialCount * sizeof(D3D12RenderItem)) };
 
 			for (u32 i{ 0 }; i < materialCount; ++i)
 			{
-				D3D12RenderItem item{};
+				D3D12RenderItem& item{ d3D12Items[i] };
 				item.entityID = entityID;
 				item.submeshGPUID = gpuIDs[i];
 				item.materialID = materialIDs[i];
@@ -832,8 +843,13 @@ namespace mooncastle::graphics::d3D12::content
 				item.depthPSOID = idPair.depthPSOID;
 
 				assert(id::isValid(item.submeshGPUID) && id::isValid(item.materialID));
+			}
 
-				itemIDs[i] = renderItems.add(item);
+			std::lock_guard lock{ renderItemMutex };
+
+			for (u32 i{ 0 }; i < materialCount; ++i)
+			{
+				itemIDs[i] = renderItems.add(d3D12Items[i]);
 			}
 
 			//Marks the end of the ID list.
@@ -902,7 +918,7 @@ namespace mooncastle::graphics::d3D12::content
 				assert(itemIndex <= d3d12RenderItemCount);
 			}
 
-			assert(itemIndex <= d3d12RenderItemCount);
+			assert(itemIndex == d3d12RenderItemCount);
 		}
 
 		void getItems(const id::idType* const d3d12RenderItemIDs, u32 idCount, const itemsCache& cache)

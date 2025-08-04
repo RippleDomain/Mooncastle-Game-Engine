@@ -45,9 +45,12 @@ namespace
 
 	id::idType textureIDs[textureUsage::count];
 
-	id::idType vertexShaderId{ id::invalidId };
-	id::idType pixelShaderId{ id::invalidId };
+	id::idType vertexShaderID{ id::invalidId };
+	id::idType pixelShaderID{ id::invalidId };
+	id::idType texturedPixelShaderID{ id::invalidId };
+
 	id::idType defaultMaterialID{ id::invalidId };
+	id::idType excaliburMaterialID{ id::invalidId };
 
 	std::unordered_map<id::idType, gameEntity::entityId> renderItemMap;
 
@@ -111,27 +114,44 @@ namespace
 		info.function = "TestShaderPS";
 		info.type = shaderType::pixel;
 
-		auto pixelShader = compileShader(info, shaderPath, extraArgs);
+		utl::vector<std::unique_ptr<u8[]>> pixelShaders;
 
-		assert(pixelShader.get());
+		pixelShaders.emplace_back(compileShader(info, shaderPath, extraArgs));
+		assert(pixelShaders.back().get());
 
-		vertexShaderId = content::addShaderGroup(vertexShadersPointers.data(), (u32)vertexShadersPointers.size(), keys.data());
+		defines[0] = L"TEXTURED_MTL=1";
+		extraArgs.emplace_back(L"-D");
+		extraArgs.emplace_back(defines[0]);
 
-		const u8* pixelShaders[]{ pixelShader.get() };
-		pixelShaderId = content::addShaderGroup(&pixelShaders[0], 1, &u32_invalid_id);
+		pixelShaders.emplace_back(compileShader(info, shaderPath, extraArgs));
+		assert(pixelShaders.back().get());
+
+		vertexShaderID = content::addShaderGroup(vertexShadersPointers.data(), (u32)vertexShadersPointers.size(), keys.data());
+
+		const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
+		pixelShaderID = content::addShaderGroup(pixelShaderPtrs, 1, &u32_invalid_id);
+
+		pixelShaderPtrs[0] = pixelShaders[1].get();
+		texturedPixelShaderID = content::addShaderGroup(pixelShaderPtrs, 1, &u32_invalid_id);
 	}
 
 	void createMaterial()
 	{
-		assert(id::isValid(vertexShaderId) && id::isValid(pixelShaderId));
+		assert(id::isValid(vertexShaderID) && id::isValid(pixelShaderID));
 
 		graphics::materialInitInfo info{};
 
-		info.shaderIDs[graphics::shaderType::vertex] = vertexShaderId;
-		info.shaderIDs[graphics::shaderType::pixel] = pixelShaderId;
+		info.shaderIDs[graphics::shaderType::vertex] = vertexShaderID;
+		info.shaderIDs[graphics::shaderType::pixel] = pixelShaderID;
 		info.type = graphics::materialType::opaque;
 
 		defaultMaterialID = content::createResource(&info, content::assetType::material);
+
+		info.shaderIDs[graphics::shaderType::pixel] = texturedPixelShaderID;
+		info.textureCount = textureUsage::count;
+		info.textureIDs = &textureIDs[0];
+
+		excaliburMaterialID = content::createResource(&info, content::assetType::material);
 	}
 
 	void removeItem(gameEntity::entityId entityID, id::idType itemID, id::idType modelID)
@@ -187,11 +207,11 @@ void createRenderItems()
 	labEntityID = createOneGameEntity({}, {}, nullptr).getId();
 	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.47f }, {}, "fanScript").getId();
 	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
-	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, nullptr).getId();
+	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, nullptr /*"excaliburScript"*/).getId();
 
 	createMaterial();
 	id::idType materials[]{ defaultMaterialID };
-	id::idType excaliburMaterials[]{ defaultMaterialID };
+	id::idType excaliburMaterials[]{ excaliburMaterialID };
 
 	planeItemID = graphics::addRenderItem(planeEntityID, planeModelID, _countof(materials), &materials[0]);
 	labItemID = graphics::addRenderItem(labEntityID, labModelID, _countof(materials), &materials[0]);
@@ -216,6 +236,10 @@ void destroyRenderItems()
 	{
 		content::destroyResource(defaultMaterialID, content::assetType::material);
 	}
+	if (id::isValid(excaliburMaterialID))
+	{
+		content::destroyResource(excaliburMaterialID, content::assetType::material);
+	}
 
 	//Remove textures.
 	for (id::idType id : textureIDs)
@@ -236,13 +260,17 @@ void destroyRenderItems()
 	}
 
 	//Removes shaders and textures.
-	if (id::isValid(vertexShaderId))
+	if (id::isValid(vertexShaderID))
 	{
-		content::destroyShaderGroup(vertexShaderId);
+		content::destroyShaderGroup(vertexShaderID);
 	}
-	if (id::isValid(pixelShaderId))
+	if (id::isValid(pixelShaderID))
 	{
-		content::destroyShaderGroup(pixelShaderId);
+		content::destroyShaderGroup(pixelShaderID);
+	}
+	if (id::isValid(texturedPixelShaderID))
+	{
+		content::destroyShaderGroup(texturedPixelShaderID);
 	}
 }
 

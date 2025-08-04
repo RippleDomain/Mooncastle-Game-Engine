@@ -592,12 +592,11 @@ namespace MooncastleEditor.Content
             {
                 foreach (var mipLevel in arraySlice)
                 {
+                    writer.Write(mipLevel[0].RowPitch);
+                    writer.Write(mipLevel[0].SlicePitch);
+
                     foreach (var slice in mipLevel)
                     {
-                        writer.Write(slice.Width);
-                        writer.Write(slice.Height);
-                        writer.Write(slice.RowPitch);
-                        writer.Write(slice.SlicePitch);
                         writer.Write(slice.RawContent);
                     }
                 }
@@ -663,6 +662,8 @@ namespace MooncastleEditor.Content
         {
             Debug.Assert(Slices.First().Any() && Slices.First().Count == MipLevels);
             var data = ContentToolsAPI.SlicesToBinary(Slices);
+
+            Debug.Assert(data?.Length > 0);
 
             return CompressionHelper.Compress(data);
         }

@@ -36,11 +36,13 @@ namespace mooncastle::graphics::d3D12::content
 		{
 			ID3D12RootSignature** const	 rootSignatures;
 			materialType::type* const    materialTypes;
+			u32* *const                  descriptorIndices;
+			u32*                         textureCount;
 		};
 
 		id::idType add(materialInitInfo data);
 		void remove(id::idType id);
-		void getMaterials(const id::idType* const materialIDs, u32 materialCount, const materialsCache& cache);
+		void getMaterials(const id::idType* const materialIDs, u32 materialCount, const materialsCache& cache, u32& descriptorIndexCount);
 	}
 
 	namespace renderItem

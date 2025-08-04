@@ -32,6 +32,33 @@ private:
 	f32 angle{ 0.f };
 };
 
+class excaliburScript;
+REGISTER_SCRIPT(excaliburScript);
+
+class excaliburScript : public script::entityScript
+{
+public:
+	constexpr explicit excaliburScript(gameEntity::entity entity) : script::entityScript{ entity } {}
+
+	void beginPlay() override {}
+
+	void update(f32 dt) override
+	{
+		angle += 0.05f * dt * math::tau;
+		if (angle > math::tau) angle -= math::tau;
+
+		math::v3a rot{ 0.f, angle, 0.f };
+		DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3A(&rot)) };
+
+		math::v4 rotQuat{};
+		DirectX::XMStoreFloat4(&rotQuat, quat);
+		setRotation(rotQuat);
+	}
+
+private:
+	f32 angle{ 0.f };
+};
+
 class fanScript;
 REGISTER_SCRIPT(fanScript);
 

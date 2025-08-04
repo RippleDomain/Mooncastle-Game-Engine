@@ -8,240 +8,306 @@ namespace mooncastle::graphics::d3D12::d3DX
     {
         const D3D12_HEAP_PROPERTIES defaultHeap
         {
-            D3D12_HEAP_TYPE_DEFAULT,                    //Type
-            D3D12_CPU_PAGE_PROPERTY_UNKNOWN,            //CPUPageProperty
-            D3D12_MEMORY_POOL_UNKNOWN,                  //MemoryPoolPreference
-            0,                                          //CreationNodeMask
-            0                                           //VisibleNodeMask
-        };
-
-		const D3D12_HEAP_PROPERTIES uploadHeap
-		{
-			D3D12_HEAP_TYPE_UPLOAD,                     //Type
-			D3D12_CPU_PAGE_PROPERTY_UNKNOWN,            //CPUPageProperty
-			D3D12_MEMORY_POOL_UNKNOWN,                  //MemoryPoolPreference
-			0,                                          //CreationNodeMask
-			0                                           //VisibleNodeMask
-		};
-    } heapProperties;
-
-	constexpr struct 
-	{
-		const D3D12_RASTERIZER_DESC noCull
-		{
-			D3D12_FILL_MODE_SOLID,                      //FillMode
-			D3D12_CULL_MODE_NONE,                       //CullMode
-			1,                                          //FrontCounterClockwise
-			0,                                          //DepthBias
-			0,                                          //DepthBiasClamp
-			0,                                          //SlopeScaledDepthBias
-			1,                                          //DepthClipEnable
-			0,                                          //MultisampleEnable
-			0,                                          //AntialiasedLineEnable
-			0,                                          //ForcedSampleCount
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,  //ConservativeRaster
-		};
-
-		const D3D12_RASTERIZER_DESC backfaceCull
-		{
-			D3D12_FILL_MODE_SOLID,                      //FillMode
-			D3D12_CULL_MODE_BACK,                       //CullMode
-			1,											//FrontCounterClockwise
-			0,											//DepthBias
-			0,											//DepthBiasClamp
-			0,											//SlopeScaledDepthBias
-			1,											//DepthClipEnable
-			0,											//MultisampleEnable
-			0,											//AntialiasedLineEnable
-			0,											//ForcedSampleCount
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	//ConservativeRaster
-		};
-
-		const D3D12_RASTERIZER_DESC frontfaceCull
-		{
-			D3D12_FILL_MODE_SOLID,                      //FillMode
-			D3D12_CULL_MODE_FRONT,						//CullMode
-			1,											//FrontCounterClockwise
-			0,											//DepthBias
-			0,											//DepthBiasClamp
-			0,											//SlopeScaledDepthBias
-			1,											//DepthClipEnable
-			0,											//MultisampleEnable
-			0,											//AntialiasedLineEnable
-			0,											//ForcedSampleCount
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	//ConservativeRaster
-		};
-
-		const D3D12_RASTERIZER_DESC wireframe
-		{
-			D3D12_FILL_MODE_WIREFRAME,                  //FillMode
-			D3D12_CULL_MODE_NONE,						//CullMode
-			1,											//FrontCounterClockwise
-			0,											//DepthBias
-			0,											//DepthBiasClamp
-			0,											//SlopeScaledDepthBias
-			1,											//DepthClipEnable
-			0,											//MultisampleEnable
-			0,											//AntialiasedLineEnable
-			0,											//ForcedSampleCount
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	//ConservativeRaster
-		};
-	} rasterizerState;
-
-	constexpr struct 
-	{
-		const D3D12_DEPTH_STENCIL_DESC1 disabled
-		{
-			0,                                          //DepthEnable
-			D3D12_DEPTH_WRITE_MASK_ZERO,                //DepthWriteMask
-			D3D12_COMPARISON_FUNC_LESS_EQUAL,           //DepthFunc
-			0,                                          //StencilEnable
-			0,                                          //StencilReadMask
-			0,                                          //StencilWriteMask
-			{},                                         //FrontFace
-			{},                                         //BackFace
-			0                                           //DepthBoundsTestEnable
-		};
-
-		const D3D12_DEPTH_STENCIL_DESC1 enabled
-		{
-			1,                                          //DepthEnable
-			D3D12_DEPTH_WRITE_MASK_ALL,                 //DepthWriteMask
-			D3D12_COMPARISON_FUNC_LESS_EQUAL,           //DepthFunc
-			0,                                          //StencilEnable
-			0,                                          //StencilReadMask
-			0,                                          //StencilWriteMask
-			{},                                         //FrontFace
-			{},                                         //BackFace
-			0                                           //DepthBoundsTestEnable
-		};
-
-		const D3D12_DEPTH_STENCIL_DESC1 enabledReadonly
-		{
-			1,                                          //DepthEnable
-			D3D12_DEPTH_WRITE_MASK_ZERO,                //DepthWriteMask
-			D3D12_COMPARISON_FUNC_LESS_EQUAL,           //DepthFunc
-			0,                                          //StencilEnable
-			0,                                          //StencilReadMask
-			0,                                          //StencilWriteMask
-			{},                                         //FrontFace
-			{},                                         //BackFace
-			0                                           //DepthBoundsTestEnable
-		};
-
-		const D3D12_DEPTH_STENCIL_DESC1 reversed
-		{
-			1,                                          //DepthEnable
-			D3D12_DEPTH_WRITE_MASK_ALL,                 //DepthWriteMask
-			D3D12_COMPARISON_FUNC_GREATER_EQUAL,        //DepthFunc
-			0,                                          //StencilEnable
-			0,                                          //StencilReadMask
-			0,                                          //StencilWriteMask
-			{},                                         //FrontFace
-			{},                                         //BackFace
-			0                                           //DepthBoundsTestEnable
-		};
-
-		const D3D12_DEPTH_STENCIL_DESC1 reversedReadonly
-		{
-			1,                                          //DepthEnable
-			D3D12_DEPTH_WRITE_MASK_ZERO,                //DepthWriteMask
-			D3D12_COMPARISON_FUNC_GREATER_EQUAL,        //DepthFunc
-			0,                                          //StencilEnable
-			0,                                          //StencilReadMask
-			0,                                          //StencilWriteMask
-			{},                                         //FrontFace
-			{},                                         //BackFace
-			0                                           //DepthBoundsTestEnable
-		};
-	} depthState;
-
-	constexpr struct
-	{
-		const D3D12_BLEND_DESC disabled{
-			0,											//AlphaToCoverageEnable
-			0,											//IndependentBlendEnable
-			{
-				{
-					0,									//BlendEnable
-					0,									//LogicOpEnable
-					D3D12_BLEND_SRC_ALPHA,				//SrcBlend
-					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
-					D3D12_BLEND_OP_ADD,					//BlendOp
-					D3D12_BLEND_ONE,					//SrcBlendAlpha
-					D3D12_BLEND_ONE,					//DestBlendAlpha
-					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
-					D3D12_LOGIC_OP_NOOP,				//LogicOp
-					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
-				},
-
-				{}, {}, {}, {}, {}, {}, {}
-			}
-		};
-
-		const D3D12_BLEND_DESC alphaBlend{
-			0,											//AlphaToCoverageEnable
-			0,											//IndependentBlendEnable
-			{
-				{
-					1,									//BlendEnable
-					0,									//LogicOpEnable
-					D3D12_BLEND_SRC_ALPHA,				//SrcBlend
-					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
-					D3D12_BLEND_OP_ADD,					//BlendOp
-					D3D12_BLEND_ONE,					//SrcBlendAlpha
-					D3D12_BLEND_ONE,					//DestBlendAlpha
-					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
-					D3D12_LOGIC_OP_NOOP,				//LogicOp
-					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
-				},
-
-				{}, {}, {}, {}, {}, {}, {}
-			}
-		};
-
-		const D3D12_BLEND_DESC additive{
-			0,											//AlphaToCoverageEnable
-			0,											//IndependentBlendEnable
-			{
-				{
-					1,									//BlendEnable
-					0,									//LogicOpEnable
-					D3D12_BLEND_ONE,					//SrcBlend
-					D3D12_BLEND_ONE,					//DestBlend
-					D3D12_BLEND_OP_ADD,					//BlendOp
-					D3D12_BLEND_ONE,					//SrcBlendAlpha
-					D3D12_BLEND_ONE,					//DestBlendAlpha
-					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
-					D3D12_LOGIC_OP_NOOP,				//LogicOp
-					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
-				},
-
-				{}, {}, {}, {}, {}, {}, {}
-			}
-		};
-
-		const D3D12_BLEND_DESC premultiplied{
-			0,											//AlphaToCoverageEnable
-			0,											//IndependentBlendEnable
-			{
-				{
-					0,									//BlendEnable
-					0,									//LogicOpEnable
-					D3D12_BLEND_ONE,					//SrcBlend
-					D3D12_BLEND_INV_SRC_ALPHA,			//DestBlend
-					D3D12_BLEND_OP_ADD,					//BlendOp
-					D3D12_BLEND_ONE,					//SrcBlendAlpha
-					D3D12_BLEND_ONE,					//DestBlendAlpha
-					D3D12_BLEND_OP_ADD,					//BlendOpAlpha
-					D3D12_LOGIC_OP_NOOP,				//LogicOp
-					D3D12_COLOR_WRITE_ENABLE_ALL		//RenderTargetWriteMask
+            D3D12_HEAP_TYPE_DEFAULT,                        //Type
+            D3D12_CPU_PAGE_PROPERTY_UNKNOWN,                //CPUPageProperty
+            D3D12_MEMORY_POOL_UNKNOWN,                      //MemoryPoolPreference
+            0,                                              //CreationNodeMask
+            0                                               //VisibleNodeMask
+        };												    
+														    
+		const D3D12_HEAP_PROPERTIES uploadHeap			    
+		{												    
+			D3D12_HEAP_TYPE_UPLOAD,                         //Type
+			D3D12_CPU_PAGE_PROPERTY_UNKNOWN,                //CPUPageProperty
+			D3D12_MEMORY_POOL_UNKNOWN,                      //MemoryPoolPreference
+			0,                                              //CreationNodeMask
+			0                                               //VisibleNodeMask
+		};												    
+    } heapProperties;									    
+														    
+	constexpr struct 									    
+	{													    
+		const D3D12_RASTERIZER_DESC noCull				    
+		{												    
+			D3D12_FILL_MODE_SOLID,                          //FillMode
+			D3D12_CULL_MODE_NONE,                           //CullMode
+			1,                                              //FrontCounterClockwise
+			0,                                              //DepthBias
+			0,                                              //DepthBiasClamp
+			0,                                              //SlopeScaledDepthBias
+			1,                                              //DepthClipEnable
+			0,                                              //MultisampleEnable
+			0,                                              //AntialiasedLineEnable
+			0,                                              //ForcedSampleCount
+			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,      //ConservativeRaster
+		};												    
+														    
+		const D3D12_RASTERIZER_DESC backfaceCull		    
+		{												    
+			D3D12_FILL_MODE_SOLID,                          //FillMode
+			D3D12_CULL_MODE_BACK,                           //CullMode
+			1,											    //FrontCounterClockwise
+			0,											    //DepthBias
+			0,											    //DepthBiasClamp
+			0,											    //SlopeScaledDepthBias
+			1,											    //DepthClipEnable
+			0,											    //MultisampleEnable
+			0,											    //AntialiasedLineEnable
+			0,											    //ForcedSampleCount
+			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	    //ConservativeRaster
+		};												    
+														    
+		const D3D12_RASTERIZER_DESC frontfaceCull		    
+		{												    
+			D3D12_FILL_MODE_SOLID,                          //FillMode
+			D3D12_CULL_MODE_FRONT,						    //CullMode
+			1,											    //FrontCounterClockwise
+			0,											    //DepthBias
+			0,											    //DepthBiasClamp
+			0,											    //SlopeScaledDepthBias
+			1,											    //DepthClipEnable
+			0,											    //MultisampleEnable
+			0,											    //AntialiasedLineEnable
+			0,											    //ForcedSampleCount
+			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	    //ConservativeRaster
+		};												    
+														    
+		const D3D12_RASTERIZER_DESC wireframe			    
+		{												    
+			D3D12_FILL_MODE_WIREFRAME,                      //FillMode
+			D3D12_CULL_MODE_NONE,						    //CullMode
+			1,											    //FrontCounterClockwise
+			0,											    //DepthBias
+			0,											    //DepthBiasClamp
+			0,											    //SlopeScaledDepthBias
+			1,											    //DepthClipEnable
+			0,											    //MultisampleEnable
+			0,											    //AntialiasedLineEnable
+			0,											    //ForcedSampleCount
+			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,	    //ConservativeRaster
+		};												    
+	} rasterizerState;									    
+														    
+	constexpr struct 									    
+	{													    
+		const D3D12_DEPTH_STENCIL_DESC1 disabled		    
+		{												    
+			0,                                              //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ZERO,                    //DepthWriteMask
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,               //DepthFunc
+			0,                                              //StencilEnable
+			0,                                              //StencilReadMask
+			0,                                              //StencilWriteMask
+			{},                                             //FrontFace
+			{},                                             //BackFace
+			0                                               //DepthBoundsTestEnable
+		};												    
+														    
+		const D3D12_DEPTH_STENCIL_DESC1 enabled			    
+		{												    
+			1,                                              //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ALL,                     //DepthWriteMask
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,               //DepthFunc
+			0,                                              //StencilEnable
+			0,                                              //StencilReadMask
+			0,                                              //StencilWriteMask
+			{},                                             //FrontFace
+			{},                                             //BackFace
+			0                                               //DepthBoundsTestEnable
+		};												    
+														    
+		const D3D12_DEPTH_STENCIL_DESC1 enabledReadonly	    
+		{												    
+			1,                                              //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ZERO,                    //DepthWriteMask
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,               //DepthFunc
+			0,                                              //StencilEnable
+			0,                                              //StencilReadMask
+			0,                                              //StencilWriteMask
+			{},                                             //FrontFace
+			{},                                             //BackFace
+			0                                               //DepthBoundsTestEnable
+		};												    
+														    
+		const D3D12_DEPTH_STENCIL_DESC1 reversed		    
+		{												    
+			1,                                              //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ALL,                     //DepthWriteMask
+			D3D12_COMPARISON_FUNC_GREATER_EQUAL,            //DepthFunc
+			0,                                              //StencilEnable
+			0,                                              //StencilReadMask
+			0,                                              //StencilWriteMask
+			{},                                             //FrontFace
+			{},                                             //BackFace
+			0                                               //DepthBoundsTestEnable
+		};												    
+														    
+		const D3D12_DEPTH_STENCIL_DESC1 reversedReadonly    
+		{												    
+			1,                                              //DepthEnable
+			D3D12_DEPTH_WRITE_MASK_ZERO,                    //DepthWriteMask
+			D3D12_COMPARISON_FUNC_GREATER_EQUAL,            //DepthFunc
+			0,                                              //StencilEnable
+			0,                                              //StencilReadMask
+			0,                                              //StencilWriteMask
+			{},                                             //FrontFace
+			{},                                             //BackFace
+			0                                               //DepthBoundsTestEnable
+		};												    
+	} depthState;										    
+														    
+	constexpr struct									    
+	{													    
+		const D3D12_BLEND_DESC disabled{				    
+			0,											    //AlphaToCoverageEnable
+			0,											    //IndependentBlendEnable
+			{											    
+				{										    
+					0,									    //BlendEnable
+					0,									    //LogicOpEnable
+					D3D12_BLEND_SRC_ALPHA,				    //SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			    //DestBlend
+					D3D12_BLEND_OP_ADD,					    //BlendOp
+					D3D12_BLEND_ONE,					    //SrcBlendAlpha
+					D3D12_BLEND_ONE,					    //DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					    //BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				    //LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		    //RenderTargetWriteMask
+				},										    
+														    
+				{}, {}, {}, {}, {}, {}, {}				    
+			}											    
+		};												    
+														    
+		const D3D12_BLEND_DESC alphaBlend{				    
+			0,											    //AlphaToCoverageEnable
+			0,											    //IndependentBlendEnable
+			{											    
+				{										    
+					1,									    //BlendEnable
+					0,									    //LogicOpEnable
+					D3D12_BLEND_SRC_ALPHA,				    //SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			    //DestBlend
+					D3D12_BLEND_OP_ADD,					    //BlendOp
+					D3D12_BLEND_ONE,					    //SrcBlendAlpha
+					D3D12_BLEND_ONE,					    //DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					    //BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				    //LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		    //RenderTargetWriteMask
+				},										    
+														    
+				{}, {}, {}, {}, {}, {}, {}				    
+			}											    
+		};												    
+														    
+		const D3D12_BLEND_DESC additive{				    
+			0,											    //AlphaToCoverageEnable
+			0,											    //IndependentBlendEnable
+			{											    
+				{										    
+					1,									    //BlendEnable
+					0,									    //LogicOpEnable
+					D3D12_BLEND_ONE,					    //SrcBlend
+					D3D12_BLEND_ONE,					    //DestBlend
+					D3D12_BLEND_OP_ADD,					    //BlendOp
+					D3D12_BLEND_ONE,					    //SrcBlendAlpha
+					D3D12_BLEND_ONE,					    //DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					    //BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				    //LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		    //RenderTargetWriteMask
+				},										    
+														    
+				{}, {}, {}, {}, {}, {}, {}				    
+			}											    
+		};												    
+														    
+		const D3D12_BLEND_DESC premultiplied{			    
+			0,											    //AlphaToCoverageEnable
+			0,											    //IndependentBlendEnable
+			{											    
+				{										    
+					0,									    //BlendEnable
+					0,									    //LogicOpEnable
+					D3D12_BLEND_ONE,					    //SrcBlend
+					D3D12_BLEND_INV_SRC_ALPHA,			    //DestBlend
+					D3D12_BLEND_OP_ADD,					    //BlendOp
+					D3D12_BLEND_ONE,					    //SrcBlendAlpha
+					D3D12_BLEND_ONE,					    //DestBlendAlpha
+					D3D12_BLEND_OP_ADD,					    //BlendOpAlpha
+					D3D12_LOGIC_OP_NOOP,				    //LogicOp
+					D3D12_COLOR_WRITE_ENABLE_ALL		    //RenderTargetWriteMask
 				},
 
 				{}, {}, {}, {}, {}, {}, {}
 			}
 		};
 	} blendState;
+
+	constexpr struct 
+	{
+		const D3D12_STATIC_SAMPLER_DESC staticPoint
+		{
+			D3D12_FILTER_MIN_MAG_MIP_POINT,                 //Filter
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressU
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressV
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressW
+			0.f,                                            //MipLODBias
+			1,                                              //MaxAnisotropy
+			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
+			0.f,					                        //MinLOD
+			D3D12_FLOAT32_MAX,								//MaxLOD
+			0,												//ShaderRegister
+			0,												//RegisterSpace
+			D3D12_SHADER_VISIBILITY_PIXEL					//ShaderVisibility
+		};
+
+		const D3D12_STATIC_SAMPLER_DESC staticLinear
+		{
+			D3D12_FILTER_MIN_MAG_MIP_LINEAR,                //Filter
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressU
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressV
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressW
+			0.f,                                            //MipLODBias
+			1,                                              //MaxAnisotropy
+			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
+			0.f,					                        //MinLOD
+			D3D12_FLOAT32_MAX,								//MaxLOD
+			0,												//ShaderRegister
+			0,												//RegisterSpace
+			D3D12_SHADER_VISIBILITY_PIXEL					//ShaderVisibility
+		};
+
+		const D3D12_STATIC_SAMPLER_DESC staticAnisotropic
+		{
+			D3D12_FILTER_ANISOTROPIC,                       //Filter
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressU
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressV
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,                //AddressW
+			0.f,                                            //MipLODBias
+			1,                                              //MaxAnisotropy
+			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
+			0.f,					                        //MinLOD
+			D3D12_FLOAT32_MAX,								//MaxLOD
+			0,												//ShaderRegister
+			0,												//RegisterSpace
+			D3D12_SHADER_VISIBILITY_PIXEL					//ShaderVisibility
+		};
+	} samplerState;
+
+	constexpr D3D12_STATIC_SAMPLER_DESC staticSampler(D3D12_STATIC_SAMPLER_DESC staticSampler,
+			u32 shaderRegister, u32 registerSpace, D3D12_SHADER_VISIBILITY visibility)
+	{
+		D3D12_STATIC_SAMPLER_DESC sampler{ staticSampler };
+
+		sampler.ShaderRegister = shaderRegister;
+		sampler.RegisterSpace = registerSpace;
+		sampler.ShaderVisibility = visibility;
+
+		return sampler;
+	}
 
 	constexpr u64 alignSizeForConstantBuffer(u64 size)
 	{

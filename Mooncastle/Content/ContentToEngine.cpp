@@ -11,7 +11,7 @@ namespace mooncastle::content
 		public:
 			DISABLE_COPY_AND_MOVE(geometryHierarchyStream);
 
-			geometryHierarchyStream(u8* const newBuffer, u32 lods = u32_invalid_id) : buffer{ newBuffer }
+			explicit geometryHierarchyStream(u8* const newBuffer, u32 lods = u32_invalid_id)
 			{
 				assert(newBuffer && lods);
 
@@ -54,7 +54,6 @@ namespace mooncastle::content
 			[[nodiscard]] constexpr id::idType* getGPUIDs() const { return gpuIDs; }
 
 		private:
-			u8* const		            buffer;
 			f32*			            thresholds;
 			lodOffset*		            lodOffsets;
 			id::idType*	                gpuIDs;
@@ -324,9 +323,9 @@ namespace mooncastle::content
 		    u32 width, height, arraySize (or depth), flags, mipLevels, format,
 
 		    struct 
-			{
-		        u32 width, height, rowPitch, slicePitch,
-		        u8 image[slicePitch],
+			  {
+		        u32 rowPitch, slicePitch,
+		        u8 image[mipLevel][slicePitch * depthPerMIP],
 		    } images[]
 		} texture*/
 		[[nodiscard]] id::idType createTextureResource(const void *const data)

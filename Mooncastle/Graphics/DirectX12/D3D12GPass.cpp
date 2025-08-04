@@ -34,6 +34,7 @@ namespace mooncastle::graphics::d3D12::gPass
 		struct gPassCache
 		{
 			utl::vector<id::idType> d3D12RenderItemIDs;
+			u32                     descriptorIndexCount{ 0 };
 
 			//When adding new arrays, do not forget to update resize() and structSize.
 			id::idType*					entityIDs{ nullptr };
@@ -43,12 +44,15 @@ namespace mooncastle::graphics::d3D12::gPass
 			ID3D12PipelineState**		depthPipelineStates{ nullptr };
 			ID3D12RootSignature**		rootSignatures{ nullptr };
 			materialType::type*			materialTypes{ nullptr };
+			u32**                       descriptorIndices{ nullptr };
+			u32*                        textureCounts{ nullptr };
 			D3D12_GPU_VIRTUAL_ADDRESS*	positionBuffers{ nullptr };
 			D3D12_GPU_VIRTUAL_ADDRESS*	elementBuffers{ nullptr };
 			D3D12_INDEX_BUFFER_VIEW*	indexBufferViews{ nullptr };
 			D3D12_PRIMITIVE_TOPOLOGY*	primitiveTopologies{ nullptr };
 			u32*						elementTypes{ nullptr };
 			D3D12_GPU_VIRTUAL_ADDRESS*	perObjectData{ nullptr };
+			D3D12_GPU_VIRTUAL_ADDRESS*  srvIndices{ nullptr };
 
 			constexpr content::renderItem::itemsCache getItemsCache() const
 			{
@@ -79,7 +83,9 @@ namespace mooncastle::graphics::d3D12::gPass
 				return 
 				{
 					rootSignatures,
-					materialTypes
+					materialTypes,
+					descriptorIndices,
+					textureCounts
 				};
 			}
 
@@ -91,6 +97,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			CONSTEXPR void clear()
 			{
 				d3D12RenderItemIDs.clear();
+				descriptorIndexCount = 0;
 			}
 
 			CONSTEXPR void resize()
@@ -107,37 +114,43 @@ namespace mooncastle::graphics::d3D12::gPass
 				if (newSize != oldSize)
 				{
 					entityIDs = (id::idType*)buffer.data();
-					submeshGPUIDs = (id::idType*)(&entityIDs[itemsCount]);
-					materialIDs = (id::idType*)(&submeshGPUIDs[itemsCount]);
-					gPassPipelineStates = (ID3D12PipelineState**)(&materialIDs[itemsCount]);
-					depthPipelineStates = (ID3D12PipelineState**)(&gPassPipelineStates[itemsCount]);
-					rootSignatures = (ID3D12RootSignature**)(&depthPipelineStates[itemsCount]);
-					materialTypes = (materialType::type*)(&rootSignatures[itemsCount]);
-					positionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&materialTypes[itemsCount]);
-					elementBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&positionBuffers[itemsCount]);
-					indexBufferViews = (D3D12_INDEX_BUFFER_VIEW*)(&elementBuffers[itemsCount]);
-					primitiveTopologies = (D3D12_PRIMITIVE_TOPOLOGY*)(&indexBufferViews[itemsCount]);
-					elementTypes = (u32*)(&primitiveTopologies[itemsCount]);
-					perObjectData = (D3D12_GPU_VIRTUAL_ADDRESS*)(&elementTypes[itemsCount]);
+					submeshGPUIDs = (id::idType*)&entityIDs[itemsCount];
+					materialIDs = (id::idType*)&submeshGPUIDs[itemsCount];
+					gPassPipelineStates = (ID3D12PipelineState**)&materialIDs[itemsCount];
+					depthPipelineStates = (ID3D12PipelineState**)&gPassPipelineStates[itemsCount];
+					rootSignatures = (ID3D12RootSignature**)&depthPipelineStates[itemsCount];
+					materialTypes = (materialType::type*)&rootSignatures[itemsCount];
+					descriptorIndices = (u32**)&materialTypes[itemsCount];
+					textureCounts = (u32*)&descriptorIndices[itemsCount];
+					positionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&textureCounts[itemsCount];
+					elementBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&positionBuffers[itemsCount];
+					indexBufferViews = (D3D12_INDEX_BUFFER_VIEW*)&elementBuffers[itemsCount];
+					primitiveTopologies = (D3D12_PRIMITIVE_TOPOLOGY*)&indexBufferViews[itemsCount];
+					elementTypes = (u32*)&primitiveTopologies[itemsCount];
+					perObjectData = (D3D12_GPU_VIRTUAL_ADDRESS*)&elementTypes[itemsCount];
+					srvIndices = (D3D12_GPU_VIRTUAL_ADDRESS*)&perObjectData[itemsCount];
 				}
 			}
 
 		private:
 			constexpr static u32 structSize
 			{
-				sizeof(id::idType) +				// entityIDs
-				sizeof(id::idType) +				// submeshIDs
-				sizeof(id::idType) +				// materialIDs
-				sizeof(ID3D12PipelineState*) +		// gPassPipelineStates
-				sizeof(ID3D12PipelineState*) +		// depthPipelineStates
-				sizeof(ID3D12RootSignature*) +		// rootSignatures
-				sizeof(materialType::type) +		// materialTypes
-				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + // positionBuffers
-				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + // elementBuffers
-				sizeof(D3D12_INDEX_BUFFER_VIEW) +	// indexBufferViews
-				sizeof(D3D12_PRIMITIVE_TOPOLOGY) +	// primitiveTopologies
-				sizeof(u32) +						// element_types
-				sizeof(D3D12_GPU_VIRTUAL_ADDRESS)	// perObjectData
+				sizeof(id::idType) +				//entityIDs
+				sizeof(id::idType) +				//submeshIDs
+				sizeof(id::idType) +				//materialIDs
+				sizeof(ID3D12PipelineState*) +		//gPassPipelineStates
+				sizeof(ID3D12PipelineState*) +		//depthPipelineStates
+				sizeof(ID3D12RootSignature*) +		//rootSignatures
+				sizeof(materialType::type) +		//materialTypes
+				sizeof(u32*) +                      //descriptorIndices
+				sizeof(u32) +                       //textureCounts
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + //positionBuffers
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + //elementBuffers
+				sizeof(D3D12_INDEX_BUFFER_VIEW) +	//indexBufferViews
+				sizeof(D3D12_PRIMITIVE_TOPOLOGY) +	//primitiveTopologies
+				sizeof(u32) +						//elementTypes
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +	//perObjectData
+				sizeof(D3D12_GPU_VIRTUAL_ADDRESS)   //srvIndices
 			};
 
 			utl::vector<u8> buffer;
@@ -230,7 +243,7 @@ namespace mooncastle::graphics::d3D12::gPass
 
 		void setRootParams(ID3D12GraphicsCommandList* const commandList, u32 cacheIndex)
 		{
-			gPassCache& cache{ frameCache };
+			const gPassCache& cache{ frameCache };
 
 			assert(cacheIndex < cache.getSize());
 
@@ -245,6 +258,11 @@ namespace mooncastle::graphics::d3D12::gPass
 				commandList->SetGraphicsRootShaderResourceView(params::positionBuffer, cache.positionBuffers[cacheIndex]);
 				commandList->SetGraphicsRootShaderResourceView(params::elementBuffer, cache.elementBuffers[cacheIndex]);
 				commandList->SetGraphicsRootConstantBufferView(params::perObjectData, cache.perObjectData[cacheIndex]);
+
+				if (cache.textureCounts[cacheIndex])
+				{
+					commandList->SetGraphicsRootShaderResourceView(params::srvIndices, cache.srvIndices[cacheIndex]);
+				}
 			}
 			break;
 			}
@@ -270,9 +288,31 @@ namespace mooncastle::graphics::d3D12::gPass
 			submesh::getViews(itemsCache.submeshGPUIds, itemCount, viewsCache);
 
 			const material::materialsCache materialsCache{ cache.getMaterialsCache() };
-			material::getMaterials(itemsCache.materialIDs, itemCount, materialsCache);
+			material::getMaterials(itemsCache.materialIDs, itemCount, materialsCache, cache.descriptorIndexCount);
 
 			fillPerObjectData(d3D12Info);
+
+			if (cache.descriptorIndexCount)
+			{
+				constantBuffer& cBuffer{ core::getConstantBuffer() };
+				const u32 size{ cache.descriptorIndexCount * sizeof(u32) };
+				u32 *const srvIndices{ (u32 *const)cBuffer.allocate(size) };
+				u32 srvIndexOffset{ 0 };
+
+				for (u32 i{ 0 }; i < itemCount; ++i)
+				{
+					const u32 textureCount{ cache.textureCounts[i] };
+					cache.srvIndices[i] = 0;
+
+					if (textureCount)
+					{
+						const u32 *const descriptor_indices{ cache.descriptorIndices[i] };
+						memcpy(&srvIndices[srvIndexOffset], descriptor_indices, textureCount * sizeof(u32));
+						cache.srvIndices[i] = cBuffer.getBufferGPUAddress(srvIndices + srvIndexOffset);
+						srvIndexOffset += textureCount;
+					}
+				}
+			}
 		}
 	}
 
