@@ -95,6 +95,7 @@ namespace mooncastle::graphics::d3D12::content
 					sizeof(shaderFlags::flags) +                           //Shader flags.
 					sizeof(id::idType) +                                   //Root signature ID.
 					sizeof(u32) +                                          //Texture count.
+					sizeof(materialSurface) +							   //PBR material surface data.
 					sizeof(id::idType) * shaderCount +                     //Shader IDs.
 					(sizeof(id::idType) + sizeof(u32)) * info.textureCount //Texture IDs and descriptor indices (maybe 0 if no textures used).
 				};
@@ -104,10 +105,10 @@ namespace mooncastle::graphics::d3D12::content
 
 				u8 *const newBuffer{ buffer };
 
-				*(materialType::type*)newBuffer = info.type;
-				*(shaderFlags::flags*)(&newBuffer[shaderFlagsIndex]) = (shaderFlags::flags)flags;
-				*(id::idType*)(&newBuffer[rootSignatureIndex]) = createRootSignature(info.type, (shaderFlags::flags)flags);
-				*(u32*)(&newBuffer[textureCountIndex]) = info.textureCount;
+				*(shaderFlags::flags*)&newBuffer[shaderFlagsIndex] = (shaderFlags::flags)flags;
+				*(id::idType*)&newBuffer[rootSignatureIndex] = createRootSignature(info.type, (shaderFlags::flags)flags);
+				*(u32*)&newBuffer[textureCountIndex] = info.textureCount;
+				*(materialSurface*)&newBuffer[materialSurfaceIndex] = info.surface;
 
 				initialize();
 
@@ -138,6 +139,7 @@ namespace mooncastle::graphics::d3D12::content
 			[[nodiscard]] constexpr id::idType* getTextureIDs() const { return textureIDs; }
 			[[nodiscard]] constexpr u32* getDescriptorIndices() const { return descriptorIndices; }
 			[[nodiscard]] constexpr id::idType* getShaderIDs() const { return shaderIDs; }
+			[[nodiscard]] constexpr materialSurface* getMaterialSurface() const { return materialsSurface; }
 
 		private:
 			void initialize()
@@ -146,19 +148,22 @@ namespace mooncastle::graphics::d3D12::content
 				u8 *const newBuffer{ buffer };
 
 				type = *(materialType::type*)newBuffer;
-				shaderFlags = *(shaderFlags::flags*)(&newBuffer[shaderFlagsIndex]);
-				rootSignatureID = *(id::idType*)(&newBuffer[rootSignatureIndex]);
-				textureCount = *(u32*)(&newBuffer[textureCountIndex]);
-				shaderIDs = (id::idType*)(&newBuffer[textureCountIndex + sizeof(u32)]);
+				shaderFlags = *(shaderFlags::flags*)&newBuffer[shaderFlagsIndex];
+				rootSignatureID = *(id::idType*)&newBuffer[rootSignatureIndex];
+				textureCount = *(u32*)&newBuffer[textureCountIndex];
+				materialsSurface = (materialSurface*)&newBuffer[materialSurfaceIndex];
+				shaderIDs = (id::idType*)&newBuffer[materialSurfaceIndex + sizeof(materialSurface)];
 				textureIDs = textureCount ? &shaderIDs[_mm_popcnt_u32(shaderFlags)] : nullptr;
-				descriptorIndices = textureCount ? (u32*)(&textureIDs[textureCount]) : nullptr;
+				descriptorIndices = textureCount ? (u32*)&textureIDs[textureCount] : nullptr;
 			}
 
 			constexpr static u32		shaderFlagsIndex{ sizeof(materialType::type) };
 			constexpr static u32		rootSignatureIndex{ shaderFlagsIndex + sizeof(shaderFlags::flags) };
 			constexpr static u32		textureCountIndex{ rootSignatureIndex + sizeof(id::idType) };
+			constexpr static u32		materialSurfaceIndex{ textureCountIndex + sizeof(u32) };
 
 			u8*						buffer;
+			materialSurface*        materialsSurface;
 			id::idType*			    textureIDs;
 			u32*					descriptorIndices;
 			id::idType*			    shaderIDs;
@@ -741,6 +746,7 @@ namespace mooncastle::graphics::d3D12::content
 
 			for (u32 i{ 0 }; i < idCount; ++i)
 			{
+				assert(id::isValid(textureIDs[i]));
 				indices[i] = descriptorIndices[textureIDs[i]];
 			}
 		}
@@ -792,6 +798,7 @@ namespace mooncastle::graphics::d3D12::content
 				cache.materialTypes[i] = stream.getMaterialType();
 				cache.descriptorIndices[i] = stream.getDescriptorIndices();
 				cache.textureCount[i] = stream.getTextureCount();
+				cache.materialSurfaces[i] = stream.getMaterialSurface();
 				totalIndexCount += stream.getTextureCount();
 			}
 

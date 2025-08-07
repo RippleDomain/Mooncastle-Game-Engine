@@ -3,12 +3,16 @@
 #include "Content/ContentToEngine.h"
 #include "Graphics/Renderer.h"
 #include "Components/Entity.h"
+#include "Components/Geometry.h"
 #include "ShaderCompilation.h"
+#include "Test.h"
 #include "../ContentTools/Geometry.h"
+
+#if TEST_RENDERER
 
 using namespace mooncastle;
 
-gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, const char* scriptName);
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, geometry::initInfo* geometryInfo, const char* scriptName);
 void removeGameEntity(gameEntity::entityId);
 bool readFile(std::filesystem::path, std::unique_ptr<u8[]>&, u64&);
 
@@ -18,16 +22,15 @@ namespace
 	id::idType fanModelID{ id::invalidId };
 	id::idType planeModelID{ id::invalidId };
 	id::idType excaliburModelID{ id::invalidId };
-
-	id::idType labItemID{ id::invalidId };
-	id::idType fanItemID{ id::invalidId };
-	id::idType planeItemID{ id::invalidId };
-	id::idType excaliburItemID{ id::invalidId };
+	//id::idType botModelID{ id::invalidId };
+	id::idType sphereModelID{ id::invalidId };
 
 	gameEntity::entityId labEntityID{ id::invalidId };
 	gameEntity::entityId fanEntityID{ id::invalidId };
 	gameEntity::entityId planeEntityID{ id::invalidId };
 	gameEntity::entityId excaliburEntityID{ id::invalidId };
+	//gameEntity::entityId botEntityID{ id::invalidId };
+	gameEntity::entityId sphereEntityIDs[12];
 
 	struct textureUsage
 	{
@@ -36,6 +39,7 @@ namespace
 			ambientOcclusion = 0,
 			baseColor,
 			emissive,
+			//metalRough,
 			metal,
 			roughness,
 			normal,
@@ -51,33 +55,33 @@ namespace
 
 	id::idType defaultMaterialID{ id::invalidId };
 	id::idType excaliburMaterialID{ id::invalidId };
+	//id::idType botMaterialID{ id::invalidId };
 
-	std::unordered_map<id::idType, gameEntity::entityId> renderItemMap;
+	id::idType pbrMaterialIDs[12];
+
+	[[nodiscard]] id::idType loadAsset(const char* path, content::assetType::type type)
+	{
+		std::unique_ptr<u8[]> buffer;
+
+		u64 size{ 0 };
+		readFile(path, buffer, size);
+
+		const id::idType assetID{ content::createResource(buffer.get(), type) };
+		assert(id::isValid(assetID));
+
+		return assetID;
+	}
 
 	//Loading the test model.
 	[[nodiscard]] id::idType loadModel(const char* path)
 	{
-		std::unique_ptr<u8[]> model;
-		u64 size{ 0 };
-		readFile(path, model, size);
-
-		const id::idType modelID = content::createResource(model.get(), content::assetType::mesh);
-		assert(id::isValid(modelID));
-
-		return modelID;
+		return loadAsset(path, content::assetType::mesh);
 	}
 
 	//Loading the test texture.
 	[[nodiscard]] id::idType loadTexture(const char* path)
 	{
-		std::unique_ptr<u8[]> texture;
-		u64 size{ 0 };
-		readFile(path, texture, size);
-
-		const id::idType textureID = content::createResource(texture.get(), content::assetType::texture);
-		assert(id::isValid(textureID));
-
-		return textureID;
+		return loadAsset(path, content::assetType::texture);
 	}
 
 	void loadShaders()
@@ -137,36 +141,44 @@ namespace
 
 	void createMaterial()
 	{
-		assert(id::isValid(vertexShaderID) && id::isValid(pixelShaderID));
+		assert(id::isValid(vertexShaderID) && id::isValid(pixelShaderID) && id::isValid(texturedPixelShaderID));
 
 		graphics::materialInitInfo info{};
 
-		info.shaderIDs[graphics::shaderType::vertex] = vertexShaderID;
-		info.shaderIDs[graphics::shaderType::pixel] = pixelShaderID;
+		info.shaderIDs[shaderType::vertex] = vertexShaderID;
+		info.shaderIDs[shaderType::pixel] = pixelShaderID;
 		info.type = graphics::materialType::opaque;
 
 		defaultMaterialID = content::createResource(&info, content::assetType::material);
 
-		info.shaderIDs[graphics::shaderType::pixel] = texturedPixelShaderID;
+		memset(pbrMaterialIDs, 0xff, sizeof(pbrMaterialIDs));
+
+		math::v2 metalRough[_countof(pbrMaterialIDs)]
+		{
+			{0.f, 0.0f}, {0.f, 0.2f}, {0.f, 0.4f}, {0.f, 0.6f}, {0.f, 0.8f}, {0.f, 1.f},
+			{1.f, 0.0f}, {1.f, 0.2f}, {1.f, 0.4f}, {1.f, 0.6f}, {1.f, 0.8f}, {1.f, 1.f},
+		};
+
+		graphics::materialSurface& s{ info.surface };
+		s.baseColor = { 0.5f, 0.5f, 0.5f, 1.f };
+
+		for (u32 i{ 0 }; i < _countof(pbrMaterialIDs); ++i)
+		{
+			s.metallic = metalRough[i].x;
+			s.roughness = metalRough[i].y;
+			pbrMaterialIDs[i] = content::createResource(&info, content::assetType::material);
+		}
+
+		info.shaderIDs[shaderType::pixel] = texturedPixelShaderID;
 		info.textureCount = textureUsage::count;
 		info.textureIDs = &textureIDs[0];
 
 		excaliburMaterialID = content::createResource(&info, content::assetType::material);
+		//botMaterialID = content::createResource(&info, content::assetType::material);
 	}
 
-	void removeItem(gameEntity::entityId entityID, id::idType itemID, id::idType modelID)
+	void removeModel(id::idType modelID)
 	{
-		if (id::isValid(itemID))
-		{
-			graphics::removeRenderItem(itemID);
-			auto pair = renderItemMap.find(itemID);
-
-			if (pair != renderItemMap.end())
-			{
-				removeGameEntity(pair->second);
-			}
-		}
-
 		if (id::isValid(modelID))
 		{
 			content::destroyResource(modelID, content::assetType::mesh);
@@ -180,6 +192,7 @@ void createRenderItems()
 	assert(std::filesystem::exists("..\\..\\x64\\fanModel.model"));
 	assert(std::filesystem::exists("..\\..\\x64\\planeModel.model"));
 	assert(std::filesystem::exists("..\\..\\x64\\excaliburModel.model"));
+	//assert(std::filesystem::exists("..\\..\\x64\\botModel.model"));
 
 	memset(&textureIDs[0], 0xff, sizeof(id::idType) * _countof(textureIDs));
 
@@ -192,10 +205,18 @@ void createRenderItems()
 		std::thread{ [] { textureIDs[textureUsage::roughness] = loadTexture("..\\..\\x64\\excaliburRoughness.texture"); }},
 		std::thread{ [] { textureIDs[textureUsage::normal] = loadTexture("..\\..\\x64\\excaliburNormal.texture"); }},
 
+		/*std::thread{ [] { textureIDs[textureUsage::ambientOcclusion] = loadTexture("..\\..\\x64\\botAO.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::baseColor] = loadTexture("..\\..\\x64\\botBaseColor.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::emissive] = loadTexture("..\\..\\x64\\botEmissive.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::metalRough] = loadTexture("..\\..\\x64\\botMetalRough.texture"); }},
+		std::thread{ [] { textureIDs[textureUsage::normal] = loadTexture("..\\..\\x64\\botNormal.texture"); }},*/
+
 		std::thread{ [] { labModelID = loadModel("..\\..\\x64\\labModel.model"); } },
 		std::thread{ [] { fanModelID = loadModel("..\\..\\x64\\fanModel.model"); } },
 		std::thread{ [] { planeModelID = loadModel("..\\..\\x64\\planeModel.model"); } },
 		std::thread{ [] { excaliburModelID = loadModel("..\\..\\x64\\excaliburModel.model"); } },
+		//std::thread{ [] { botModelID = loadModel("..\\..\\x64\\botModel.model"); } },
+		std::thread{ [] { sphereModelID = loadModel("..\\..\\x64\\sphereModel.model"); } },
 		std::thread{ [] { loadShaders(); } }
 	};
 
@@ -204,32 +225,70 @@ void createRenderItems()
 		thread.join();
 	}
 
-	labEntityID = createOneGameEntity({}, {}, nullptr).getId();
-	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.47f }, {}, "fanScript").getId();
-	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, "shipScript").getId();
-	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, "excaliburScript").getId();
-
 	createMaterial();
 	id::idType materials[]{ defaultMaterialID };
 	id::idType excaliburMaterials[]{ excaliburMaterialID };
+	//id::idType botMaterials[]{ botMaterialID, botMaterialID };
 
-	planeItemID = graphics::addRenderItem(planeEntityID, planeModelID, _countof(materials), &materials[0]);
-	labItemID = graphics::addRenderItem(labEntityID, labModelID, _countof(materials), &materials[0]);
-	fanItemID = graphics::addRenderItem(fanEntityID, fanModelID, _countof(materials), &materials[0]);
-	excaliburItemID = graphics::addRenderItem(excaliburEntityID, excaliburModelID, _countof(excaliburMaterials), &excaliburMaterials[0]);
+	geometry::initInfo geometryInfo{};
+	geometryInfo.materialCount = _countof(materials);
+	geometryInfo.materialIDs = &materials[0];
 
-	renderItemMap[planeItemID] = planeEntityID;
-	renderItemMap[labItemID] = labEntityID;
-	renderItemMap[fanItemID] = fanEntityID;
-	renderItemMap[excaliburItemID] = excaliburEntityID;
+	geometryInfo.geometryContentID = labModelID;
+	labEntityID = createOneGameEntity({}, {}, &geometryInfo, nullptr).getId();
+
+	geometryInfo.geometryContentID = fanModelID;
+	fanEntityID = createOneGameEntity({ -10.47f, 5.93f, -6.7f }, {}, &geometryInfo, "fanScript").getId();
+
+	geometryInfo.geometryContentID = planeModelID;
+	planeEntityID = createOneGameEntity({ 0.f, 1.3f, -6.6f }, {}, &geometryInfo, "shipScript").getId();
+
+	geometryInfo.geometryContentID = excaliburModelID;
+	geometryInfo.materialCount = _countof(excaliburMaterials);
+	geometryInfo.materialIDs = &excaliburMaterials[0];
+	excaliburEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, &geometryInfo, "excaliburScript").getId();
+
+	/*geometryInfo.geometryContentID = botModelID;
+	geometryInfo.materialCount = _countof(botMaterials);
+	geometryInfo.materialIDs = &botMaterials[0];
+	botEntityID = createOneGameEntity({ -6.f, 0.f, 10.f }, { 0.f, math::pi, 0.f }, &geometryInfo, "rotatorScript").getId();*/
+
+	geometryInfo.geometryContentID = sphereModelID;
+	geometryInfo.materialCount = 1;
+
+	for (u32 i{ 0 }; i < _countof(sphereEntityIDs); ++i)
+	{
+		id::idType id{ pbrMaterialIDs[i] };
+		id::idType sphere_mtls[]{ id };
+		geometryInfo.materialIDs = &sphere_mtls[0];
+
+		const f32 x{ -6.f + i % 6 };
+		const f32 y{ (i < 6) ? 7.f : 5.5f };
+		const f32 z = x;
+
+		sphereEntityIDs[i] = createOneGameEntity({ x, y, z }, {}, &geometryInfo, nullptr).getId();
+	}
 }
 
 void destroyRenderItems()
 {
-	removeItem(planeEntityID, planeItemID, planeModelID);
-	removeItem(labEntityID, labItemID, labModelID);
-	removeItem(fanEntityID, fanItemID, fanModelID);
-	removeItem(excaliburEntityID, excaliburItemID, excaliburModelID);
+	removeGameEntity(labEntityID);
+	removeGameEntity(fanEntityID);
+	removeGameEntity(planeEntityID);
+	removeGameEntity(excaliburEntityID);
+	/*removeGameEntity(botEntityID);*/
+
+	for (u32 i{ 0 }; i < _countof(sphereEntityIDs); ++i)
+	{
+		removeGameEntity(sphereEntityIDs[i]);
+	}
+
+	removeModel(labModelID);
+	removeModel(fanModelID);
+	removeModel(planeModelID);
+	removeModel(excaliburModelID);
+	//removeModel(botModelID);
+	removeModel(sphereModelID);
 
 	//Remove materials.
 	if (id::isValid(defaultMaterialID))
@@ -240,13 +299,16 @@ void destroyRenderItems()
 	{
 		content::destroyResource(excaliburMaterialID, content::assetType::material);
 	}
+	/*if (id::isValid(botMaterialID))
+	{
+		content::destroyResource(botMaterialID, content::assetType::material);
+	}*/
 
-	//Remove textures.
-	for (id::idType id : textureIDs)
+	for (id::idType id : pbrMaterialIDs)
 	{
 		if (id::isValid(id))
 		{
-			content::destroyResource(id, content::assetType::texture);
+			content::destroyResource(id, content::assetType::material);
 		}
 	}
 
@@ -259,7 +321,7 @@ void destroyRenderItems()
 		}
 	}
 
-	//Removes shaders and textures.
+	//Removes shaders.
 	if (id::isValid(vertexShaderID))
 	{
 		content::destroyShaderGroup(vertexShaderID);
@@ -274,11 +336,4 @@ void destroyRenderItems()
 	}
 }
 
-void getRenderItems(id::idType* items, [[maybe_unused]] u32 count)
-{
-	assert(count == 4);
-	items[0] = planeItemID;
-	items[1] = labItemID;
-	items[2] = fanItemID;
-	items[3] = excaliburItemID;
-}
+#endif

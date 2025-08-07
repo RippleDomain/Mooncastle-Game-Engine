@@ -46,6 +46,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			materialType::type*			materialTypes{ nullptr };
 			u32**                       descriptorIndices{ nullptr };
 			u32*                        textureCounts{ nullptr };
+			materialSurface**           materialSurfaces{ nullptr };
 			D3D12_GPU_VIRTUAL_ADDRESS*	positionBuffers{ nullptr };
 			D3D12_GPU_VIRTUAL_ADDRESS*	elementBuffers{ nullptr };
 			D3D12_INDEX_BUFFER_VIEW*	indexBufferViews{ nullptr };
@@ -85,7 +86,8 @@ namespace mooncastle::graphics::d3D12::gPass
 					rootSignatures,
 					materialTypes,
 					descriptorIndices,
-					textureCounts
+					textureCounts,
+					materialSurfaces
 				};
 			}
 
@@ -122,7 +124,8 @@ namespace mooncastle::graphics::d3D12::gPass
 					materialTypes = (materialType::type*)&rootSignatures[itemsCount];
 					descriptorIndices = (u32**)&materialTypes[itemsCount];
 					textureCounts = (u32*)&descriptorIndices[itemsCount];
-					positionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&textureCounts[itemsCount];
+					materialSurfaces = (materialSurface**)&textureCounts[itemsCount];
+					positionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&materialSurfaces[itemsCount];
 					elementBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)&positionBuffers[itemsCount];
 					indexBufferViews = (D3D12_INDEX_BUFFER_VIEW*)&elementBuffers[itemsCount];
 					primitiveTopologies = (D3D12_PRIMITIVE_TOPOLOGY*)&indexBufferViews[itemsCount];
@@ -144,6 +147,7 @@ namespace mooncastle::graphics::d3D12::gPass
 				sizeof(materialType::type) +		//materialTypes
 				sizeof(u32*) +                      //descriptorIndices
 				sizeof(u32) +                       //textureCounts
+				sizeof(materialSurface*) +			//materialSurfaces
 				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + //positionBuffers
 				sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + //elementBuffers
 				sizeof(D3D12_INDEX_BUFFER_VIEW) +	//indexBufferViews
@@ -210,7 +214,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			return gPassMainBuffer.getResource() && gPassDepthBuffer.getResource();
 		}
 
-		void fillPerObjectData(const D3D12FrameInfo& d3D12Info)
+		void fillPerObjectData(const D3D12FrameInfo& d3D12Info, const content::material::materialsCache& materialsCache)
 		{
 			const gPassCache& cache{ frameCache };
 			const u32 renderItemsCount{ (u32)cache.getSize() };
@@ -231,6 +235,9 @@ namespace mooncastle::graphics::d3D12::gPass
 					XMMATRIX world{ XMLoadFloat4x4(&data.World) };
 					XMMATRIX wvp{ XMMatrixMultiply(world, d3D12Info.camera->getViewProjection()) };
 					XMStoreFloat4x4(&data.WorldViewProjection, wvp);
+
+					const materialSurface *const mtlSurface{ materialsCache.materialSurfaces[i] };
+					memcpy(&data.BaseColor, mtlSurface, sizeof(materialSurface));
 
 					currentDataPtr = cBuffer.allocate<hlsl::PerObjectData>();
 					memcpy(currentDataPtr, &data, sizeof(hlsl::PerObjectData));
@@ -290,7 +297,7 @@ namespace mooncastle::graphics::d3D12::gPass
 			const material::materialsCache materialsCache{ cache.getMaterialsCache() };
 			material::getMaterials(itemsCache.materialIDs, itemCount, materialsCache, cache.descriptorIndexCount);
 
-			fillPerObjectData(d3D12Info);
+			fillPerObjectData(d3D12Info, materialsCache);
 
 			if (cache.descriptorIndexCount)
 			{

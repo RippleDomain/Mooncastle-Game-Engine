@@ -44,7 +44,7 @@ namespace mooncastle::transform
 			XMVECTOR front{ XMVectorSet(0.f, 0.f, 1.f, 0.f) };
 			math::v3 orientation;
 
-			XMStoreFloat3(&orientation, XMVector3Rotate(front, rotationQuaternion));
+			XMStoreFloat3(&orientation, XMVector3Normalize(XMVector3Rotate(front, rotationQuaternion)));
 
 			return orientation;
 		}

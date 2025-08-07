@@ -64,7 +64,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 
 	ID3D12PipelineState* createPipelineState(D3D12_PIPELINE_STATE_STREAM_DESC desc)
 	{
-		assert(desc.pPipelineStateSubobjectStream && desc.SizeInBytes);
+		assert(desc.pPipelineStateSubobjectStream && desc.SizeInBytes >= sizeof(void*));
 		ID3D12PipelineState* pso{ nullptr };
 		DXCall(core::device()->CreatePipelineState(&desc, IID_PPV_ARGS(&pso)));
 		assert(pso);
@@ -114,7 +114,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 		else
 		{
 			DXCall(core::device()->CreateCommittedResource(isCPUAccessible ? &heapProperties.uploadHeap : &heapProperties.defaultHeap,
-				D3D12_HEAP_FLAG_NONE, &desc, resourceState, nullptr, IID_PPV_ARGS(&resource)));
+				D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, resourceState, nullptr, IID_PPV_ARGS(&resource)));
 		}
 
 		if (data)

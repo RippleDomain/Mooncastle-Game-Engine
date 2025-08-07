@@ -44,7 +44,7 @@ namespace mooncastle::graphics::d3D12 {
 		[[nodiscard]] constexpr bool isShaderVisible() const { return gpuStart.ptr != 0; }
 
 	private:
-		ID3D12DescriptorHeap*        heap;
+		ID3D12DescriptorHeap*        heap{ nullptr };
 		D3D12_CPU_DESCRIPTOR_HANDLE  cpuStart{};
 		D3D12_GPU_DESCRIPTOR_HANDLE  gpuStart{};
 		std::unique_ptr<u32[]>       freeHandles{};
@@ -61,7 +61,7 @@ namespace mooncastle::graphics::d3D12 {
 		ID3D12Heap1*						heap{ nullptr };
 		const void*							data{ nullptr };
 		D3D12_RESOURCE_ALLOCATION_INFO1		allocationInfo{};
-		D3D12_RESOURCE_STATES				initialState{};
+		D3D12_RESOURCE_STATES				initialState{ D3D12_RESOURCE_STATE_COMMON };
 		D3D12_RESOURCE_FLAGS				flags{ D3D12_RESOURCE_FLAG_NONE };
 		u32									size{ 0 };
 		u32									alignment{ 0 };
@@ -126,7 +126,7 @@ namespace mooncastle::graphics::d3D12 {
 	{
 	public:
 		constantBuffer() = default;
-		explicit constantBuffer(D3D12BufferInitInfo info);
+		explicit constantBuffer(const D3D12BufferInitInfo& info);
 
 		DISABLE_COPY_AND_MOVE(constantBuffer);
 
@@ -140,10 +140,10 @@ namespace mooncastle::graphics::d3D12 {
 		}
 
 		constexpr void clear() { cpuOffset = 0; }
-		[[nodiscard]] u8* const allocate(u32 size);
+		[[nodiscard]] u8 *const allocate(u32 size);
 
 		template<typename T>
-		[[nodiscard]] T* const allocate()
+		[[nodiscard]] constexpr T* const allocate()
 		{
 			return(T* const)allocate(sizeof(T));
 		}

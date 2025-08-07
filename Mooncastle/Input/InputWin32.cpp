@@ -263,7 +263,7 @@ namespace mooncastle::input
 		}
 		break;
 
-		case WM_MOUSEHWHEEL:
+		case WM_MOUSEWHEEL:
 		{
 			set(inputSource::mouse, inputCode::mouseWheel, { (f32)(GET_WHEEL_DELTA_WPARAM(wParam)), 0.f, 0.f });
 		}

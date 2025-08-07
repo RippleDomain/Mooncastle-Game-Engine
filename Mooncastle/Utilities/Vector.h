@@ -13,7 +13,7 @@ namespace mooncastle::utl
     {
     public:
         //Default constructor. Does not allocate memory.
-        vector() = default;
+        constexpr vector() = default;
 
         //Constructor resizes the vector and initializes "count" items.
         constexpr explicit vector(u64 count)
@@ -49,7 +49,7 @@ namespace mooncastle::utl
                 clear();
                 reserve(o.currentSize);
 
-                for (auto& item : o)
+                for (const auto& item : o)
                 {
                     emplace_back(item);
                 }

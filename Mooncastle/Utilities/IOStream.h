@@ -17,7 +17,7 @@ namespace mooncastle::utl
 
 		//This template function is intended to read primitive types.
 		template<typename T>
-		[[nodiscard]] T read()
+		[[nodiscard]] constexpr T read()
 		{
 			static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitive type.");
 
@@ -34,7 +34,7 @@ namespace mooncastle::utl
 			currentPosition += length;
 		}
 
-		void skip(size_t offset)
+		constexpr void skip(size_t offset)
 		{
 			currentPosition += offset;
 		}
@@ -61,7 +61,7 @@ namespace mooncastle::utl
 
 		//This template function is intended to write primitive types.
 		template<typename T>
-		void write(T value)
+		constexpr void write(T value)
 		{
 			static_assert(std::is_arithmetic_v<T>, "Template argument should be a primitive type.");
 			assert(&currentPosition[sizeof(T)] <= &currentBuffer[currentBufferSize]);
@@ -88,7 +88,7 @@ namespace mooncastle::utl
 			currentPosition += length;
 		}
 
-		void skip(size_t offset)
+		constexpr void skip(size_t offset)
 		{
 			assert(&currentPosition[offset] <= &currentBuffer[currentBufferSize]);
 

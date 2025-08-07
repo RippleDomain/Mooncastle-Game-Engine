@@ -107,8 +107,8 @@ namespace mooncastle::graphics::d3D12
 
         viewport.TopLeftX = 0.f;
         viewport.TopLeftY = 0.f;
-        viewport.Width = (float)width;
-        viewport.Height = (float)height;
+        viewport.Width = (f32)width;
+        viewport.Height = (f32)height;
         viewport.MinDepth = 0.f;
         viewport.MaxDepth = 1.f;
 

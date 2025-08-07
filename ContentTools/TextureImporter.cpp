@@ -354,11 +354,10 @@ namespace mooncastle::tools
 
         void copySubresources(const ScratchImage& scratch, textureData *const data)
         {
-            const TexMetadata& metadata{ scratch.GetMetadata() };
             const Image *const images{ scratch.GetImages() };
             const u32 imageCount{ (u32)scratch.GetImageCount() };
 
-            assert(images && metadata.mipLevels && metadata.mipLevels <= textureData::maxMIPs);
+            assert(images && scratch.GetMetadata().mipLevels && scratch.GetMetadata().mipLevels <= textureData::maxMIPs);
 
             u64 subresourceSize{ 0 };
 

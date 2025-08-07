@@ -176,7 +176,7 @@ namespace mooncastle::input
 		u64					binding{ 0 };
 		type				sourceType;
 		u32					code{ 0 };
-		float				multiplier{ 0 };
+		f32					multiplier{ 0 };
 		bool				isDiscrete{ true };
 		axis::type			sourceAxis{};
 		axis::type			axis{};

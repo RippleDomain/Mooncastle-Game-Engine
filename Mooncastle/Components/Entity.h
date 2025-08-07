@@ -5,8 +5,11 @@
 namespace mooncastle
 {
 #define INIT_INFO(component) namespace component { struct initInfo; }
+
 	INIT_INFO(transform)
 	INIT_INFO(script)
+	INIT_INFO(geometry)
+
 #undef INIT_INFO
 
 	namespace transform { struct initInfo; }
@@ -17,6 +20,7 @@ namespace mooncastle
 		{
 			transform::initInfo* transform{ nullptr };
 			script::initInfo* script{ nullptr };
+			geometry::initInfo* geometry{ nullptr };
 		};
 
 		entity create(entityInfo info);

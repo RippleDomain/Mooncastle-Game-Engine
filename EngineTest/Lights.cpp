@@ -1,13 +1,14 @@
 #include "EngineAPI/GameEntity.h"
 #include "EngineAPI/Light.h"
 #include "EngineAPI/TransformComponent.h"
+#include "Components/Geometry.h"
 #include "Graphics/Renderer.h"
 
 #define RANDOM_LIGHTS 1
 
 using namespace mooncastle;
 
-gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, const char* scriptName);
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, geometry::initInfo* geometryInfo, const char* scriptName);
 void removeGameEntity(gameEntity::entityId);
 
 namespace
@@ -26,7 +27,7 @@ namespace
 	void createLight(math::v3 position, math::v3 rotation, graphics::light::type type, u64 lightSetKey)
 	{
 		const char* scriptName{ nullptr }; //{ type == graphics::light::spot ? "rotatorScript" : nullptr };
-		gameEntity::entityId entityId{ createOneGameEntity(position, rotation, scriptName).getId() };
+		gameEntity::entityId entityId{ createOneGameEntity(position, rotation, nullptr, scriptName).getId() };
 
 		graphics::lightInitInfo info{};
 		info.entityID = entityId;
@@ -81,32 +82,32 @@ void generateLights()
 	//LEFT SET
 	graphics::lightInitInfo info{};
 
-	info.entityID = createOneGameEntity({}, { 0, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { 0, 0, 0 }, nullptr, nullptr).getId();
 	info.type = graphics::light::directional;
 	info.lightSetKey = leftSet;
 	info.intensity = 1.f;
 	info.color = rgbToColor(174, 174, 174);
 	lights.emplace_back(graphics::createLight(info));
 
-	info.entityID = createOneGameEntity({}, { math::pi * 0.5f, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).getId();
 	info.color = rgbToColor(17, 27, 48);
 	lights.emplace_back(graphics::createLight(info));
 
-	info.entityID = createOneGameEntity({}, { -math::pi * 0.5f, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).getId();
 	info.color = rgbToColor(63, 47, 30);
 	lights.emplace_back(graphics::createLight(info));
 
 	//RIGHT SET
-	info.entityID = createOneGameEntity({}, { 0, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { 0, 0, 0 }, nullptr, nullptr).getId();
 	info.lightSetKey = rightSet;
 	info.color = rgbToColor(150, 100, 200);
 	lights.emplace_back(graphics::createLight(info));
 
-	info.entityID = createOneGameEntity({}, { math::pi * 0.5f, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { math::pi * 0.5f, 0, 0 }, nullptr, nullptr).getId();
 	info.color = rgbToColor(17, 27, 48);
 	lights.emplace_back(graphics::createLight(info));
 
-	info.entityID = createOneGameEntity({}, { -math::pi * 0.5f, 0, 0 }, nullptr).getId();
+	info.entityID = createOneGameEntity({}, { -math::pi * 0.5f, 0, 0 }, nullptr, nullptr).getId();
 	info.color = rgbToColor(163, 47, 30);
 	lights.emplace_back(graphics::createLight(info));
 

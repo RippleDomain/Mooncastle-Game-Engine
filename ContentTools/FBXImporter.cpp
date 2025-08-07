@@ -251,7 +251,6 @@ namespace mooncastle::tools
 		utl::vector vertexRef(numVertices, u32_invalid_id);
 #endif
 		
-
 		for (i32 i{ 0 }; i < numIndices; ++i)
 		{
 			const u32 vIdx{ (u32)indices[i] };
@@ -320,7 +319,9 @@ namespace mooncastle::tools
 			FbxLayerElementArrayTemplate<FbxVector4>* tangents{ nullptr };
 
 			//Calculates tangents using FBX's built-in method, but only if no tangent data is already there.
-			if (fbxMesh->GenerateTangentsData() && fbxMesh->GetTangents(&tangents) && tangents && tangents->GetCount() > 0)
+			fbxMesh->GenerateTangentsData();
+
+			if (fbxMesh->GetTangents(&tangents) && tangents && tangents->GetCount() == m.rawIndices.size())
 			{
 				const i32 numTangents{ tangents->GetCount() };
 
@@ -331,7 +332,7 @@ namespace mooncastle::tools
 					t[3] = 0.0;
 					t = transform.MultT(t);
 					t.Normalize();
-					m.tangents.emplace_back((f32)t[0], (f32)t[1], (f32)t[2], handedness);
+					m.tangents.emplace_back((f32)t[0], (f32)t[1], (f32)t[2], -handedness);
 				}
 			}
 			else
@@ -352,11 +353,13 @@ namespace mooncastle::tools
 
 			if (fbxMesh->GetPolygonVertexUVs(uvNames.GetStringAt(i), uvs))
 			{
-				const i32 num_uvs{ uvs.Size() };
+				const i32 numUVs{ uvs.Size() };
 
-				for (i32 j{ 0 }; j < num_uvs; ++j)
+				for (i32 j{ 0 }; j < numUVs; ++j)
 				{
-					m.uvSets[i].emplace_back((f32)uvs[j][0], (f32)uvs[j][1]);
+					/*The V-axis should be flipped, since DirectX uses the upper-left corner as
+					the originand FBX UVs always have their origin at the bottom - left.*/
+					m.uvSets[i].emplace_back((f32)uvs[j][0], 1.f - (f32)uvs[j][1]);
 				}
 			}
 		}

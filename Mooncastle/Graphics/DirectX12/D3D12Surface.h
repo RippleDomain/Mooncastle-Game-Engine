@@ -7,7 +7,7 @@ namespace mooncastle::graphics::d3D12
     class D3D12Surface
     {
     public:
-        constexpr static DXGI_FORMAT defaultBackBufferFormat{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
+        constexpr static DXGI_FORMAT defaultBackBufferFormat{ DXGI_FORMAT_R16G16B16A16_FLOAT };
         constexpr static u32 bufferCount{ 3 };
 
         explicit D3D12Surface(platform::window window) : window(window)
@@ -24,8 +24,7 @@ namespace mooncastle::graphics::d3D12
         {
             for (u32 i{ 0 }; i < bufferCount; ++i)
             {
-                targetData[i].resource = o.targetData[i].resource;
-                targetData[i].rtv = o.targetData[i].rtv;
+                renderTargetData[i] = o.renderTargetData[i];
             }
 
             o.reset();

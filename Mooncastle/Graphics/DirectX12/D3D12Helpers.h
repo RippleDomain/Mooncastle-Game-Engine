@@ -322,7 +322,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 	class D3D12ResourceBarrier
 	{
 	public:
-		constexpr static u32 maxResourceBarriers{ 32 };
+		constexpr static u32 maxResourceBarriers{ 64 };
 
 		//Adds a transition barrier to the list of barriers.
 		constexpr void add(ID3D12Resource* resource,
@@ -337,10 +337,10 @@ namespace mooncastle::graphics::d3D12::d3DX
 			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 			barrier.Flags = flags;
 			barrier.Transition.pResource = resource;
+			barrier.Transition.Subresource = subresource;
 			barrier.Transition.StateBefore = before;
 			barrier.Transition.StateAfter = after;
-			barrier.Transition.Subresource = subresource;
-
+			
 			++offset;
 		}
 

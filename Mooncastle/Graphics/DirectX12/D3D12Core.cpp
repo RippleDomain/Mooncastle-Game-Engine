@@ -106,12 +106,11 @@ namespace mooncastle::graphics::d3D12::core
 
                 surface.present();
 
-                u64& fenceValueRef{ fenceValue };
-                ++fenceValueRef;
+                const u64 newFenceValue{ ++fenceValue };
                 commandFrame& frame{ commandFrames[frameIndex] };
-                frame.fenceValue = fenceValueRef;
+                frame.fenceValue = newFenceValue;
 
-                commandQueue->Signal(fence, fenceValueRef);
+                DXCall(commandQueue->Signal(fence, newFenceValue));
 
                 frameIndex = (frameIndex + 1) % frameBufferCount;
             }
@@ -394,6 +393,8 @@ namespace mooncastle::graphics::d3D12::core
         {
             new (&constantBuffers[i]) constantBuffer{ constantBuffer::getDefaultInitInfo(1024 * 1024) };
             NAME_D3D12_OBJECT_INDEXED(constantBuffers[i].getBuffer(), i, L"Global Constant Buffer");
+
+            if (!constantBuffers[i].getBuffer()) return failedInit();
         }
 
         new (&gfxCommand)D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -455,6 +456,7 @@ namespace mooncastle::graphics::d3D12::core
 
 #ifdef _DEBUG
         {
+            if (mainDevice)
             {
                 ComPtr<ID3D12InfoQueue> infoQueue;
                 DXCall(mainDevice->QueryInterface(IID_PPV_ARGS(&infoQueue)));
@@ -549,7 +551,7 @@ namespace mooncastle::graphics::d3D12::core
         reset the allocator once it is done.
         This frees the memory that was used to store commands.*/
         gfxCommand.beginFrame();
-        ID3D12GraphicsCommandList* commandList{ gfxCommand.getCommandList() };
+        ID3D12GraphicsCommandList *const commandList{ gfxCommand.getCommandList() };
 
         const u32 frameIndex{ getCurrentFrameIndex() };
         constantBuffer& cBuffer{ constantBuffers[frameIndex] };
@@ -599,11 +601,11 @@ namespace mooncastle::graphics::d3D12::core
         gPass::render(commandList, d3D12Info);
 
         //Post-processing. Will write to the current back buffer.
+        gPass::addTransitionsForPostProcess(barriers);
         barriers.add(currentBackBuffer,
             D3D12_RESOURCE_STATE_PRESENT,
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
-        gPass::addTransitionsForPostProcess(barriers);
         barriers.apply(commandList);
         ppfx::postProcess(commandList, d3D12Info, surface.getRTV());
 

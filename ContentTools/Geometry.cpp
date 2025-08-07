@@ -217,11 +217,10 @@ namespace mooncastle::tools
                             XMVECTOR n2{ XMLoadFloat3(&m.normals[refs[k]]) };
                             if (!isSoftEdge)
                             {
-                                //NOTE
-                                //We are accounting for the length of n1 in this calculation because
-                                //it can possibly change in this loop iteration. We assume unit length
-                                //for n2.
-                                //cos(angle) = dot(n1, n2) / (||n1||*||n2||)
+                                /*We are accounting for the length of n1 in this calculation because
+                                it can possibly change in this loop iteration. We assume unit length
+                                for n2.
+                                cos(angle) = dot(n1, n2) / (||n1||*||n2||)*/
                                 XMStoreFloat(&cosTheta, XMVector3Dot(n1, n2) * XMVector3ReciprocalLength(n1));
                             }
 
@@ -290,7 +289,7 @@ namespace mooncastle::tools
 
         void processTangents(mesh& m)
         {
-            if (m.tangents.size() != m.positions.size())
+            if (m.tangents.size() != m.rawIndices.size())
             {
                 return;
             }
@@ -331,7 +330,7 @@ namespace mooncastle::tools
                     {
                         XMVECTOR xmTangent{ XMLoadFloat4(&m.tangents[refs[k]]) };
 
-                        if (XMVector4NearEqual(xmTangent, xmTangent, xmEpsilon))
+                        if (XMVector4NearEqual(xmTJ, xmTangent, xmEpsilon))
                         {
                             m.indices[refs[k]] = m.indices[refs[j]];
                             refs.erase(refs.begin() + k);
@@ -392,7 +391,7 @@ namespace mooncastle::tools
                 for (u32 i{ 0 }; i < numVertices; ++i)
                 {
                     vertex& v{ m.vertices[i] };
-                    tSigns[i] = (u8)((v.normal.z > 0.0f) << 1);
+                    tSigns[i] = (u8)((v.normal.z > 0.0f) << 2);
                     normals[i] = { (u16)math::packFloat<16>(v.normal.x, -1.0f, 1.0f), (u16)math::packFloat<16>(v.normal.y, -1.0f, 1.0f) };
                 }
 

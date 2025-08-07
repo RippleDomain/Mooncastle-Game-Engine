@@ -20,7 +20,7 @@ namespace mooncastle::graphics::d3D12
 
         release();
 
-        auto* const device{ core::device() };
+        ID3D12Device* const device{ core::device() };
         assert(device);
 
         D3D12_DESCRIPTOR_HEAP_DESC desc{};
@@ -34,7 +34,7 @@ namespace mooncastle::graphics::d3D12
 
         if (FAILED(hr)) return false;
 
-        freeHandles = std::move(std::make_unique<u32[]>(capacity));
+        freeHandles = std::make_unique<u32[]>(capacity);
         this->capacity = capacity;
         size = 0;
 
@@ -126,7 +126,7 @@ namespace mooncastle::graphics::d3D12
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// D3D12 BUFFER
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    D3D12Buffer::D3D12Buffer(D3D12BufferInitInfo info, bool isCPUAccessible)
+    D3D12Buffer::D3D12Buffer(const D3D12BufferInitInfo info, bool isCPUAccessible)
     {
         assert(!buffer && info.size && info.alignment);
 
@@ -147,7 +147,7 @@ namespace mooncastle::graphics::d3D12
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// CONSTANT BUFFER
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    constantBuffer::constantBuffer(D3D12BufferInitInfo info) : buffer{ info, true }
+    constantBuffer::constantBuffer(const D3D12BufferInitInfo& info) : buffer{ info, true }
     {
         NAME_D3D12_OBJECT_INDEXED(getBuffer(), getSize(), L"Constant Buffer - Size");
 

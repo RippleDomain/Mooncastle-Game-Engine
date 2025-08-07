@@ -5,7 +5,7 @@
 
 namespace mooncastle::math 
 {
-	constexpr bool isEqual(f32 a, f32 b, f32 eps = epsilon)
+	[[nodiscard]] constexpr bool isEqual(f32 a, f32 b, f32 eps = epsilon)
 	{
 		f32 diff{ a - b };
 		if (diff < 0.f) diff = -diff;
@@ -16,13 +16,14 @@ namespace mooncastle::math
     template<typename T>
     [[nodiscard]] constexpr T clamp(T value, T min, T max)
     {
+		assert(min <= max);
         return (value < min) ? min : (value > max) ? max : value;
     }
 
 	template<u32 bits>
 	[[nodiscard]] constexpr u32 packUnitFloat(f32 f)
 	{
-		static_assert(bits <= sizeof(u32) * 8);
+		static_assert(bits && bits <= sizeof(u32) * 8);
 		assert(f >= 0.f && f <= 1.f);
 		constexpr f32 intervals{ (f32)(((u32)1 << bits) - 1) };
 
@@ -32,7 +33,7 @@ namespace mooncastle::math
 	template<u32 bits>
 	[[nodiscard]] constexpr f32 unpackToUnitFloat(u32 i)
 	{
-		static_assert(bits <= sizeof(u32) * 8);
+		static_assert(bits && bits <= sizeof(u32) * 8);
 		assert(i < ((u32)1 << bits));
 		constexpr f32 intervals{ (f32)(((u32)1 << bits) - 1) };
 

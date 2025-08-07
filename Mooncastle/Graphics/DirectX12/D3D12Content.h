@@ -25,8 +25,8 @@ namespace mooncastle::graphics::d3D12::content
 
 	namespace texture 
 	{
-		id::idType add(const u8* const);
-		void remove(id::idType);
+		id::idType add(const u8* const data);
+		void remove(id::idType id);
 		void getDescriptorIndices(const id::idType* const textureIDs, u32 idCount, u32* const indices);
 	}
 
@@ -38,6 +38,7 @@ namespace mooncastle::graphics::d3D12::content
 			materialType::type* const    materialTypes;
 			u32* *const                  descriptorIndices;
 			u32*                         textureCount;
+			materialSurface* *const      materialSurfaces;
 		};
 
 		id::idType add(materialInitInfo data);

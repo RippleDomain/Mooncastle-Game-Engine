@@ -211,12 +211,23 @@ namespace mooncastle::graphics
 		};
 	};
 
+	struct materialSurface
+	{
+		math::v4    baseColor{ 1.f, 1.f, 1.f, 1.f };
+		math::v3    emissive{ 0.f, 0.f, 0.f };
+		f32         emissiveIntensity{ 1.f };
+		f32         ambientOcclusion{ 1.f };
+		f32         metallic{ 0.f };
+		f32         roughness{ 1.f };
+	};
+
 	struct materialInitInfo
 	{
+		id::idType*			textureIDs;
+		materialSurface     surface;
 		materialType::type	type;
 		u32					textureCount;
 		id::idType			shaderIDs[shaderType::type::count]{ id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId, id::invalidId };
-		id::idType*		    textureIDs;
 	};
 
 	struct primitiveTopology

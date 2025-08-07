@@ -5,6 +5,7 @@
 #include "Components/Entity.h"
 #include "Components/Transform.h"
 #include "Components/Script.h"
+#include "Components/Geometry.h"
 #include "Input/Input.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/DirectX12/D3D12Core.h"
@@ -67,14 +68,14 @@ struct cameraSurface
 	graphics::renderSurface surface{};
 };
 
-id::idType itemID{ id::invalidId };
-id::idType modelID{ id::invalidId };
 cameraSurface surfaces[4];
 
 timeIt timer{};
 
 bool resized{ false };
 bool isRestarting{ false };
+
+utl::vector<id::idType> renderItemIDCache;
 
 //---------Forward declarations---------//
 void removeCameraSurface(cameraSurface& surface);
@@ -86,8 +87,6 @@ void destroyRenderItems();
 
 void generateLights();
 void removeLights();
-
-void getRenderItems(id::idType* items, u32 count);
 
 void testLights(f32 dt);
 //--------------------------------------//
@@ -177,7 +176,7 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 //Method that creates a game entity in order to test the camera.
-gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, const char* scriptName)
+gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, geometry::initInfo* geometryInfo, const char* scriptName)
 {
 	transform::initInfo transformInfo{};
 	DirectX::XMVECTOR quat{ DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation)) };
@@ -197,6 +196,7 @@ gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, con
 	gameEntity::entityInfo entityInfo{};
 	entityInfo.transform = &transformInfo;
 	entityInfo.script = &scriptInfo;
+	entityInfo.geometry = geometryInfo;
 	gameEntity::entity ntt{ gameEntity::create(entityInfo) };
 
 	assert(ntt.isValid());
@@ -235,7 +235,7 @@ void createCameraSurface(cameraSurface& surface, platform::windowInitInfo info)
 {
 	surface.surface.window = platform::createWindow(&info);
 	surface.surface.surface = graphics::createSurface(surface.surface.window);
-	surface.entity = createOneGameEntity({ 13.76f, 3.f, -1.1f }, { -0.137f, -1.70f, 0.f }, "cameraScript");
+	surface.entity = createOneGameEntity({ -5.49f, 1.73f, 9.26f }, { 0.19f, 5.61f, 0.f }, nullptr, "cameraScript");
 	surface.camera = graphics::createCamera(graphics::perspectiveCameraInitInfo{ surface.entity.getId() });
 	surface.camera.aspectRatio((f32)surface.surface.window.width() / surface.surface.window.height());
 }
@@ -291,17 +291,13 @@ bool testInitialize()
 		createCameraSurface(surfaces[i], info[i]);
 	}
 
-	//Loads the test model.
-	std::unique_ptr<u8[]> model;
-	u64 size{ 0 };
-	if (!readFile("..\\..\\x64\\excaliburModel.model", model, size)) return false;
-	modelID = content::createResource(model.get(), content::assetType::mesh);
-	if (!id::isValid(modelID)) return false;
-
 	initTestWorkers(bufferTestWorker);
 	createRenderItems();
 
 	generateLights();
+
+	renderItemIDCache.resize(4 + 12);
+	geometry::getRenderItemIDs(renderItemIDCache.data(), (u32)renderItemIDCache.size());
 
 	input::inputSource source{};
 	source.binding = std::hash<std::string>()("move");
@@ -346,11 +342,6 @@ void testShutdown()
 	destroyRenderItems();
 	jointTestWorkers();
 
-	if (id::isValid(modelID))
-	{
-		content::destroyResource(modelID, content::assetType::mesh);
-	}
-
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
 	{
 		removeCameraSurface(surfaces[i]);
@@ -381,14 +372,10 @@ void engineTest::run()
 	{
 		if (surfaces[i].surface.surface.isValid())
 		{
-			f32 thresholds[4]{};
-
-			id::idType renderItems[4]{};
-			getRenderItems(&renderItems[0], 4);
-
+			f32 thresholds[4 + 12]{};
 			graphics::frameInfo info{};
-			info.renderItemIDs = &renderItems[0];
-			info.renderItemCount = 4;
+			info.renderItemIDs = renderItemIDCache.data();
+			info.renderItemCount = 4 + 12;
 			info.thresholds = &thresholds[0];
 			info.lightSetKey = lightSetKey;
 			info.averageFrameTime = dt;

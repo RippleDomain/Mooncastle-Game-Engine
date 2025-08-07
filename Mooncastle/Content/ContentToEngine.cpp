@@ -26,7 +26,7 @@ namespace mooncastle::content
 				gpuIDs = (id::idType*)(&lodOffsets[lodCount]);
 			}
 
-			void initializeGPUIDs(u32 lod, id::idType*& ids, u32& idCount)
+			constexpr void initializeGPUIDs(u32 lod, id::idType*& ids, u32& idCount)
 			{
 				assert(lod < lodCount);
 
@@ -34,7 +34,7 @@ namespace mooncastle::content
 				idCount = lodOffsets[lod].count;
 			}
 
-			u32 lodFromThreshold(f32 threshold)
+			[[nodiscard]] constexpr u32 lodFromThreshold(f32 threshold)
 			{
 				assert(threshold >= 0);
 

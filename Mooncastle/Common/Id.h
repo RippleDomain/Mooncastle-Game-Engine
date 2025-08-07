@@ -22,6 +22,8 @@ namespace mooncastle::id
 	static_assert(detail::generationBits <= sizeof(generationType) * 8);
 	static_assert(sizeof(idType) - sizeof(generationType) > 0);
 
+	constexpr generationType maxGeneration{ (generationType)(detail::generationMask - 1) }; //For example, 254 for 8-bit generations.
+
 	constexpr bool isValid(idType id)
 	{
 		return (id != invalidId);

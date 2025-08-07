@@ -62,7 +62,7 @@ namespace mooncastle::graphics::d3D12::shaders
 	D3D12_SHADER_BYTECODE getEngineShader(engineShader::id id)
 	{
 		assert(id < engineShader::count);
-		const content::compiledShaderPointer& shader{ engineShaders[id] };
+		const content::compiledShaderPointer shader{ engineShaders[id] };
 		assert(shader && shader->getByteCodeSize());
 
 		return { shader->getByteCode(), shader->getByteCodeSize()};

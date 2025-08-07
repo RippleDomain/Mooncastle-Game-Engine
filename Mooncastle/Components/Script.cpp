@@ -26,25 +26,32 @@ namespace mooncastle::script
 			return reg;
 		}
 
-		#ifdef USE_WITH_EDITOR
+#ifdef USE_WITH_EDITOR
 		utl::vector<std::string>& scriptNames()
 		{
 			static utl::vector<std::string> names;
 			return names;
 		}
 
-		#endif
+#endif
 
+#if _DEBUG
+		
 		bool exists(scriptId id) 
 		{
 			assert(id::isValid(id));
 
 			const id::idType index{ id::index(id) };
-
-			assert(index < generations.size() && idMapping[index] < entityScripts.size());
+			assert(index < generations.size() && !(id::isValid(idMapping[index]) && idMapping[index] >= entityScripts.size()));
 			assert(generations[index] == id::generation(id));
-			return (generations[index] == id::generation(id)) && (entityScripts[idMapping[index]]) && (entityScripts[idMapping[index]])->isValid();
+
+			return (id::isValid(idMapping[index]) &&
+				generations[index] == id::generation(id)) &&
+				entityScripts[idMapping[index]] &&
+				entityScripts[idMapping[index]]->isValid();
 		};
+
+#endif
 
 #if USE_TRANSFORM_CACHE_MAP
 		transform::componentCache* const getCachePointer(const gameEntity::entity* const entity)
@@ -166,11 +173,16 @@ namespace mooncastle::script
 		utl::erase_unordered(entityScripts, index);
 		idMapping[id::index(lastId)] = index;
 		idMapping[id::index(id)] = id::invalidId;
+
+		if (generations[index] < id::maxGeneration)
+		{
+			freeIds.push_back(id);
+		}
 	}
 
-	void update(float dt)
+	void update(f32 dt)
 	{
-		for (auto& ptr : entityScripts)
+		for (const auto& ptr : entityScripts)
 		{
 			ptr->update(dt);
 		}

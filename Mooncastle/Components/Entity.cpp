@@ -1,6 +1,7 @@
 #include "Entity.h"
 #include "Transform.h"
 #include "Script.h"
+#include "Geometry.h"
 
 namespace mooncastle::gameEntity 
 {
@@ -8,6 +9,7 @@ namespace mooncastle::gameEntity
 	{
 		utl::vector<transform::component>     transforms;
 		utl::vector<script::component>        scripts;
+		utl::vector<geometry::component>      geometries;
 		utl::vector<id::generationType>       generations;
 		utl::deque<entityId>                  freeIds;
 	}
@@ -15,9 +17,9 @@ namespace mooncastle::gameEntity
 	entity create(entityInfo info) 
 	{
 		assert(info.transform); //All components must have a transform.
-		if (!info.transform) return entity{};
+		if (!info.transform) return {};
 
-		entityId id;
+		entityId id{};
 
 		if (freeIds.size() > id::minDeletedElements) 
 		{
@@ -36,6 +38,7 @@ namespace mooncastle::gameEntity
 			//Resize components. (NOT using resize() to avoid more memory allocations)
 			transforms.emplace_back();
 			scripts.emplace_back();
+			geometries.emplace_back();
 		}
 
 		const entity newEntity{ id };
@@ -44,6 +47,8 @@ namespace mooncastle::gameEntity
 		//Create the transform component.
 		assert(!transforms[index].isValid());
 		transforms[index] = transform::create(*info.transform, newEntity);
+		assert(transforms[index].getId() == id);
+
 		if (!transforms[index].isValid()) return {};
 
 		//Create the script component.
@@ -53,6 +58,15 @@ namespace mooncastle::gameEntity
 			scripts[index] = script::create(*info.script, newEntity);
 			assert(scripts[index].isValid());
 		}
+
+		//Create the geometry component.
+		if (info.geometry) 
+		{
+			assert(!geometries[index].isValid());
+			geometries[index] = geometry::create(*info.geometry, newEntity);
+			assert(geometries[index].isValid());
+		}
+
 		return newEntity;
 	}
 
@@ -60,6 +74,13 @@ namespace mooncastle::gameEntity
 	{
 		const id::idType index{ id::index(id) };
 		assert(isAlive(id));
+
+		if (geometries[index].isValid())
+		{
+			geometry::remove(geometries[index]);
+			geometries[index] = {};
+		}
+
 		if (scripts[index].isValid())
 		{
 			script::remove(scripts[index]);
@@ -68,7 +89,11 @@ namespace mooncastle::gameEntity
 
 		transform::remove(transforms[index]);
 		transforms[index] = {};
-		freeIds.push_back(id);
+
+		if (generations[index] < id::maxGeneration)
+		{
+			freeIds.push_back(id);
+		}
 	}
 
 	bool isAlive(entityId id)
@@ -77,20 +102,24 @@ namespace mooncastle::gameEntity
 		const id::idType index{ id::index(id) };
 		assert(index < generations.size());
 		assert(generations[index] == id::generation(id));
-		return (generations[index] == id::generation(id) && transforms[index].isValid());
+		return generations[index] == id::generation(id) && transforms[index].isValid();
 	}
 
 	transform::component entity::transform() const
 	{
 		assert(isAlive(id));
-		const id::idType index{ id::index(id) };
-		return transforms[index];
+		return transforms[id::index(id)];
 	}
 
 	script::component entity::script() const
 	{
 		assert(isAlive(id));
-		const id::idType index{ id::index(id) };
-		return scripts[index];
+		return scripts[id::index(id)];
+	}
+
+	geometry::component entity::geometry() const
+	{
+		assert(isAlive(id));
+		return geometries[id::index(id)];
 	}
 }
