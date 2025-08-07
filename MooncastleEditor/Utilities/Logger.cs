@@ -60,10 +60,7 @@ namespace MooncastleEditor.Utilities
 
         public static async void Clear()
         {
-            await Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                _messages.Clear();
-            }));
+            await Application.Current.Dispatcher.BeginInvoke(new Action(_messages.Clear));
         }
 
         public static void SetMessageFilter(int mask)

@@ -223,7 +223,7 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        private async Task StopGame() => await Task.Run(() => VisualStudio.Stop());
+        private async Task StopGame() => await Task.Run(VisualStudio.Stop);
 
         private async Task BuildGameCodeDll(bool showWindow = true)
         {

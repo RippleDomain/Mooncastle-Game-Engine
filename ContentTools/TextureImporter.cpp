@@ -12,11 +12,16 @@ namespace mooncastle::tools
 {
     bool isNormalMap(const Image *const image);
 
+    HRESULT equirectangularToCubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
+        bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
+    HRESULT equirectangularToCubemap(const Image* env_maps, u32 env_map_count, u32 cubemap_size,
+        bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
+
     namespace
     {
         struct importError
         {
-            enum errorCode : u32 
+            enum errorCode : u32
             {
                 success = 0,
                 unknown,
@@ -34,7 +39,7 @@ namespace mooncastle::tools
 
         struct textureDimension
         {
-            enum dimension : u32 
+            enum dimension : u32
             {
                 texture1D,
                 texture2D,
@@ -45,14 +50,17 @@ namespace mooncastle::tools
 
         struct textureImportSettings
         {
-            char* sources;           //String of one or more file paths separated by semi-colons ";".
-            u32 sourceCount;        //Number of file paths.
+            char* sources;              //String of one or more file paths separated by semi-colons ";".
+            u32 sourceCount;            //Number of file paths.
             u32 dimension;
             u32 mipLevels;
             f32 alphaThreshold;
             u32 preferBC7;
             u32 outputFormat;
             u32 compress;
+            u32 cubemapSize;
+            u32 mirrorCubemap;
+            u32 prefilterCubemap;
         };
 
         struct textureInfo
@@ -169,6 +177,49 @@ namespace mooncastle::tools
                     d3D11Devices.back().device = devices[i];
                 }
             }
+        }
+
+        bool tryCreateD3D11Device()
+        {
+            std::lock_guard lock{ deviceCreationMutex };
+            static bool tryOnce = false;
+
+            if (!tryOnce)
+            {
+                tryOnce = true;
+                createD3D11Device();
+            }
+
+            return d3D11Devices.size() > 0;
+        }
+
+        template<typename T> bool runOnGPU(T func)
+        {
+            if (!tryCreateD3D11Device())
+            {
+                return false;
+            }
+
+            bool wait{ true };
+
+            while (wait)
+            {
+                for (u32 i{ 0 }; i < d3D11Devices.size(); ++i)
+                {
+                    if (d3D11Devices[i].hwCompressionMutex.try_lock())
+                    {
+                        func(d3D11Devices[i].device.Get());
+                        d3D11Devices[i].hwCompressionMutex.unlock();
+                        wait = false;
+
+                        break;
+                    }
+                }
+
+                if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+
+            return true;
         }
 
         [[nodiscard]] utl::vector<Image> subresourceDataToImages(textureData *const data)
@@ -333,6 +384,23 @@ namespace mooncastle::tools
             return mipLevels;
         }
 
+        bool isHDR(DXGI_FORMAT format)
+        {
+            switch (format)
+            {
+            case DXGI_FORMAT_BC6H_UF16:
+            case DXGI_FORMAT_BC6H_SF16:
+            case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+            case DXGI_FORMAT_R10G10B10A2_UINT:
+            case DXGI_FORMAT_R16G16B16A16_FLOAT:
+            case DXGI_FORMAT_R32G32B32A32_FLOAT:
+            case DXGI_FORMAT_R32G32B32_FLOAT:
+                return true;
+            };
+
+            return false;
+        }
+
         void textureInfoFromMetaData(const TexMetadata& metadata, textureInfo& info)
         {
             using namespace mooncastle::content;
@@ -345,7 +413,7 @@ namespace mooncastle::tools
             info.mipLevels = (u32)metadata.mipLevels;
 
             setOrClearFlag(info.flags, textureFlags::hasAlpha, HasAlpha(format));
-            setOrClearFlag(info.flags, textureFlags::isHDR, format == DXGI_FORMAT_BC6H_UF16 || format == DXGI_FORMAT_BC6H_SF16);
+            setOrClearFlag(info.flags, textureFlags::isHDR, isHDR(format));
             setOrClearFlag(info.flags, textureFlags::isPremultipliedAlpha, metadata.IsPMAlpha());
             setOrClearFlag(info.flags, textureFlags::isCubeMap, metadata.IsCubemap());
             setOrClearFlag(info.flags, textureFlags::isVolumeMap, metadata.IsVolumemap());
@@ -392,6 +460,32 @@ namespace mooncastle::tools
             }
         }
 
+        [[nodiscard]] ScratchImage generateMIPMaps(const ScratchImage& source, textureInfo& info, u32 mipLevels, bool is3D)
+        {
+            const TexMetadata& metadata{ source.GetMetadata() };
+            mipLevels = math::clamp(mipLevels, (u32)0, getMaxMIPCount((u32)metadata.width, (u32)metadata.height, (u32)metadata.depth));
+            HRESULT hr{ S_OK };
+
+            ScratchImage mipScratch{};
+
+            if (!is3D)
+            {
+                hr = GenerateMipMaps(source.GetImages(), source.GetImageCount(), source.GetMetadata(), TEX_FILTER_DEFAULT, mipLevels, mipScratch);
+            }
+            else
+            {
+                hr = GenerateMipMaps3D(source.GetImages(), source.GetImageCount(), source.GetMetadata(), TEX_FILTER_DEFAULT, mipLevels, mipScratch);
+            }
+
+            if (FAILED(hr))
+            {
+                info.importError = importError::mipMapGeneration;
+                return {};
+            }
+
+            return mipScratch;
+        }
+
         [[nodiscard]] ScratchImage initializeFromImages(textureData *const data, const utl::vector<Image>& images)
         {
             assert(data);
@@ -401,7 +495,7 @@ namespace mooncastle::tools
             HRESULT hr{ S_OK };
             const u32 arraySize{ (u32)images.size() };
 
-			//Scope for working scratch image.
+            //Scope for working scratch image.
             {
                 ScratchImage workingScratch{};
 
@@ -413,13 +507,30 @@ namespace mooncastle::tools
                 }
                 else if (settings.dimension == textureDimension::textureCube)
                 {
-                    if (arraySize % 6)
+                    const Image& image{ images[0] };
+
+                    if (math::isEqual((f32)image.width / (f32)image.height, 2.f))
+                    {
+                        if (!runOnGPU([&](ID3D11Device* device)
+                            {
+                                hr = equirectangularToCubemap(device, images.data(), arraySize, settings.cubemapSize,
+                                    settings.prefilterCubemap, settings.mirrorCubemap, workingScratch);
+                            }))
+                        {
+                            hr = equirectangularToCubemap(images.data(), arraySize, settings.cubemapSize,
+                                settings.prefilterCubemap, settings.mirrorCubemap, workingScratch);
+                        }
+
+                    }
+                    else if (arraySize % 6 || image.width != image.height)
                     {
                         data->info.importError = importError::sixImagesNeeded;
                         return {};
                     }
-
-                    hr = workingScratch.InitializeCubeFromImages(images.data(), images.size());
+                    else
+                    {
+                        hr = workingScratch.InitializeCubeFromImages(images.data(), images.size());
+                    }
                 }
                 else
                 {
@@ -436,30 +547,10 @@ namespace mooncastle::tools
                 scratch = std::move(workingScratch);
             }
 
-            if (settings.mipLevels != 1)
+            if (settings.mipLevels != 1 || settings.prefilterCubemap)
             {
-                ScratchImage mipScratch;
-                const TexMetadata& metadata{ scratch.GetMetadata() };
-                u32 mipLevels{ math::clamp(settings.mipLevels, (u32)0, getMaxMIPCount((u32)metadata.width, (u32)metadata.height, (u32)metadata.depth)) };
-
-                if (settings.dimension != textureDimension::texture3D)
-                {
-                    hr = GenerateMipMaps(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(), 
-                        TEX_FILTER_DEFAULT, mipLevels, mipScratch);
-                }
-                else
-                {
-                    hr = GenerateMipMaps3D(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(), 
-                        TEX_FILTER_DEFAULT, mipLevels, mipScratch);
-                }
-
-                if (FAILED(hr))
-                {
-                    data->info.importError = importError::mipMapGeneration;
-                    return {};
-                }
-
-                scratch = std::move(mipScratch);
+                scratch = generateMIPMaps(scratch, data->info, settings.prefilterCubemap ? 0 :
+                    settings.mipLevels, settings.dimension == textureDimension::texture3D);
             }
 
             return scratch;
@@ -524,20 +615,8 @@ namespace mooncastle::tools
             case DXGI_FORMAT_BC7_TYPELESS:
             case DXGI_FORMAT_BC7_UNORM:
             case DXGI_FORMAT_BC7_UNORM_SRGB:
-                
-				std::lock_guard lock{ deviceCreationMutex };
-                static bool tryOnce = false;
-
-                if (!tryOnce)
-                {
-                    tryOnce = true;
-                    createD3D11Device();
-                }
-
-                return d3D11Devices.size() > 0;
+                return true;
             }
-
-            return false;
         }
 
         [[nodiscard]] ScratchImage compressImage(textureData *const data, ScratchImage& scratch)
@@ -556,30 +635,12 @@ namespace mooncastle::tools
             HRESULT hr{ S_OK };
             ScratchImage bcScratch;
 
-            if (canUseGPU(outputFormat))
-            {
-                bool wait{ true };
-
-                while (wait)
-                {
-                    for (u32 i{ 0 }; i < d3D11Devices.size(); ++i)
+            if (!(canUseGPU(outputFormat) &&
+                runOnGPU([&](ID3D11Device* device)
                     {
-                        if (d3D11Devices[i].hwCompressionMutex.try_lock())
-                        {
-                            hr = Compress(d3D11Devices[i].device.Get(), scratch.GetImages(), scratch.GetImageCount(),
-                                scratch.GetMetadata(), outputFormat, TEX_COMPRESS_DEFAULT, 1.0f, bcScratch);
-
-                            d3D11Devices[i].hwCompressionMutex.unlock();
-                            wait = false;
-
-                            break;
-                        }
-                    }
-
-                    if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                }
-            }
-            else
+                        hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
+                            scratch.GetMetadata(), outputFormat, TEX_COMPRESS_DEFAULT, 1.f, bcScratch);
+                    })))
             {
                 hr = Compress(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
                     outputFormat, TEX_COMPRESS_PARALLEL, data->importSettings.alphaThreshold, bcScratch);
@@ -593,7 +654,46 @@ namespace mooncastle::tools
 
             return bcScratch;
         }
+
+        [[nodiscard]] ScratchImage decompressImage(textureData *const data)
+        {
+            using namespace mooncastle::content;
+
+            assert(data->importSettings.compress);
+            textureInfo& info{ data->info };
+            const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
+
+            assert(IsCompressed(format));
+
+            utl::vector<Image> images = subresourceDataToImages(data);
+            const bool is3D{ (info.flags & textureFlags::isVolumeMap) != 0 };
+
+            TexMetadata metadata{};
+            metadata.width = info.width;
+            metadata.height = info.height;
+            metadata.depth = is3D ? info.arraySize : 1;
+            metadata.arraySize = is3D ? 1 : info.arraySize;
+            metadata.mipLevels = info.mipLevels;
+            metadata.miscFlags = info.flags & textureFlags::isCubeMap ? TEX_MISC_TEXTURECUBE : 0;
+            metadata.miscFlags2 = info.flags & textureFlags::isPremultipliedAlpha
+                ? TEX_ALPHA_MODE_PREMULTIPLIED
+                : info.flags & textureFlags::hasAlpha ? TEX_ALPHA_MODE_STRAIGHT : TEX_ALPHA_MODE_OPAQUE;
+            metadata.format = format;
+            metadata.dimension = is3D ? TEX_DIMENSION_TEXTURE3D : TEX_DIMENSION_TEXTURE2D;
+
+            ScratchImage scratch;
+            HRESULT hr{ Decompress(images.data(), (size_t)images.size(), metadata, DXGI_FORMAT_UNKNOWN, scratch) };
+
+            if (FAILED(hr))
+            {
+                data->info.importError = importError::decompress;
+                return {};
+            }
+
+            return scratch;
+        }
     }
+
 
     void ShutDownTextureTools()
     {
@@ -612,43 +712,13 @@ namespace mooncastle::tools
         }
     }
 
-    EDITOR_INTERFACE void DecompressMipmaps(textureData *const data)
+    EDITOR_INTERFACE void Decompress(textureData *const data)
     {
-        using namespace mooncastle::content;
-
-        assert(data->importSettings.compress);
-        textureInfo& info{ data->info };
-        const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
-
-        assert(IsCompressed(format));
-
-        utl::vector<Image> images = subresourceDataToImages(data);
-        const bool is3D{ (info.flags & textureFlags::isVolumeMap) != 0 };
-
-        TexMetadata metadata{};
-        metadata.width = info.width;
-        metadata.height = info.height;
-        metadata.depth = is3D ? info.arraySize : 1;
-        metadata.arraySize = is3D ? 1 : info.arraySize;
-        metadata.mipLevels = info.mipLevels;
-        metadata.miscFlags = info.flags & textureFlags::isCubeMap ? TEX_MISC_TEXTURECUBE : 0;
-        metadata.miscFlags2 = info.flags & textureFlags::isPremultipliedAlpha
-            ? TEX_ALPHA_MODE_PREMULTIPLIED
-            : info.flags & textureFlags::hasAlpha ? TEX_ALPHA_MODE_STRAIGHT : TEX_ALPHA_MODE_OPAQUE;
-        metadata.format = format;
-        metadata.dimension = is3D ? TEX_DIMENSION_TEXTURE3D : TEX_DIMENSION_TEXTURE2D;
-
-        ScratchImage scratch;
-        HRESULT hr{ Decompress(images.data(), (size_t)images.size(), metadata, DXGI_FORMAT_UNKNOWN, scratch) };
-
-        if (SUCCEEDED(hr))
+        ScratchImage scratch{ decompressImage(data) };
+        if (!data->info.importError)
         {
             copySubresources(scratch, data);
             textureInfoFromMetaData(scratch.GetMetadata(), data->info);
-        }
-        else
-        {
-            info.importError = importError::decompress;
         }
     }
 

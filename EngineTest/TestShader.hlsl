@@ -161,15 +161,15 @@ float3 CookTorranceBRDF(Surface S, float3 L)
     const float NoH = saturate(dot(N, H));
     const float VoH = saturate(dot(S.V, H));
 
-    const float D = D_GGX(NoH, S.a2);
-    const float G = V_SmithGGXCorrelated(NoV, NoL, S.a2);
-    const float3 F = F_Schlick(S.SpecularColor, VoH);
+    const float D = DGGX(NoH, S.a2);
+    const float G = VSmithGGXCorrelated(NoV, NoL, S.a2);
+    const float3 F = FSchlick(S.SpecularColor, VoH);
 
     float3 specularBRDF = (D * G) * F;
     float3 rho = 1.f - F;
     
-    //float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
-    float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
+    float3 diffuseBRDF = DiffuseLambert() * S.DiffuseColor * rho;
+    //float3 diffuseBRDF = DiffuseBurley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
 
     return (diffuseBRDF + specularBRDF) * NoL;
 }
@@ -308,7 +308,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
 #if DEBUG_SHOW_NORMALS
     PixelOut o;
-    float3 n = normalize(mul((float3x3) GlobalData.View, S.Normal)); // to view space
+    float3 n = normalize(mul((float3x3) GlobalData.View, S.Normal)); //To view space
     o.Color = float4(n * 0.5f + 0.5f, 1.f);
     return o;
 #endif

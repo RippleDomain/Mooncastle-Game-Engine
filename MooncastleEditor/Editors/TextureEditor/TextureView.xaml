@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ed="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mooncastle="clr-namespace:MooncastleEditor"
     d:DataContext="{d:DesignInstance Type=ed:TextureEditor}"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -31,11 +32,136 @@
                             Viewport="0,0,64,64"
                             ViewportUnits="Absolute" />
                     </Border.Background>
-                    <Image x:Name="textureImage" Source="{Binding SelectedSliceBitmap}">
-                        <Image.Effect>
-                            <ed:ChannelSelector Channels="{Binding Channels}" Stride="{Binding Stride}" />
-                        </Image.Effect>
-                    </Image>
+                    <Border.Resources>
+                        <mooncastle:ReciprocalConverter x:Key="reciprocalConverter" />
+                        <ed:ArrayIndexToCubeFaceConverter x:Key="arrayIndexToCubeFaceConverter" />
+                        <ed:ChannelSelector
+                            x:Key="channelEffect"
+                            Channels="{Binding Channels}"
+                            Stride="{Binding Stride}" />
+                        <ScaleTransform x:Key="scaleTransform" ScaleX="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, Converter={StaticResource reciprocalConverter}}" ScaleY="{Binding Path=ScaleFactor, RelativeSource={RelativeSource AncestorType={x:Type ed:TextureView}}, Converter={StaticResource reciprocalConverter}}" />
+                        <Image
+                            x:Key="singleImageView"
+                            Effect="{StaticResource channelEffect}"
+                            Source="{Binding SelectedSliceBitmap}" />
+                        <Style x:Key="{x:Type Path}" TargetType="{x:Type Path}">
+                            <Setter Property="Fill" Value="{DynamicResource Editor.OrangeBrush}" />
+                            <Setter Property="Stroke" Value="#8f000000" />
+                            <Setter Property="StrokeThickness" Value="2" />
+                            <Setter Property="StrokeLineJoin" Value="Round" />
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="-32" />
+                        </Style>
+                        <Style x:Key="gridStyle" TargetType="{x:Type Grid}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="0">
+                                    <Setter Property="Grid.Row" Value="1" />
+                                    <Setter Property="Grid.Column" Value="2" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="1">
+                                    <Setter Property="Grid.Row" Value="1" />
+                                    <Setter Property="Grid.Column" Value="0" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="2">
+                                    <Setter Property="Grid.Row" Value="0" />
+                                    <Setter Property="Grid.Column" Value="1" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="3">
+                                    <Setter Property="Grid.Row" Value="2" />
+                                    <Setter Property="Grid.Column" Value="1" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="4">
+                                    <Setter Property="Grid.Row" Value="1" />
+                                    <Setter Property="Grid.Column" Value="1" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ArrayIndex, Converter={StaticResource arrayIndexToCubeFaceConverter}, NotifyOnTargetUpdated=True}" Value="5">
+                                    <Setter Property="Grid.Row" Value="1" />
+                                    <Setter Property="Grid.Column" Value="3" />
+                                </DataTrigger>
+                                <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                    <BeginStoryboard>
+                                        <Storyboard AutoReverse="True">
+                                            <DoubleAnimation
+                                                Storyboard.TargetProperty="Opacity"
+                                                From="0"
+                                                To="1"
+                                                Duration="0:0:1" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Grid x:Key="cubeMapView">
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Image
+                                Grid.Row="1"
+                                Grid.Column="2"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.PositiveX}" />
+                            <Image
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.NegativeX}" />
+                            <Image
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.PositiveY}" />
+                            <Image
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.NegativeY}" />
+                            <Image
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.PositiveZ}" />
+                            <Image
+                                Grid.Row="1"
+                                Grid.Column="3"
+                                Effect="{StaticResource channelEffect}"
+                                Source="{Binding CubeMap.NegativeZ}" />
+                            <Grid LayoutTransform="{StaticResource scaleTransform}" Style="{StaticResource gridStyle}">
+                                <Path HorizontalAlignment="Left" Data="M0,0 L32,16 0,32 8,16 z" />
+                                <Path HorizontalAlignment="Right" Data="M0,16 L32,0 24,16 32,32 z" />
+                                <Path VerticalAlignment="Bottom" Data="M0,32 L16,0 32,32 16,24 z" />
+                                <Path VerticalAlignment="Top" Data="M0,0 L16,8 32,0 16,32 z" />
+                            </Grid>
+                        </Grid>
+                        <DataTemplate DataType="{x:Type ed:TextureEditor}">
+                            <Grid>
+                                <ContentPresenter x:Name="singleImagePresenter" Content="{StaticResource singleImageView}" />
+                                <ContentPresenter
+                                    x:Name="cubeMapPresenter"
+                                    Content="{StaticResource cubeMapView}"
+                                    Visibility="Collapsed" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Texture.IsCubeMap}" Value="True" />
+                                        <Condition Binding="{Binding ViewAsCubeMap}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter TargetName="singleImagePresenter" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="cubeMapPresenter" Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </Border.Resources>
+                    <ContentPresenter x:Name="textureImage" Content="{Binding}" />
                 </Border>
             </Canvas>
         </Grid>

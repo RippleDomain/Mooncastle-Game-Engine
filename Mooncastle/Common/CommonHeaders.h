@@ -7,15 +7,10 @@
 //C/C++
 #include <cstdint>
 #include <assert.h>
-#include <typeinfo>
 #include <memory>
 #include <unordered_map>
 #include <mutex>
 #include <cstring>
-
-#if defined(_WIN64)
-#include <DirectXMath.h>
-#endif
 
 //DEBUG OP macro
 #ifdef _DEBUG
@@ -26,10 +21,9 @@
 
 //Common
 #include "PrimitiveTypes.h"
-#include "../Utilities/Math.h"
 #include "../Utilities/Utilities.h"
-#include "../Utilities/MathTypes.h"
-#include "Id.h"
+#include "../Utilities/Math.h"
+#include "../Common/Id.h"
 
 //Macros
 #ifndef DISABLE_COPY

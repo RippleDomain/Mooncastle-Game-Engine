@@ -34,10 +34,10 @@
                     x:Name="lodSlider"
                     Width="128"
                     VerticalAlignment="Center"
-                    Interval="1"
                     IsSnapToTickEnabled="True"
                     Maximum="{Binding MaxLODIndex}"
                     Minimum="0"
+                    TickFrequency="1"
                     TickPlacement="BottomRight"
                     Value="{Binding LodIndex}">
                     <Slider.Style>

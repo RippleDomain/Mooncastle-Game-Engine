@@ -37,10 +37,10 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Center"
                 d:Value="65"
-                Interval="1"
                 IsSnapToTickEnabled="True"
                 Maximum="180"
                 Minimum="0"
+                TickFrequency="1"
                 Value="{Binding SmoothingAngle}" />
         </DockPanel>
         <DockPanel

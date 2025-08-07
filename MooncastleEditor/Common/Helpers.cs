@@ -139,6 +139,28 @@ namespace MooncastleEditor
             return null;
         }
 
+        internal static IEnumerable<string> SaveAsset(this Asset asset)
+        {
+            try
+            {
+                ContentWatcher.EnableFileWatcher(false);
+                Debug.Assert(!string.IsNullOrEmpty(asset.FullPath));
+
+                return asset.Save(asset.FullPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to save asset {asset.FullPath}");
+                Debug.WriteLine(ex.Message);
+
+                return new List<string>();
+            }
+            finally
+            {
+                ContentWatcher.EnableFileWatcher(true);
+            }
+        }
+
         internal static async Task<List<Asset>> ImportFilesAsync(IEnumerable<AssetProxy> proxies)
         {
             List<Asset> assets = new();

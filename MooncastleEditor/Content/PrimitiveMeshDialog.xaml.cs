@@ -153,7 +153,8 @@ namespace MooncastleEditor.Content
 
                 var asset = (DataContext as IAssetEditor).Asset;
                 Debug.Assert(asset != null);
-                asset.Save(saveDialog.SaveFilePath);
+                asset.FullPath = saveDialog.SaveFilePath;
+                asset.SaveAsset();
 
                 saveDialog.Close();
             }

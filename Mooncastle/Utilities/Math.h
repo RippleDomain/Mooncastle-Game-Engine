@@ -1,7 +1,12 @@
 #pragma once
 
 #include "CommonHeaders.h"
-#include "MathTypes.h"
+
+#if defined(_WIN64)
+#include <DirectXMath.h>
+#endif
+
+#include "../Utilities/MathTypes.h"
 
 namespace mooncastle::math 
 {

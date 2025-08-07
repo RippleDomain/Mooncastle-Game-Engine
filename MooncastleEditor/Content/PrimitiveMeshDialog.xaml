@@ -104,10 +104,10 @@
                                 <Slider
                                     x:Name="xSliderPlane"
                                     HorizontalAlignment="Stretch"
-                                    Interval="1"
                                     IsSnapToTickEnabled="True"
                                     Maximum="10"
                                     Minimum="1"
+                                    TickFrequency="1"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
                                     Value="1" />
@@ -125,10 +125,10 @@
                                 <Slider
                                     x:Name="zSliderPlane"
                                     HorizontalAlignment="Stretch"
-                                    Interval="1"
                                     IsSnapToTickEnabled="True"
                                     Maximum="10"
                                     Minimum="1"
+                                    TickFrequency="1"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
                                     Value="1" />
@@ -221,10 +221,10 @@
                                 <Slider
                                     x:Name="xSliderUvSphere"
                                     HorizontalAlignment="Stretch"
-                                    Interval="1"
                                     IsSnapToTickEnabled="True"
                                     Maximum="64"
                                     Minimum="2"
+                                    TickFrequency="1"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
                                     Value="24" />
@@ -242,10 +242,10 @@
                                 <Slider
                                     x:Name="ySliderUvSphere"
                                     HorizontalAlignment="Stretch"
-                                    Interval="1"
                                     IsSnapToTickEnabled="True"
                                     Maximum="64"
                                     Minimum="3"
+                                    TickFrequency="1"
                                     TickPlacement="BottomRight"
                                     ValueChanged="OnSlider_ValueChanged"
                                     Value="12" />
@@ -329,10 +329,10 @@
                             <Slider
                                 x:Name="angleSliderUvSphere"
                                 HorizontalAlignment="Stretch"
-                                Interval="1"
                                 IsSnapToTickEnabled="True"
                                 Maximum="180"
                                 Minimum="0"
+                                TickFrequency="1"
                                 ValueChanged="OnSlider_ValueChanged"
                                 Value="1" />
                         </DockPanel>
