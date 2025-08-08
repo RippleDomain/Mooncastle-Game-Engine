@@ -652,7 +652,14 @@ namespace MooncastleEditor.Content
                     IsPrefilteredIBL = true;
                     var iblFile = AssetRegistry.GetAssetInfo(iblPairGuid)?.FullPath;
 
-                    if (!string.IsNullOrEmpty(iblFile) && IBLPair == null)
+                    if (string.IsNullOrEmpty(iblFile))
+                    {
+                        Logger.Log(MessageType.Error, $"Unable to open IBL pair asset for {file}");
+
+                        return false;
+                    }
+
+                    if (IBLPair == null)
                     {
                         IBLPair = new Texture() { IBLPair = this };
 
@@ -665,6 +672,7 @@ namespace MooncastleEditor.Content
 
                 var compressedLength = reader.ReadInt32();
                 Debug.Assert(compressedLength > 0);
+
                 var compressed = reader.ReadBytes(compressedLength);
 
                 DecompressContent(compressed);

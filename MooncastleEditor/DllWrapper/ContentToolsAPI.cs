@@ -415,17 +415,19 @@ namespace MooncastleEditor.DllWrappers
 
                     diffuseResult.Wait();
 
-                    diffuseData.GetTextureInfo(diffuseIBLCubemap);
-                    diffuseIBLCubemap.SetData(diffuseData.GetSlices(), diffuseData.GetIcon(), texture);
-
                     IAssetImportSettings.CopyImportSettings(texture.TextureImportSettings, diffuseIBLCubemap.TextureImportSettings);
                     diffuseIBLCubemap.TextureImportSettings.Sources.Clear();
+
+                    diffuseData.GetTextureInfo(diffuseIBLCubemap);
+
+                    if (!diffuseIBLCubemap.SetData(diffuseData.GetSlices(), diffuseData.GetIcon(), texture)) throw new InvalidDataException();
 
                     specularResult.Wait();
                 }
 
                 textureData.GetTextureInfo(texture);
-                texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap);
+
+                if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
             }
             catch (Exception ex)
             {

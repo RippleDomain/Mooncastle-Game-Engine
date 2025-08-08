@@ -14,10 +14,11 @@ namespace mooncastle::tools
 
 #include "EnvMapProcessing_EquirectangularToCubeMapCS.inc"
 #include "EnvMapProcessing_PrefilterDiffuseEnvMapCS.inc"
+#include "EnvMapProcessing_PrefilterSpecularEnvMapCS.inc"
 
         };
 
-        constexpr u32 prefilteredDiffuseCubemapSize{ 64 };
+        constexpr u32 prefilteredDiffuseCubemapSize{ 32 };
         constexpr u32 prefilteredSpecularCubemapSize{ 256 };
         constexpr u32 roughnessMIPLevels{ 6 };
         constexpr u32 brdfIntegrationLUTSize{ 256 };
@@ -182,10 +183,10 @@ namespace mooncastle::tools
             return device->CreateUnorderedAccessView(texture, &desc, textureUAV);
         }
 
-        HRESULT downloadTexture2D(ID3D11DeviceContext* ctx, u32 width, u32 height, u32 arraySize, u32 mipLevels, DXGI_FORMAT format, bool isCubemap,
+        HRESULT downloadTexture2D(ID3D11DeviceContext* context, u32 width, u32 height, u32 arraySize, u32 mipLevels, DXGI_FORMAT format, bool isCubemap,
                 ID3D11Texture2D* gpuResource, ID3D11Texture2D* cpuResource, ScratchImage& result)
         {
-            ctx->CopyResource(cpuResource, gpuResource);
+            context->CopyResource(cpuResource, gpuResource);
 
             HRESULT hr{ isCubemap ?
                 result.InitializeCube(format, width, height, arraySize / 6, mipLevels) :
@@ -203,7 +204,7 @@ namespace mooncastle::tools
                 {
                     D3D11_MAPPED_SUBRESOURCE mappedResource{};
                     const u32 resourceIndex{ mip + (imageIndex * mipLevels) };
-                    hr = ctx->Map(cpuResource, resourceIndex, D3D11_MAP_READ, 0, &mappedResource);
+                    hr = context->Map(cpuResource, resourceIndex, D3D11_MAP_READ, 0, &mappedResource);
 
                     if (FAILED(hr))
                     {
@@ -222,24 +223,24 @@ namespace mooncastle::tools
                         dst += img.rowPitch;
                     }
 
-                    ctx->Unmap(cpuResource, resourceIndex);
+                    context->Unmap(cpuResource, resourceIndex);
                 }
             }
 
             return hr;
         }
 
-        void dispatch(ID3D11DeviceContext* ctx,
+        void dispatch(ID3D11DeviceContext* context,
                 ID3D11ShaderResourceView* *const srvArray, ID3D11UnorderedAccessView* *const uavArray,
                 ID3D11Buffer* *const buffersArray, ID3D11SamplerState* *const samplersArray,
                 ID3D11ComputeShader* shader, math::u32v3 groupCount)
         {
-            ctx->CSSetShaderResources(0, 1, srvArray);
-            ctx->CSSetUnorderedAccessViews(0, 1, uavArray, nullptr);
-            ctx->CSSetConstantBuffers(0, 1, &buffersArray[0]);
-            ctx->CSSetSamplers(0, 1, &samplersArray[0]);
-            ctx->CSSetShader(shader, nullptr, 0);
-            ctx->Dispatch(groupCount.x, groupCount.y, groupCount.z);
+            context->CSSetShaderResources(0, 1, srvArray);
+            context->CSSetUnorderedAccessViews(0, 1, uavArray, nullptr);
+            context->CSSetConstantBuffers(0, 1, &buffersArray[0]);
+            context->CSSetSamplers(0, 1, &samplersArray[0]);
+            context->CSSetShader(shader, nullptr, 0);
+            context->Dispatch(groupCount.x, groupCount.y, groupCount.z);
         }
 
     }
@@ -608,5 +609,183 @@ namespace mooncastle::tools
         return downloadTexture2D(context.Get(), prefilteredDiffuseCubemapSize, prefilteredDiffuseCubemapSize,
             arraySize, 1, metaData.format, true,
             cubemapsOutput.Get(), cubemapsCPU.Get(), prefilteredDiffuse);
+    }
+
+    HRESULT prefilterSpecular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredSpecular)
+    {
+        const TexMetadata& metaData{ cubemaps.GetMetadata() };
+        const u32 arraySize{ (u32)metaData.arraySize };
+        const u32 cubemapCount{ arraySize / 6 };
+
+        assert(device && metaData.IsCubemap() && cubemapCount && !(arraySize % 6));
+
+        ComPtr<ID3D11DeviceContext> context{};
+        device->GetImmediateContext(context.GetAddressOf());
+
+        assert(context.Get());
+
+        HRESULT hr{ S_OK };
+
+        //Uploads the source cubemaps and creates output resources.
+        ComPtr<ID3D11Texture2D> cubemapsInput{};
+        ComPtr<ID3D11Texture2D> cubemapsOutput{};
+        ComPtr<ID3D11Texture2D> cubemapsCPU{};
+
+        {
+            D3D11_TEXTURE2D_DESC desc{};
+
+            desc.Width = (u32)metaData.width;
+            desc.Height = (u32)metaData.height;
+            desc.MipLevels = (u32)metaData.mipLevels;
+            desc.ArraySize = arraySize;
+            desc.Format = metaData.format;
+            desc.SampleDesc = { 1, 0 };
+            desc.Usage = D3D11_USAGE_DEFAULT;
+            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            desc.CPUAccessFlags = 0;
+            desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+            {
+                const u32 imageCount{ (u32)cubemaps.GetImageCount() };
+                const Image* images{ cubemaps.GetImages() };
+                utl::vector<D3D11_SUBRESOURCE_DATA> inputData(imageCount);
+
+                for (u32 i{ 0 }; i < imageCount; ++i)
+                {
+                    inputData[i].pSysMem = images[i].pixels;
+                    inputData[i].SysMemPitch = (u32)images[i].rowPitch;
+                }
+
+                hr = device->CreateTexture2D(&desc, inputData.data(), cubemapsInput.GetAddressOf());
+
+                if (FAILED(hr))
+                {
+                    return hr;
+                }
+            }
+
+            desc.Width = desc.Height = prefilteredSpecularCubemapSize;
+            desc.MipLevels = roughnessMIPLevels; //Allocates space for MIP maps.
+            desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+            desc.MiscFlags = 0;
+
+            hr = device->CreateTexture2D(&desc, nullptr, cubemapsOutput.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+
+            desc.BindFlags = 0;
+            desc.Usage = D3D11_USAGE_STAGING;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+            hr = device->CreateTexture2D(&desc, nullptr, cubemapsCPU.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        ComPtr<ID3D11ComputeShader> shader{};
+
+        hr = device->CreateComputeShader(shaders::EnvMapProcessing_PrefilterSpecularEnvMapCS,
+            sizeof(shaders::EnvMapProcessing_PrefilterSpecularEnvMapCS),
+            nullptr, shader.GetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ComPtr<ID3D11Buffer> constantBuffer{};
+        {
+            hr = createConstantBuffer(device, constantBuffer.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        ComPtr<ID3D11SamplerState> linearSampler{};
+
+        hr = createLinearSampler(device, linearSampler.GetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        resetD3D11Context(context.Get());
+
+        for (u32 i{ 0 }; i < cubemapCount; ++i)
+        {
+            ComPtr<ID3D11ShaderResourceView> cubemapInputSRV{};
+
+            hr = createCubemapSRV(device, metaData.format, i * 6, (u32)metaData.mipLevels, cubemapsInput.Get(), cubemapInputSRV.ReleaseAndGetAddressOf());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+
+            //Starts from MIP level 1, because MIP 0 is identical to the source and rather than filtering it, we can copy it.
+            for (u32 mip{ 1 }; mip < roughnessMIPLevels; ++mip)
+            {
+                ComPtr<ID3D11UnorderedAccessView> cubemapOutputUAV{};
+
+                hr = createTexture2DUAV(device, metaData.format, 6, i * 6, mip, cubemapsOutput.Get(), cubemapOutputUAV.ReleaseAndGetAddressOf());
+
+                if (FAILED(hr))
+                {
+                    return hr;
+                }
+
+                ShaderConstants constants{};
+
+                constants.CubeMapInSize = (u32)metaData.width;
+                constants.CubeMapOutSize = std::max((u32)1, prefilteredSpecularCubemapSize >> mip);
+                constants.SampleCount = sampleCount;
+                constants.Roughness = mip * (1.f / roughnessMIPLevels);
+
+                hr = setConstants(context.Get(), constantBuffer.Get(), constants);
+
+                if (FAILED(hr))
+                {
+                    return hr;
+                }
+
+                const u32 blockSize{ std::max((u32)1, (u32)((prefilteredSpecularCubemapSize >> mip) + 15) >> 4) };
+                dispatch(context.Get(), cubemapInputSRV.GetAddressOf(), cubemapOutputUAV.GetAddressOf(), constantBuffer.GetAddressOf(),
+                    linearSampler.GetAddressOf(), shader.Get(), { blockSize, blockSize, 6 });
+            }
+        }
+
+        resetD3D11Context(context.Get());
+
+        ScratchImage prefilteredResult{};
+        hr = downloadTexture2D(context.Get(), prefilteredSpecularCubemapSize, prefilteredSpecularCubemapSize,
+            arraySize, roughnessMIPLevels, metaData.format, true,
+            cubemapsOutput.Get(), cubemapsCPU.Get(), prefilteredResult);
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        assert(metaData.width == prefilteredResult.GetMetadata().width);
+
+        for (u32 imageIndex{ 0 }; imageIndex < arraySize; ++imageIndex)
+        {
+            const Image& src{ *cubemaps.GetImage(0, imageIndex, 0) };
+            const Image& dst{ *prefilteredResult.GetImage(0, imageIndex, 0) };
+
+            memcpy(dst.pixels, src.pixels, src.slicePitch);
+        }
+
+        prefilteredSpecular = std::move(prefilteredResult);
+
+        return hr;
     }
 }

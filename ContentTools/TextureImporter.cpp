@@ -12,11 +12,12 @@ namespace mooncastle::tools
 {
     bool isNormalMap(const Image *const image);
 
+    HRESULT prefilterSpecular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredSpecular);
     HRESULT prefilterDiffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredDiffuse);
-    HRESULT equirectangularToCubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
-        bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
-    HRESULT equirectangularToCubemap(const Image* env_maps, u32 env_map_count, u32 cubemap_size,
-        bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
+    HRESULT equirectangularToCubemap(ID3D11Device* device, const Image* envMaps, u32 envMapCount, u32 cubemapSize,
+        bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubemaps);
+    HRESULT equirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize,
+        bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubemaps);
 
     namespace
     {
@@ -211,6 +212,7 @@ namespace mooncastle::tools
             }
 
             bool wait{ true };
+            bool result{ false };
 
             while (wait)
             {
@@ -218,7 +220,7 @@ namespace mooncastle::tools
                 {
                     if (d3D11Devices[i].hwCompressionMutex.try_lock())
                     {
-                        func(d3D11Devices[i].device.Get());
+                        result = func(d3D11Devices[i].device.Get());
                         d3D11Devices[i].hwCompressionMutex.unlock();
                         wait = false;
 
@@ -229,7 +231,7 @@ namespace mooncastle::tools
                 if (wait) std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
 
-            return true;
+            return result;
         }
 
         [[nodiscard]] utl::vector<Image> subresourceDataToImages(textureData *const data)
@@ -525,6 +527,8 @@ namespace mooncastle::tools
                             {
                                 hr = equirectangularToCubemap(device, images.data(), arraySize, settings.cubemapSize,
                                     settings.prefilterCubemap, settings.mirrorCubemap, workingScratch);
+
+                                return SUCCEEDED(hr);
                             }))
                         {
                             hr = equirectangularToCubemap(images.data(), arraySize, settings.cubemapSize,
@@ -557,10 +561,13 @@ namespace mooncastle::tools
                 scratch = std::move(workingScratch);
             }
 
-            if (settings.mipLevels != 1 || settings.prefilterCubemap)
+            const bool generateFullMIPChain{ settings.prefilterCubemap && settings.dimension == textureDimension::textureCube };
+
+            if (settings.mipLevels != 1 || generateFullMIPChain)
             {
-                scratch = generateMIPMaps(scratch, data->info, settings.prefilterCubemap ? 0 :
-                    settings.mipLevels, settings.dimension == textureDimension::texture3D);
+                scratch = generateMIPMaps(scratch, data->info,
+                    generateFullMIPChain ? 0 : settings.mipLevels,
+                    settings.dimension == textureDimension::texture3D);
             }
 
             return scratch;
@@ -650,6 +657,8 @@ namespace mooncastle::tools
                 {
                     hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
                         scratch.GetMetadata(), outputFormat, TEX_COMPRESS_DEFAULT, 1.f, bcScratch);
+
+                    return SUCCEEDED(hr);
                 })))
             {
                 hr = Compress(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
@@ -742,7 +751,9 @@ namespace mooncastle::tools
             {
                 hr = filterType == iblFilter::diffuse ?
                     prefilterDiffuse(device, cubemaps, sampleCount, cubemaps) :
-                    S_OK; //prefilterSpecular(device, cubemaps, sampleCount, cubemaps);
+                    prefilterSpecular(device, cubemaps, sampleCount, cubemaps);
+
+                return SUCCEEDED(hr);
             });
 
             if (FAILED(hr))
