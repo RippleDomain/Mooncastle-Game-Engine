@@ -12,9 +12,10 @@ using System.Windows;
 
 namespace MooncastleEditor.Content
 {
-    class AssetRegistry
+    static class AssetRegistry
     {
-        private static readonly Dictionary<string, AssetInfo> _assetDictionary = new();
+        private static readonly Dictionary<string, AssetInfo> _assetsFileDictionary = new();
+        private static readonly Dictionary<Guid, AssetInfo> _assetsGuidDictionary = new();
         private static readonly ObservableCollection<AssetInfo> _assets = new();
 
         public static ReadOnlyObservableCollection<AssetInfo> Assets { get; } = new ReadOnlyObservableCollection<AssetInfo>(_assets);
@@ -42,15 +43,34 @@ namespace MooncastleEditor.Content
             try
             {
                 var fileInfo = new FileInfo(file);
+                var isNew = !_assetsFileDictionary.ContainsKey(file);
 
-                if (!_assetDictionary.ContainsKey(file) || _assetDictionary[file].RegisterTime.IsOlder(fileInfo.LastWriteTime))
+                if (isNew || _assetsFileDictionary[file].RegisterTime.IsOlder(fileInfo.LastWriteTime))
                 {
                     var info = Asset.GetAssetInfo(file);
                     Debug.Assert(info != null);
                     info.RegisterTime = DateTime.Now;
-                    _assetDictionary[file] = info;
-                    Debug.Assert(_assetDictionary.ContainsKey(file));
-                    _assets.Add(_assetDictionary[file]);
+
+                    //Handles the case when the same asset file was imported using a different guid.
+                    if (!isNew && _assetsFileDictionary[file].Guid != info.Guid)
+                    {
+                        _assetsGuidDictionary.Remove(_assetsFileDictionary[file].Guid);
+                    }
+
+                    _assetsFileDictionary[file] = info;
+                    _assetsGuidDictionary[info.Guid] = info;
+
+                    if (isNew)
+                    {
+                        Debug.Assert(!_assets.Contains(info));
+                        _assets.Add(info);
+                    }
+                    else
+                    {
+                        var oldInfo = _assets.FirstOrDefault(x => x.FullPath == info.FullPath);
+                        Debug.Assert(oldInfo != null);
+                        _assets[_assets.IndexOf(oldInfo)] = info;
+                    }
                 }
             }
             catch (Exception ex)
@@ -61,10 +81,17 @@ namespace MooncastleEditor.Content
 
         private static void UnregisterAsset(string file)
         {
-            if (_assetDictionary.ContainsKey(file))
+            if (_assetsFileDictionary.ContainsKey(file))
             {
-                _assets.Remove(_assetDictionary[file]);
-                _assetDictionary.Remove(file);
+                var info = _assetsFileDictionary[file];
+                _assets.Remove(info);
+                _assetsFileDictionary.Remove(file);
+
+                //When a file's renamed, the same GUID will be registered with the new name.
+                if (_assetsGuidDictionary.ContainsKey(info.Guid) && !File.Exists(_assetsGuidDictionary[info.Guid].FullPath))
+                {
+                    _assetsGuidDictionary.Remove(info.Guid);
+                }
             }
         }
 
@@ -84,18 +111,19 @@ namespace MooncastleEditor.Content
 
         public static void Reset(string contentFolder)
         {
-            ContentWatcher.ContentModified += OnContentModified;
+            ContentWatcher.ContentModified -= OnContentModified;
 
-            _assetDictionary.Clear();
+            _assetsFileDictionary.Clear();
+            _assetsGuidDictionary.Clear();
             _assets.Clear();
 
             Debug.Assert(Directory.Exists(contentFolder));
             RegisterAllAssets(contentFolder);
 
-            ContentWatcher.ContentModified -= OnContentModified;
+            ContentWatcher.ContentModified += OnContentModified;
         }
 
-        public static AssetInfo GetAssetInfo(string file) => _assetDictionary.ContainsKey(file) ? _assetDictionary[file] : null;
-        public static AssetInfo GetAssetInfo(Guid guid) => _assets.FirstOrDefault(x => x.Guid == guid);
+        public static AssetInfo GetAssetInfo(string file) => _assetsFileDictionary.ContainsKey(file) ? _assetsFileDictionary[file] : null;
+        public static AssetInfo GetAssetInfo(Guid guid) => _assetsGuidDictionary.ContainsKey(guid) ? _assetsGuidDictionary[guid] : null;
     }
 }

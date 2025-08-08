@@ -104,6 +104,9 @@
                             <DataTrigger Binding="{Binding State}" Value="{x:Static local:AssetEditorState.Done}">
                                 <Setter Property="IsEnabled" Value="True" />
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding Texture.TextureImportSettings.Sources.Count}" Value="0">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>

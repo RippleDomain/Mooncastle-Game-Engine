@@ -6,7 +6,7 @@
     xmlns:editors="clr-namespace:MooncastleEditor.Editors"
     xmlns:local="clr-namespace:MooncastleEditor"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Mooncastle Editor"
+    Title="{Binding Name, StringFormat='Mooncastle Editor [{0}]'}"
     Width="800"
     Height="450"
     Style="{StaticResource MooncastleWindowStyle}"

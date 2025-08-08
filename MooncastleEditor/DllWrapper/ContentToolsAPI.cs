@@ -1,16 +1,12 @@
 ﻿using MooncastleEditor.Content;
 using MooncastleEditor.ContentToolsAPIStructs;
 using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MooncastleEditor.ContentToolsAPIStructs
 {
@@ -55,10 +51,8 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         public int MirrorCubeMap;
         public int PrefilterCubeMap;
 
-        public void FromContentSettings(Texture texture)
+        public void FromContentSettings(Content.TextureImportSettings settings)
         {
-            var settings = texture.TextureImportSettings;
-
             Sources = string.Join(";", settings.Sources);
             SourceCount = settings.Sources.Count;
             Dimension = (int)settings.Dimension;
@@ -83,6 +77,20 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         public int Format;
         public int ImportError;
         public int Flags;
+
+        public TextureInfo Clone()
+        {
+            return new TextureInfo
+            {
+                Width = Width,
+                Height = Height,
+                ArraySize = ArraySize,
+                MipLevels = MipLevels,
+                Format = Format,
+                ImportError = ImportError,
+                Flags = Flags
+            };
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -95,6 +103,164 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         public TextureInfo Info = new();
         public TextureImportSettings ImportSettings = new();
 
+        public static SliceArray3D SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
+        {
+            Debug.Assert(data?.Length > 0 && arraySize > 0);
+            Debug.Assert(mipLevels > 0 && mipLevels < Texture.MaxMIPLevels);
+
+            var depthPerMIPLevel = Enumerable.Repeat(1, mipLevels).ToList();
+
+            if (is3D)
+            {
+                var depth = arraySize;
+                arraySize = 1;
+
+                for (var i = 0; i < mipLevels; ++i)
+                {
+                    depthPerMIPLevel[i] = depth;
+                    depth = Math.Max(depth >> 1, 1);
+                }
+            }
+
+            using var reader = new BinaryReader(new MemoryStream(data));
+            var slices = new SliceArray3D();
+
+            for (var i = 0; i < arraySize; ++i)
+            {
+                var arraySlice = new List<List<Slice>>();
+
+                for (var j = 0; j < mipLevels; ++j)
+                {
+                    var mipSlice = new List<Slice>();
+
+                    for (var k = 0; k < depthPerMIPLevel[j]; ++k)
+                    {
+                        var slice = new Slice();
+
+                        slice.Width = reader.ReadInt32();
+                        slice.Height = reader.ReadInt32();
+                        slice.RowPitch = reader.ReadInt32();
+                        slice.SlicePitch = reader.ReadInt32();
+                        slice.RawContent = reader.ReadBytes(slice.SlicePitch);
+
+                        mipSlice.Add(slice);
+                    }
+
+                    arraySlice.Add(mipSlice);
+                }
+
+                slices.Add(arraySlice);
+            }
+
+            return slices;
+        }
+
+        public static byte[] SlicesToBinary(SliceArray3D slices)
+        {
+            Debug.Assert(slices?.Any() == true && slices.First()?.Any() == true);
+            using var writer = new BinaryWriter(new MemoryStream());
+
+            foreach (var arraySlice in slices)
+            {
+                foreach (var mipLevel in arraySlice)
+                {
+                    foreach (var slice in mipLevel)
+                    {
+                        writer.Write(slice.Width);
+                        writer.Write(slice.Height);
+                        writer.Write(slice.RowPitch);
+                        writer.Write(slice.SlicePitch);
+                        writer.Write(slice.RawContent);
+                    }
+                }
+            }
+
+            writer.Flush();
+            var data = (writer.BaseStream as MemoryStream)?.ToArray();
+            Debug.Assert(data?.Length > 0);
+
+            return data;
+        }
+
+        public SliceArray3D GetSlices()
+        {
+            Debug.Assert(Info.MipLevels > 0);
+            Debug.Assert(SubresourceData != IntPtr.Zero && SubresourceSize > 0);
+
+            var subresourceData = new byte[SubresourceSize];
+            Marshal.Copy(SubresourceData, subresourceData, 0, SubresourceSize);
+
+            return SlicesFromBinary(subresourceData, Info.ArraySize, Info.MipLevels, ((TextureFlags)Info.Flags).HasFlag(TextureFlags.IsVolumeMap));
+        }
+
+        public Slice GetIcon()
+        {
+            if (ImportSettings.Compress == 0) return null;
+
+            Debug.Assert(Icon != IntPtr.Zero && IconSize > 0);
+
+            var icon = new byte[IconSize];
+            Marshal.Copy(Icon, icon, 0, IconSize);
+
+            return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
+        }
+
+        public void SetSubresourceData(SliceArray3D slices)
+        {
+            var subresourceData = SlicesToBinary(slices);
+            SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
+            SubresourceSize = subresourceData.Length;
+            Marshal.Copy(subresourceData, 0, SubresourceData, SubresourceSize);
+        }
+
+        public void GetTextureDataInfo(Texture texture)
+        {
+            Info.Width = texture.Width;
+            Info.Height = texture.Height;
+            Info.ArraySize = texture.ArraySize;
+            Info.MipLevels = texture.MipLevels;
+            Info.Format = (int)texture.Format;
+            Info.Flags = (int)texture.Flags;
+        }
+
+        public void GetTextureInfo(Texture texture)
+        {
+            //Set the flags first, because some properties check flags as they're set.
+            texture.Flags = (TextureFlags)Info.Flags;
+            texture.Width = Info.Width;
+            texture.Height = Info.Height;
+            texture.ArraySize = Info.ArraySize;
+            texture.MipLevels = Info.MipLevels;
+            texture.Format = (DXGI_FORMAT)Info.Format;
+        }
+
+        public TextureData Clone(Content.TextureImportSettings settings)
+        {
+            TextureData data = new TextureData();
+            if (SubresourceData != IntPtr.Zero && SubresourceSize > 0)
+            {
+                var bytes = new byte[SubresourceSize];
+                data.SubresourceData = Marshal.AllocCoTaskMem(SubresourceSize);
+                data.SubresourceSize = SubresourceSize;
+                Marshal.Copy(SubresourceData, bytes, 0, SubresourceSize);
+                Marshal.Copy(bytes, 0, data.SubresourceData, SubresourceSize);
+            }
+
+            if (Icon != IntPtr.Zero && IconSize > 0)
+            {
+                var bytes = new byte[IconSize];
+                data.Icon = Marshal.AllocCoTaskMem(IconSize);
+                data.IconSize = IconSize;
+                Marshal.Copy(Icon, bytes, 0, IconSize);
+                Marshal.Copy(bytes, 0, data.Icon, IconSize);
+            }
+
+            data.Info = Info.Clone();
+            data.ImportSettings.FromContentSettings(settings);
+
+            return data;
+        }
+
         public void Dispose()
         {
             Marshal.FreeCoTaskMem(SubresourceData);
@@ -106,7 +272,6 @@ namespace MooncastleEditor.ContentToolsAPIStructs
         {
             Dispose();
         }
-
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -177,143 +342,13 @@ namespace MooncastleEditor.DllWrappers
         [DllImport(_toolsDLL)]
         public static extern void ShutDownContentTools();
 
-        #region Texture
+        #region Texture       
 
-        private static SliceArray3D GetSlices(TextureData data)
-        {
-            Debug.Assert(data.Info.MipLevels > 0);
-            Debug.Assert(data.SubresourceData != IntPtr.Zero && data.SubresourceSize > 0);
+        [DllImport(_toolsDLL)]
+        private static extern void PrefilterDiffuseIBL([In, Out] TextureData data);
 
-            var subresourceData = new byte[data.SubresourceSize];
-            Marshal.Copy(data.SubresourceData, subresourceData, 0, data.SubresourceSize);
-
-            return SlicesFromBinary(subresourceData, data.Info.ArraySize, data.Info.MipLevels,
-                ((TextureFlags)data.Info.Flags).HasFlag(TextureFlags.IsVolumeMap));
-        }
-
-        public static SliceArray3D SlicesFromBinary(byte[] data, int arraySize, int mipLevels, bool is3D)
-        {
-            Debug.Assert(data.Length > 0 && arraySize > 0);
-            Debug.Assert(mipLevels > 0 && mipLevels < Texture.MaxMIPLevels);
-
-            var depthPerMipLevel = Enumerable.Repeat(1, mipLevels).ToList();
-
-            if (is3D)
-            {
-                var depth = arraySize;
-                arraySize = 1;
-                for (var i = 0; i < mipLevels; ++i)
-                {
-                    depthPerMipLevel[i] = depth;
-                    depth = Math.Max(depth >> 1, 1);
-                }
-            }
-
-            using var reader = new BinaryReader(new MemoryStream(data));
-            var slices = new SliceArray3D();
-
-            for (var i = 0; i < arraySize; ++i)
-            {
-                var arraySlice = new List<List<Slice>>();
-
-                for (var j = 0; j < mipLevels; ++j)
-                {
-                    var mipSlice = new List<Slice>();
-
-                    for (var k = 0; k < depthPerMipLevel[j]; ++k)
-                    {
-                        var slice = new Slice();
-                        slice.Width = reader.ReadInt32();
-                        slice.Height = reader.ReadInt32();
-                        slice.RowPitch = reader.ReadInt32();
-                        slice.SlicePitch = reader.ReadInt32();
-                        slice.RawContent = reader.ReadBytes(slice.SlicePitch);
-
-                        mipSlice.Add(slice);
-                    }
-
-                    arraySlice.Add(mipSlice);
-                }
-
-                slices.Add(arraySlice);
-            }
-
-            return slices;
-        }
-
-        private static Slice GetIcon(TextureData data)
-        {
-            //Subresources are not compressed. Just use the first image for the icon.
-            if (data.ImportSettings.Compress == 0) return null;
-
-            Debug.Assert(data.Icon != IntPtr.Zero && data.IconSize > 0);
-
-            var icon = new byte[data.IconSize];
-            Marshal.Copy(data.Icon, icon, 0, data.IconSize);
-
-            return SlicesFromBinary(icon, 1, 1, false).First()?.First()?.First();
-        }
-
-        public static byte[] SlicesToBinary(SliceArray3D slices)
-        {
-            Debug.Assert(slices?.Any() == true && slices.First()?.Any() == true);
-
-            using var writer = new BinaryWriter(new MemoryStream());
-
-            foreach (var arraySlice in slices)
-            {
-                foreach (var mipLevel in arraySlice)
-                {
-                    foreach (var slice in mipLevel)
-                    {
-                        writer.Write(slice.Width);
-                        writer.Write(slice.Height);
-                        writer.Write(slice.RowPitch);
-                        writer.Write(slice.SlicePitch);
-                        writer.Write(slice.RawContent);
-                    }
-                }
-            }
-
-            writer.Flush();
-            var data = (writer.BaseStream as MemoryStream)?.ToArray();
-            Debug.Assert(data?.Length > 0);
-
-            return data;
-        }
-
-        private static void SetSubresourceData(SliceArray3D slices, TextureData data)
-        {
-            var subresourceData = SlicesToBinary(slices);
-            data.SubresourceData = Marshal.AllocCoTaskMem(subresourceData.Length);
-            data.SubresourceSize = subresourceData.Length;
-            Marshal.Copy(subresourceData, 0, data.SubresourceData, data.SubresourceSize);
-        }
-
-        private static void GetTextureDataInfo(Texture texture, TextureData data)
-        {
-            var info = data.Info;
-
-            info.Width = texture.Width;
-            info.Height = texture.Height;
-            info.ArraySize = texture.ArraySize;
-            info.MipLevels = texture.MipLevels;
-            info.Format = (int)texture.Format;
-            info.Flags = (int)texture.Flags;
-        }
-
-        private static void GetTextureInfo(Texture texture, TextureData data)
-        {
-            var info = data.Info;
-
-            //Set the flags first because some properties check flags as they're set.
-            texture.Flags = (TextureFlags)info.Flags;
-            texture.Width = info.Width;
-            texture.Height = info.Height;
-            texture.ArraySize = info.ArraySize;
-            texture.MipLevels = info.MipLevels;
-            texture.Format = (DXGI_FORMAT)info.Format;
-        }
+        [DllImport(_toolsDLL)]
+        private static extern void PrefilterSpecularIBL([In, Out] TextureData data);
 
         [DllImport(_toolsDLL)]
         private static extern void Decompress([In, Out] TextureData data);
@@ -325,9 +360,9 @@ namespace MooncastleEditor.DllWrappers
 
             try
             {
-                GetTextureDataInfo(texture, textureData);
-                textureData.ImportSettings.FromContentSettings(texture);
-                SetSubresourceData(texture.Slices, textureData);
+                textureData.GetTextureDataInfo(texture);
+                textureData.ImportSettings.FromContentSettings(texture.TextureImportSettings);
+                textureData.SetSubresourceData(texture.Slices);
 
                 Decompress(textureData);
 
@@ -336,8 +371,8 @@ namespace MooncastleEditor.DllWrappers
                     Logger.Log(MessageType.Error, $"Error: {EnumExtensions.GetDescription((TextureImportError)textureData.Info.ImportError)}");
                     throw new Exception($"Error while trying to decompress mipmaps. Error code {textureData.Info.ImportError}");
                 }
-                
-                return GetSlices(textureData);
+
+                return textureData.GetSlices();
             }
             catch (Exception ex)
             {
@@ -351,14 +386,14 @@ namespace MooncastleEditor.DllWrappers
         [DllImport(_toolsDLL)]
         private static extern void Import([In, Out] TextureData data);
 
-        public static (SliceArray3D slices, Slice icon) Import(Texture texture)
+        public static void Import(Texture texture)
         {
             Debug.Assert(texture.TextureImportSettings.Sources.Any());
             using var textureData = new TextureData();
 
             try
             {
-                textureData.ImportSettings.FromContentSettings(texture);
+                textureData.ImportSettings.FromContentSettings(texture.TextureImportSettings);
 
                 Import(textureData);
 
@@ -368,15 +403,34 @@ namespace MooncastleEditor.DllWrappers
                     throw new Exception($"Error while trying to import image. Error code {textureData.Info.ImportError}");
                 }
 
-                GetTextureInfo(texture, textureData);
+                Texture diffuseIBLCubemap = null;
 
-                return (GetSlices(textureData), GetIcon(textureData));
+                if (texture.TextureImportSettings.PrefilterCubeMap && ((TextureFlags)textureData.Info.Flags).HasFlag(TextureFlags.IsCubeMap))
+                {
+                    using var diffuseData = textureData.Clone(texture.TextureImportSettings);
+                    var diffuseResult = Task.Run(() => PrefilterDiffuseIBL(diffuseData));
+                    var specularResult = Task.Run(() => PrefilterSpecularIBL(textureData));
+
+                    diffuseIBLCubemap = texture.IBLPair ?? new();
+
+                    diffuseResult.Wait();
+
+                    diffuseData.GetTextureInfo(diffuseIBLCubemap);
+                    diffuseIBLCubemap.SetData(diffuseData.GetSlices(), diffuseData.GetIcon(), texture);
+
+                    IAssetImportSettings.CopyImportSettings(texture.TextureImportSettings, diffuseIBLCubemap.TextureImportSettings);
+                    diffuseIBLCubemap.TextureImportSettings.Sources.Clear();
+
+                    specularResult.Wait();
+                }
+
+                textureData.GetTextureInfo(texture);
+                texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap);
             }
             catch (Exception ex)
             {
                 Logger.Log(MessageType.Error, $"Failed to import from {texture.FileName}");
                 Debug.WriteLine(ex.Message);
-                return new();
             }
         }
 

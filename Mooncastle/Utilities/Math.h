@@ -120,4 +120,22 @@ namespace mooncastle::math
 
 		return crc;
 	}
+
+
+	[[nodiscard]] inline u8 log2(u64 value)
+	{
+		unsigned long mssb; //Most significant set bit
+		unsigned long lssb; //Least significant set bit
+
+		/*If the number is a perfect power of two, return index of bit. Otherwise round up
+		the fractional log by adding 1 to most significant set bit's index.*/
+		if (_BitScanReverse64(&mssb, value) > 0 && _BitScanForward64(&lssb, value) > 0)
+		{
+			return u8(mssb + (mssb == lssb ? 0 : 1));
+		}
+		else
+		{
+			return 0;
+		}
+	}
 }

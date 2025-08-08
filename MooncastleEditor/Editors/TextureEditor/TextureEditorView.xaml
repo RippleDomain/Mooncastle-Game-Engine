@@ -148,6 +148,30 @@
                         </Style>
                     </ToggleButton.Style>
                 </ToggleButton>
+                <Button
+                    Width="64"
+                    Margin="5,0"
+                    Padding="5"
+                    d:Content="Diffuse"
+                    d:Visibility="Visible"
+                    Click="OnIBLPair_Button_Click">
+                    <Button.Style>
+                        <Style BasedOn="{StaticResource MooncastleButtonStyle}" TargetType="{x:Type Button}">
+                            <Setter Property="IsEnabled" Value="True" />
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Content" Value="Specular" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Texture.IBLPair.TextureImportSettings.Sources.Count}" Value="0">
+                                    <Setter Property="Content" Value="Diffuse" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Texture.IsPrefilteredIBL}" Value="False">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
                 <TextBlock
                     Margin="5,0"
                     Text="Layer:"

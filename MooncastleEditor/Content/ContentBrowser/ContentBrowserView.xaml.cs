@@ -253,7 +253,8 @@ namespace MooncastleEditor.Content
             }
             else if (FileAccess.HasFlag(FileAccess.Read))
             {
-                var assetInfo = Asset.GetAssetInfo(info.FullPath);
+                var assetInfo = Asset.TryGetAssetInfo(info.FullPath);
+
                 if (assetInfo != null)
                 {
                     OpenAssetEditor(assetInfo);
@@ -273,11 +274,11 @@ namespace MooncastleEditor.Content
                     case AssetType.Audio: break;
                     case AssetType.Material: break;
                     case AssetType.Mesh:
-                        editor = OpenEditorPanel<GeometryEditorView>(info, info.Guid, "Geometry Editor");
+                        editor = OpenEditorPanel<GeometryEditorView>(info, "Geometry Editor");
                         break;
                     case AssetType.Skeleton: break;
                     case AssetType.Texture:
-                        editor = OpenEditorPanel<TextureEditorView>(info, info.Guid, "Texture Editor");
+                        editor = OpenEditorPanel<TextureEditorView>(info, "Texture Editor");
                         break;
                 }
             }
@@ -289,12 +290,12 @@ namespace MooncastleEditor.Content
             return editor;
         }
 
-        private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, Guid guid, string title) where T : FrameworkElement, new()
+        private static IAssetEditor OpenEditorPanel<T>(AssetInfo info, string title) where T : FrameworkElement, new()
         {
             //First look for a window that's alread open and is displaying the same asset.
             foreach (Window window in Application.Current.Windows)
             {
-                if (window.Content is FrameworkElement content && content.DataContext is IAssetEditor editor && editor.AssetGuid == info.Guid)
+                if (window.Content is FrameworkElement content && content.DataContext is IAssetEditor editor && editor.CheckAssetGUID(info.Guid))
                 {
                     window.Activate();
 

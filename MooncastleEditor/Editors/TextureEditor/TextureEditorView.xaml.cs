@@ -33,6 +33,12 @@ namespace MooncastleEditor.Editors
 
         private void OnActualSizeTexture(object sender, ExecutedRoutedEventArgs e) => textureView.ActualSize();
 
+        private async void OnIBLPair_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as TextureEditor;
+            await vm.SetAsset(vm.Texture.IBLPair);
+        }
+
         public TextureEditorView()
         {
             InitializeComponent();

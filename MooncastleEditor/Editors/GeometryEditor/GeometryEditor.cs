@@ -1,18 +1,10 @@
 ﻿using MooncastleEditor.Content;
-using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
 
 namespace MooncastleEditor.Editors
 {
@@ -346,7 +338,7 @@ namespace MooncastleEditor.Editors
             }
         }
 
-        public Guid AssetGuid { get; private set; }
+        private Guid _assetGuid;
 
         Asset IAssetEditor.Asset => Geometry;
 
@@ -368,7 +360,7 @@ namespace MooncastleEditor.Editors
         public MeshRenderer MeshRenderer
         {
             get => _meshRenderer;
-            set
+            private set
             {
                 if (_meshRenderer != value)
                 {
@@ -442,12 +434,14 @@ namespace MooncastleEditor.Editors
             }
         }
 
+        public bool CheckAssetGUID(Guid guid) => _assetGuid == guid;
+
         public void SetAsset(Content.Asset asset)
         {
             Debug.Assert(asset is Content.Geometry);
             if (asset is Content.Geometry geometry)
             {
-                AssetGuid = asset.Guid;
+                _assetGuid = asset.Guid;
                 Geometry = geometry;
                 var numLods = geometry.GetLODGroup().LODs.Count;
 
@@ -457,16 +451,16 @@ namespace MooncastleEditor.Editors
                 }
                 else
                 {
-                    MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[0], MeshRenderer);
+                    MeshRenderer = new MeshRenderer(Geometry.GetLODGroup().LODs[LodIndex], MeshRenderer);
                 }
             }
         }
 
-        public async void SetAsset(AssetInfo info)
+        public async Task SetAsset(AssetInfo info)
         {
             try
             {
-                AssetGuid = info.Guid;
+                _assetGuid = info.Guid;
                 Debug.Assert(info != null && File.Exists(info.FullPath));
                 var geometry = new Content.Geometry();
 
@@ -479,7 +473,7 @@ namespace MooncastleEditor.Editors
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Debug.WriteLine($"Failed to set geometry for use in geometry editor. File: {info.FullPath}");
             }
         }
     }

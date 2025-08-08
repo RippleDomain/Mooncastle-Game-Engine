@@ -12,6 +12,7 @@ namespace mooncastle::tools
 {
     bool isNormalMap(const Image *const image);
 
+    HRESULT prefilterDiffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredDiffuse);
     HRESULT equirectangularToCubemap(ID3D11Device* device, const Image* env_maps, u32 env_map_count, u32 cubemap_size,
         bool use_prefilter_size, bool mirror_cubemap, ScratchImage& cubemaps);
     HRESULT equirectangularToCubemap(const Image* env_maps, u32 env_map_count, u32 cubemap_size,
@@ -19,6 +20,15 @@ namespace mooncastle::tools
 
     namespace
     {
+        struct iblFilter 
+        {
+            enum type : u32 
+            {
+                diffuse = 0,
+                specular,
+            };
+        };
+
         struct importError
         {
             enum errorCode : u32
@@ -637,10 +647,10 @@ namespace mooncastle::tools
 
             if (!(canUseGPU(outputFormat) &&
                 runOnGPU([&](ID3D11Device* device)
-                    {
-                        hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
-                            scratch.GetMetadata(), outputFormat, TEX_COMPRESS_DEFAULT, 1.f, bcScratch);
-                    })))
+                {
+                    hr = Compress(device, scratch.GetImages(), scratch.GetImageCount(),
+                        scratch.GetMetadata(), outputFormat, TEX_COMPRESS_DEFAULT, 1.f, bcScratch);
+                })))
             {
                 hr = Compress(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(),
                     outputFormat, TEX_COMPRESS_PARALLEL, data->importSettings.alphaThreshold, bcScratch);
@@ -692,6 +702,70 @@ namespace mooncastle::tools
 
             return scratch;
         }
+
+        void prefilterIBL(textureData *const data, iblFilter::type filterType)
+        {
+            assert(data->importSettings.prefilterCubemap);
+
+            textureInfo& info{ data->info };
+
+            const DXGI_FORMAT format{ (DXGI_FORMAT)info.format };
+            assert(!IsCompressed(format));
+            utl::vector<Image> images = subresourceDataToImages(data);
+            assert(!images.empty() && !IsCompressed(images[0].format));
+            assert(info.flags & content::textureFlags::isCubeMap);
+            assert(info.width == info.height);
+            const u32 cubemap_count{ info.arraySize / 6 };
+            assert(info.mipLevels == (u8)(math::log2(info.width) + 1));
+
+            HRESULT hr{ S_OK };
+
+            ScratchImage cubemaps{};
+            hr = cubemaps.InitializeCube(format, info.width, info.height, cubemap_count, info.mipLevels);
+
+            if (FAILED(hr))
+            {
+                info.importError = importError::unknown;
+                return;
+            }
+
+            for (u32 imageIndex{ 0 }; imageIndex < cubemaps.GetImageCount(); ++imageIndex)
+            {
+                const Image& image{ cubemaps.GetImages()[imageIndex] };
+                assert(image.slicePitch == images[imageIndex].slicePitch);
+                memcpy(image.pixels, images[imageIndex].pixels, image.slicePitch);
+            }
+
+            constexpr u32 sampleCount{ 1024 };
+
+            runOnGPU([&](ID3D11Device* device)
+            {
+                hr = filterType == iblFilter::diffuse ?
+                    prefilterDiffuse(device, cubemaps, sampleCount, cubemaps) :
+                    S_OK; //prefilterSpecular(device, cubemaps, sampleCount, cubemaps);
+            });
+
+            if (FAILED(hr))
+            {
+                info.importError = importError::unknown;
+                return;
+            }
+
+            if (data->importSettings.compress)
+            {
+                ScratchImage bcScratch{ compressImage(data, cubemaps) };
+                if (data->info.importError) return;
+
+                //Decompress the first image to be used as the icon.
+                assert(bcScratch.GetImages());
+                copyIcon(bcScratch.GetImages()[0], data);
+
+                cubemaps = std::move(bcScratch);
+            }
+
+            copySubresources(cubemaps, data);
+            textureInfoFromMetaData(cubemaps.GetMetadata(), data->info);
+        }
     }
 
 
@@ -712,9 +786,20 @@ namespace mooncastle::tools
         }
     }
 
+    EDITOR_INTERFACE void PrefilterDiffuseIBL(textureData *const data)
+    {
+        prefilterIBL(data, iblFilter::diffuse);
+    }
+
+    EDITOR_INTERFACE void PrefilterSpecularIBL(textureData *const data)
+    {
+        prefilterIBL(data, iblFilter::specular);
+    }
+
     EDITOR_INTERFACE void Decompress(textureData *const data)
     {
         ScratchImage scratch{ decompressImage(data) };
+
         if (!data->info.importError)
         {
             copySubresources(scratch, data);
@@ -797,7 +882,9 @@ namespace mooncastle::tools
 
         if (data->info.importError) return;
 
-        if (settings.compress)
+        /*Don't compress if it's a cubemap that's going to be prefiltered. 
+        Compression is postponed till after prefiltering is done.*/
+        if (settings.compress && !(scratch.GetMetadata().IsCubemap() && settings.prefilterCubemap))
         {
             ScratchImage bcScratch{ compressImage(data, scratch) };
 

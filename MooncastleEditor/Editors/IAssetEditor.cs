@@ -14,10 +14,10 @@ namespace MooncastleEditor.Editors
     interface IAssetEditor
     {
         AssetEditorState State { get; }
-        Guid AssetGuid { get; }
 
         Asset Asset { get; }
 
-        void SetAsset(AssetInfo info);
+        Task SetAsset(AssetInfo info);
+        bool CheckAssetGUID(Guid guid);
     }
 }
