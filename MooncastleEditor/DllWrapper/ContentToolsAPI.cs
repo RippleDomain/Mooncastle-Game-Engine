@@ -1,7 +1,6 @@
 ﻿using MooncastleEditor.Content;
 using MooncastleEditor.ContentToolsAPIStructs;
 using MooncastleEditor.Utilities;
-using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -349,6 +348,37 @@ namespace MooncastleEditor.DllWrappers
 
         [DllImport(_toolsDLL)]
         private static extern void PrefilterSpecularIBL([In, Out] TextureData data);
+
+        [DllImport(_toolsDLL)]
+        private static extern void ComputeBRDFIntegrationLUT([In, Out] TextureData data);
+
+        public static void ComputeBRDFIntegrationLUT(Texture texture)
+        {
+            using var textureData = new TextureData();
+
+            try
+            {
+                texture.TextureImportSettings.Compress = false;
+                texture.TextureImportSettings.MipLevels = 1;
+                textureData.ImportSettings.FromContentSettings(texture.TextureImportSettings);
+
+                ComputeBRDFIntegrationLUT(textureData);
+
+                if (textureData.Info.ImportError != 0)
+                {
+                    Logger.Log(MessageType.Error, $"Error: {EnumExtensions.GetDescription((TextureImportError)textureData.Info.ImportError)}");
+                    throw new Exception($"Error while trying to compute BRDF integration LUT. Error code {textureData.Info.ImportError}");
+                }
+
+                textureData.GetTextureInfo(texture);
+                texture.SetData(textureData.GetSlices(), null, null);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(MessageType.Error, $"Failed to compute BRDF integration LUT {texture.FileName}");
+                Debug.WriteLine(ex.Message);
+            }
+        }
 
         [DllImport(_toolsDLL)]
         private static extern void Decompress([In, Out] TextureData data);

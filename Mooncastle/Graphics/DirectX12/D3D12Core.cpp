@@ -288,6 +288,7 @@ namespace mooncastle::graphics::d3D12::core
             data.ViewHeight = surface.getViewport().Height;
 			data.NumDirectionalLights = light::getNonCullableLightCount(info.lightSetKey);
             data.DeltaTime = deltaTime;
+            data.AmbientLight = light::getAmbientLight(info.lightSetKey);
 
             //Be careful not to read from this buffer. Reads are very slow.
             hlsl::GlobalShaderData *const shaderData{ cbuffer.allocate<hlsl::GlobalShaderData>() };

@@ -1,24 +1,13 @@
-﻿using Microsoft.Win32;
-using MooncastleEditor.ContentToolsAPIStructs;
+﻿using MooncastleEditor.ContentToolsAPIStructs;
 using MooncastleEditor.DllWrappers;
 using MooncastleEditor.Editors;
-using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities.Controls;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace MooncastleEditor.Content
 {
@@ -31,7 +20,39 @@ namespace MooncastleEditor.Content
 
         private void OnPrimitiveType_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePrimitive(); 
         private void OnSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdatePrimitive();
+        private void OnTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdatePrimitive();
         private void OnScalarBox_ValueChanged(object sender, RoutedEventArgs e) => UpdatePrimitive();
+
+        private void OnTexture_CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            Brush brush = Brushes.White;
+
+            if ((sender as CheckBox).IsChecked == true)
+            {
+                brush = _textures[(int)primTypeComboBox.SelectedItem];
+            }
+
+            var vm = DataContext as GeometryEditor;
+
+            foreach (var mesh in vm.MeshRenderer.Meshes)
+            {
+                mesh.Diffuse = brush;
+            }
+        }
+
+        private int Value(Slider slider) => (int)slider.Value;
+
+        private float Value(TextBox textBox, float min)
+        {
+            float.TryParse(textBox.Text, out float result);
+            return Math.Max(result, min);
+        }
+
+        private int Value(TextBox textBox, int min)
+        {
+            int.TryParse(textBox.Text, out int result);
+            return Math.Max(result, min);
+        }
 
         private float Value(ScalarBox scalarBox, float min)
         {
@@ -51,22 +72,31 @@ namespace MooncastleEditor.Content
             {
                 case PrimitiveMeshType.Plane:
                     {
-                        info.SegmentX = (int)xSliderPlane.Value;
-                        info.SegmentZ = (int)zSliderPlane.Value;
+                        info.SegmentX = Value(xSliderPlane);
+                        info.SegmentZ = Value(zSliderPlane);
                         info.Size.X = Value(widthScalarBoxPlane, 0.001f);
                         info.Size.Z = Value(lengthScalarBoxPlane, 0.001f);
                     }
                     break;
                 case PrimitiveMeshType.Cube:
-                    return;
+                    {
+                        info.SegmentX = Value(xSliderCube);
+                        info.SegmentY = Value(ySliderCube);
+                        info.SegmentZ = Value(zSliderCube);
+                        info.Size.X = Value(xTextBoxCube, 0.001f);
+                        info.Size.Y = Value(yTextBoxCube, 0.001f);
+                        info.Size.Z = Value(zTextBoxCube, 0.001f);
+                        info.LOD = Value(lodTextBoxCube, 0);
+                    }
+                    break;
                 case PrimitiveMeshType.UvSphere:
                     {
-                        info.SegmentX = (int)xSliderUvSphere.Value;
-                        info.SegmentY = (int)ySliderUvSphere.Value;
+                        info.SegmentX = Value(xSliderUvSphere);
+                        info.SegmentY = Value(ySliderUvSphere);
                         info.Size.X = Value(xScalarBoxUvSphere, 0.001f);
                         info.Size.Y = Value(yScalarBoxUvSphere, 0.001f);
                         info.Size.Z = Value(zScalarBoxUvSphere, 0.001f);
-                        smoothingAngle = (int)angleSliderUvSphere.Value;
+                        smoothingAngle = Value(angleSliderUvSphere);
                     }
                     break;
                 case PrimitiveMeshType.IcoSphere:
@@ -91,8 +121,8 @@ namespace MooncastleEditor.Content
             var uris = new List<Uri>
             {
                 new("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
-                new("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
-                new("pack://application:,,,/Resources/PrimitiveMeshView/chess.png")
+                new("pack://application:,,,/Resources/PrimitiveMeshView/CubeCheckermap.png"),
+                new("pack://application:,,,/Resources/PrimitiveMeshView/chess.png"),
             };
 
             _textures.Clear();
@@ -115,34 +145,6 @@ namespace MooncastleEditor.Content
             }
         }
 
-        static PrimitiveMeshDialog()
-        {
-            LoadTextures();
-        }
-
-        public PrimitiveMeshDialog()
-        {
-            InitializeComponent();
-            Loaded += (s, e) => UpdatePrimitive();
-        }
-
-        private void OnTexture_CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            Brush brush = Brushes.White;
-
-            if ((sender as CheckBox).IsChecked == true)
-            {
-                brush = _textures[(int)primTypeComboBox.SelectedItem];
-            }
-
-            var vm = DataContext as GeometryEditor;
-
-            foreach (var mesh in vm.MeshRenderer.Meshes)
-            {
-                mesh.Diffuse = brush;
-            }
-        }
-
         private void OnSave_Button_Click(object sender, RoutedEventArgs e)
         {
             var saveDialog = new SaveDialog();
@@ -158,6 +160,17 @@ namespace MooncastleEditor.Content
 
                 saveDialog.Close();
             }
+        }
+
+        static PrimitiveMeshDialog()
+        {
+            LoadTextures();
+        }
+
+        public PrimitiveMeshDialog()
+        {
+            InitializeComponent();
+            Loaded += (s, e) => UpdatePrimitive();
         }
     }
 }

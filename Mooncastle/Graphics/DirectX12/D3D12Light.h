@@ -5,6 +5,11 @@
 namespace mooncastle::graphics::d3D12
 {
 	struct D3D12FrameInfo;
+
+	namespace hlsl 
+	{
+		struct AmbientLightParameters;
+	}
 }
 
 namespace mooncastle::graphics::d3D12::light 
@@ -24,6 +29,7 @@ namespace mooncastle::graphics::d3D12::light
 	D3D12_GPU_VIRTUAL_ADDRESS getCullableLightBuffer(u32 frameIndex);
 	D3D12_GPU_VIRTUAL_ADDRESS getCullingInfoBuffer(u32 frameIndex);
 	D3D12_GPU_VIRTUAL_ADDRESS getBoundingSpheresBuffer(u32 frameIndex);
+	hlsl::AmbientLightParameters getAmbientLight(u64 lightSetKey);
 	u32 getNonCullableLightCount(u64 lightSetKey);
 	u32 getCullableLightCount(u64 lightSetKey);
 }

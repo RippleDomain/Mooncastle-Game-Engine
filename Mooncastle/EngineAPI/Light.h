@@ -14,6 +14,7 @@ namespace mooncastle::graphics
 			directional,
 			point,
 			spot,
+			ambient,
 			count
 		};
 

@@ -15,6 +15,7 @@ namespace mooncastle::tools
 #include "EnvMapProcessing_EquirectangularToCubeMapCS.inc"
 #include "EnvMapProcessing_PrefilterDiffuseEnvMapCS.inc"
 #include "EnvMapProcessing_PrefilterSpecularEnvMapCS.inc"
+#include "EnvMapProcessing_ComputeBrdfIntegrationLutCS.inc"
 
         };
 
@@ -787,5 +788,108 @@ namespace mooncastle::tools
         prefilteredSpecular = std::move(prefilteredResult);
 
         return hr;
+    }
+
+    HRESULT brdfIntegrationLUT(ID3D11Device* device, u32 sampleCount, ScratchImage& brdfLUT)
+    {
+        ComPtr<ID3D11DeviceContext> context{};
+        device->GetImmediateContext(context.GetAddressOf());
+        assert(context.Get());
+
+        HRESULT hr{ S_OK };
+        constexpr u32 lutSize{ brdfIntegrationLUTSize };
+        constexpr DXGI_FORMAT format{ DXGI_FORMAT_R16G16_FLOAT };
+
+        ComPtr<ID3D11Texture2D> output{};
+        ComPtr<ID3D11Texture2D> outputCPU{};
+        {
+            D3D11_TEXTURE2D_DESC desc{};
+
+            desc.Width = desc.Height = lutSize;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.Format = format;
+            desc.SampleDesc = { 1, 0 };
+            desc.Usage = D3D11_USAGE_DEFAULT;
+            desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+            desc.CPUAccessFlags = 0;
+            desc.MiscFlags = 0;
+
+            hr = device->CreateTexture2D(&desc, nullptr, output.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+
+            desc.BindFlags = 0;
+            desc.Usage = D3D11_USAGE_STAGING;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            hr = device->CreateTexture2D(&desc, nullptr, outputCPU.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        ComPtr<ID3D11ComputeShader> shader{};
+        hr = device->CreateComputeShader(shaders::EnvMapProcessing_ComputeBrdfIntegrationLutCS,
+            sizeof(shaders::EnvMapProcessing_ComputeBrdfIntegrationLutCS),
+            nullptr, shader.GetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ComPtr<ID3D11Buffer> constant_buffer{};
+        {
+            hr = createConstantBuffer(device, constant_buffer.GetAddressOf());
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+
+            ShaderConstants constants{};
+            constants.CubeMapOutSize = lutSize;
+            constants.SampleCount = sampleCount;
+
+            hr = setConstants(context.Get(), constant_buffer.Get(), constants);
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        ComPtr<ID3D11SamplerState> linearSampler{};
+        hr = createLinearSampler(device, linearSampler.GetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        resetD3D11Context(context.Get());
+
+        ComPtr<ID3D11UnorderedAccessView> outputUAV{};
+        hr = createTexture2DUAV(device, format, 1, 0, 0, output.Get(), outputUAV.ReleaseAndGetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ID3D11ShaderResourceView* srv{ nullptr };
+
+        const u32 blockSize{ (lutSize + 15) >> 4 };
+        dispatch(context.Get(), &srv, outputUAV.GetAddressOf(), constant_buffer.GetAddressOf(),
+            linearSampler.GetAddressOf(), shader.Get(), { blockSize, blockSize, 1 });
+
+        resetD3D11Context(context.Get());
+
+        return downloadTexture2D(context.Get(), lutSize, lutSize, 1, 1, format, false, output.Get(), outputCPU.Get(), brdfLUT);
     }
 }

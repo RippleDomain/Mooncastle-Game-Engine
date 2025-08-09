@@ -1,7 +1,5 @@
 #include "Common.hlsli"
 
-#if USE_BOUNDING_SPHERES
-
 static const uint MaxLightsPerGroup = 1024;
 
 groupshared uint  minDepthVS;                               //Tile's minimum depth in the view-space.
@@ -22,22 +20,6 @@ StructuredBuffer<Sphere>                        BoundingSpheres         :   regi
 RWStructuredBuffer<uint>                        LightIndexCounter       :   register(u0, space0);
 RWStructuredBuffer<uint2>                       LightGrid_Opaque        :   register(u1, space0);
 RWStructuredBuffer<uint>                        LightIndexList_Opaque   :   register(u3, space0);
-
-Sphere GetConeBoundingSphere(float3 tip, float range, float3 direction, float cosPenumbra)
-{
-    Sphere sphere;
-    sphere.Radius = range / (2.0f * cosPenumbra);
-    sphere.Center = tip + sphere.Radius * direction;
-
-    if (cosPenumbra < 0.707107f /*cos45*/)
-    {
-        const float coneSin = sqrt(1.f - cosPenumbra * cosPenumbra);
-        sphere.Center = tip + cosPenumbra * range * direction;
-        sphere.Radius = coneSin * range;
-    }
-    
-    return sphere;
-}
 
 bool Intersects(Frustum frustum, Sphere sphere, float minDepth, float maxDepth)
 {
@@ -189,123 +171,3 @@ void CullLightsCS(ComputeShaderInput csInput)
         }
     }
 }
-
-#else
-
-static const uint MaxLightsPerGroup = 1024;
-
-groupshared uint minDepthVS;                        //Tile's minimum depth in the view-space.
-groupshared uint maxDepthVS;                        //Tile's maximum depth in the view-space.
-groupshared uint lightCount;                        //Number of lights that affect the pixels in this tile.
-groupshared uint lightIndexStartOffset;             //Offset in the global light index list where we copy lightIndexList.
-groupshared uint lightIndexList[MaxLightsPerGroup]; //Indices of lights that affect this tile.
-
-ConstantBuffer<GlobalShaderData>                GlobalData              :   register(b0, space0);
-ConstantBuffer<LightCullingDispatchParameters>  ShaderParams            :   register(b1, space0);
-StructuredBuffer<Frustum>                       Frustums                :   register(t0, space0);
-StructuredBuffer<LightCullingLightInfo>         Lights                  :   register(t1, space0);
-
-RWStructuredBuffer<uint>                        LightIndexCounter       :   register(u0, space0);
-RWStructuredBuffer<uint2>                       LightGrid_Opaque        :   register(u1, space0);
-RWStructuredBuffer<uint>                        LightIndexList_Opaque   :   register(u3, space0);
-
-//"Forward vs Deffered vs Forward+ Rendering with DirectX 11" (2005) by Jeremiah van Oosten.
-//https://www.3dgep.com/forward-plus/#light-culling
-
-//TILE_SIZE is defined by the engine at compile time.
-[numthreads(TILE_SIZE, TILE_SIZE, 1)]
-void CullLightsCS(ComputeShaderInput csInput)
-{
-    //----------- STEP 1 : INITIALIZATION -----------//
-    if (csInput.GroupIndex == 0) //Only the first thread in the group need to initialize groupshared memory.
-    {
-        minDepthVS = 0x7f7fffff; //FLT_MAX as uint.
-        maxDepthVS = 0;
-        lightCount = 0;
-    }
-
-    uint i = 0;
-    uint index = 0;
-
-    //----------- STEP 2 : DEPTH MIN/MAX -----------//
-    GroupMemoryBarrierWithGroupSync();
-
-    const float depth = Texture2D(ResourceDescriptorHeap[ShaderParams.DepthBufferSrvIndex])[csInput.DispatchThreadID.xy].r;
-    const float depthVS = ClipToView(float4(0.f, 0.f, depth, 1.f), GlobalData.InvProjection).z;
-    
-    //Negate depth value because of right-handed coordinates. This makes the comparisons easier to understand.
-    const uint z = asuint(-depthVS);
-
-    if (depth != 0) //Don't include the far plane.
-    {
-        InterlockedMin(minDepthVS, z);
-        InterlockedMax(maxDepthVS, z);
-    }
-
-    //----------- STEP 3 : LIGHT CULLING -----------//
-    GroupMemoryBarrierWithGroupSync();
-    
-    const uint gridIndex = csInput.GroupID.x + (csInput.GroupID.y * ShaderParams.NumThreadGroups.x);
-    const Frustum frustum = Frustums[gridIndex];
-    
-    //Negate view-space min/max again to end up with negative z values.
-    const float newMinDepthVS = -asfloat(minDepthVS);
-    const float newMaxDepthVS = -asfloat(maxDepthVS);
-
-    for (i = csInput.GroupIndex; i < ShaderParams.NumLights; i += TILE_SIZE * TILE_SIZE)
-    {
-        const LightCullingLightInfo light = Lights[i];
-        const float3 lightPositionVS = mul(GlobalData.View, float4(light.Position, 1.f)).xyz;
-
-        if (light.Type == LIGHT_TYPE_POINT_LIGHT)
-        {
-            const Sphere sphere = { lightPositionVS, light.Range };
-            
-            if (SphereInsideFrustum(sphere, frustum, newMinDepthVS, newMaxDepthVS))
-            {
-                InterlockedAdd(lightCount, 1, index);
-                
-                if (index < MaxLightsPerGroup)
-                {
-                    lightIndexList[index] = i;
-                }
-            }
-        }
-        else if (light.Type == LIGHT_TYPE_SPOTLIGHT)
-        {
-            const float3 lightDirectionVS = mul(GlobalData.View, float4(light.Direction, 0.f)).xyz;
-            const Cone cone = { lightPositionVS, light.Range, lightDirectionVS, light.ConeRadius };
-            
-            if (ConeInsideFrustum(cone, frustum, newMinDepthVS, newMaxDepthVS))
-            {
-                InterlockedAdd(lightCount, 1, index);
-                
-                if (index < MaxLightsPerGroup)
-                {
-                    lightIndexList[index] = i;
-                }
-            }
-        }
-    }
-
-    //----------- STEP 4 : UPDATE LIGHT GRID -----------//
-    GroupMemoryBarrierWithGroupSync();
-    
-    const uint newLightCount = min(lightCount, MaxLightsPerGroup);
-
-    if (csInput.GroupIndex == 0)
-    {
-        InterlockedAdd(LightIndexCounter[0], newLightCount, lightIndexStartOffset);
-        LightGrid_Opaque[gridIndex] = uint2(lightIndexStartOffset, newLightCount);
-    }
-
-    //----------- STEP 5 : UPDATE LIGHT INDEX LIST -----------//
-    GroupMemoryBarrierWithGroupSync();
-    
-    for (i = csInput.GroupIndex; i < newLightCount; i += TILE_SIZE * TILE_SIZE)
-    {
-        LightIndexList_Opaque[lightIndexStartOffset + i] = lightIndexList[i];
-    }
-}
-
-#endif

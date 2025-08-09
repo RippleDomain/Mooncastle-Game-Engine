@@ -32,11 +32,27 @@ namespace mooncastle::graphics::d3D12::ppfx
 
 			d3DX::D3D12RootParameter parameters[idx::count]{};
 			parameters[idx::globalShaderData].asCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-			parameters[idx::rootConstants].asConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+			parameters[idx::rootConstants].asConstants(2, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 			parameters[idx::frustums].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 			parameters[idx::lightGridOpaque].asSRV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 
-			d3DX::D3D12RootSignatureDescription rootSignature{ &parameters[0], _countof(parameters) };
+			const D3D12_STATIC_SAMPLER_DESC samplers[]
+			{
+				d3DX::staticSampler(d3DX::samplerState.staticPoint, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+				d3DX::staticSampler(d3DX::samplerState.staticLinear, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+			};
+
+			d3DX::D3D12RootSignatureDescription rootSignature
+			{
+				&parameters[0], 
+				_countof(parameters), 
+
+				d3DX::D3D12RootSignatureDescription::defaultFlags,
+
+				&samplers[0],
+				_countof(samplers)
+			};
+
 			rootSignature.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 			fxRootSignature = rootSignature.create();
 
@@ -90,6 +106,7 @@ namespace mooncastle::graphics::d3D12::ppfx
 
 		commandList->SetGraphicsRootConstantBufferView(idx::globalShaderData, d3D12Info.globalShaderData);
 		commandList->SetGraphicsRoot32BitConstant(idx::rootConstants, gPass::getMainBuffer().getSRV().index, 0);
+		commandList->SetGraphicsRoot32BitConstant(idx::rootConstants, gPass::getDepthBuffer().getSRV().index, 1);
 		commandList->SetGraphicsRootShaderResourceView(idx::frustums, culling::getFrustums(lightCullingID, frameIndex));
 		commandList->SetGraphicsRootShaderResourceView(idx::lightGridOpaque, culling::getLightGridOpaque(lightCullingID, frameIndex));
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

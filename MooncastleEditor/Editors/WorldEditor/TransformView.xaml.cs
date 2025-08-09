@@ -1,17 +1,10 @@
 ﻿using MooncastleEditor.Components;
 using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace MooncastleEditor.Editors

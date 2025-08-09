@@ -6,7 +6,6 @@ namespace mooncastle::tools
 	namespace
 	{
 		using primitiveMeshCreator = void(*)(scene&, const primitiveInitInfo& info);
-		using namespace math;
 		using namespace DirectX;
 
 		void createPlane(scene& scene, const primitiveInitInfo& info);
@@ -38,13 +37,13 @@ namespace mooncastle::tools
 
 		mesh createPlane(const primitiveInitInfo& info,
 			u32 horizontalIndex = axis::x, u32 verticalIndex = axis::z, bool flipWinding = false,
-			v3 offset = { -0.5f, 0.f, -0.5f }, v2 uRange = { 0.f, 1.f }, v2 vRange = { 0.f, 1.f })
+			math::v3 offset = { -0.5f, 0.f, -0.5f }, math::v2 uRange = { 0.f, 1.f }, math::v2 vRange = { 0.f, 1.f })
 		{
 			assert(horizontalIndex < 3 && verticalIndex < 3);
 			assert(horizontalIndex != verticalIndex);
 
-			const u32 horizontalCount{ clamp(info.segments[horizontalIndex], 1u, 10u) };
-			const u32 verticalCount{ clamp(info.segments[verticalIndex], 1u, 10u) };
+			const u32 horizontalCount{ math::clamp(info.segments[horizontalIndex], 1u, 10u) };
+			const u32 verticalCount{ math::clamp(info.segments[verticalIndex], 1u, 10u) };
 			const f32 horizontalStep{ 1.f / horizontalCount };
 			const f32 verticalStep{ 1.f / verticalCount };
 			const f32 uStep{ (uRange.y - uRange.x) / horizontalCount };
@@ -52,19 +51,19 @@ namespace mooncastle::tools
 
 			mesh m{};
 
-			utl::vector<v2> uvs;
+			utl::vector<math::v2> uvs;
 
 			for (u32 j{ 0 }; j <= verticalCount; ++j)
 			{
 				for (u32 i{ 0 }; i <= horizontalCount; ++i)
 				{
-					v3 position{ offset };
+					math::v3 position{ offset };
 					f32* const asArray{ &position.x };
 					asArray[horizontalIndex] += i * horizontalStep;
 					asArray[verticalIndex] += j * verticalStep;
 					m.positions.emplace_back(position.x * info.size.x, position.y * info.size.y, position.z * info.size.z);
 
-					v2 uv{ uRange.x, 1.f - vRange.x };
+					math::v2 uv{ uRange.x, 1.f - vRange.x };
 					uv.x += i * uStep;
 					uv.y -= j * vStep;
 					/*v2 uv{ 0, 1.f };
@@ -112,12 +111,104 @@ namespace mooncastle::tools
 			return m;
 		}
 
+		constexpr math::v3 getFaceVertex(u32 face, f32 x, f32 y)
+		{
+			math::v3 faceVertex[6] = 
+			{
+				{-1.f, -y,    x},   //X- Right
+				{ 1.f, -y,   -x},   //X+ Left
+				{ x,    1.f,  y},   //Y+ Bottom
+				{ x,   -1.f, -y},   //Y- Top
+				{ x,   -y,    1.f}, //Z+ Front
+				{-x,   -y,   -1.f}, //Z- Back
+			};
+
+			return faceVertex[face];
+		}
+
+		mesh createCube(const primitiveInitInfo& info)
+		{
+			const u32 *const segments{ &info.segments[0] };
+			constexpr math::u32v2 axes[3]{ {axis::z, axis::y}, {axis::x, axis::z}, {axis::x, axis::y} };
+			constexpr f32 uRange[6]{ 0.f, 0.5f, 0.25f, 0.25f, 0.25f, 0.75f };
+			constexpr f32 vRange[6]{ 0.375f, 0.375f, 0.125f, 0.625f, 0.375f, 0.375f };
+
+			mesh m{};
+			utl::vector<math::v2> uvs{};
+
+			for (u32 face{ 0 }; face < 6; ++face)
+			{
+				const u32 axesIndex{ face >> 1 };
+				const math::u32v2& axis{ axes[axesIndex] };
+				const u32 xCount{ math::clamp(segments[axis.x], (u32)1, (u32)10) };
+				const u32 yCount{ math::clamp(segments[axis.y], (u32)1, (u32)10) };
+				const f32 xStep{ 1.f / xCount };
+				const f32 yStep{ 1.f / yCount };
+				const f32 uStep{ 0.25f / xCount };
+				const f32 vStep{ 0.25f / yCount };
+				const u32 rawIndexOffset{ (u32)m.positions.size() };
+
+				for (u32 y{ 0 }; y <= yCount; ++y)
+				{
+					for (u32 x{ 0 }; x <= xCount; ++x)
+					{
+						math::v2 pos{ 2.f * x * xStep - 1.f, 2.f * y * yStep - 1.f };
+						math::v3 position{ getFaceVertex(face, pos.x, pos.y) };
+						m.positions.emplace_back(position.x * info.size.x, position.y * info.size.y, position.z * info.size.z);
+#if 1
+						math::v2 uv{ uRange[face], 1.f - vRange[face] };
+						uv.x += x * uStep;
+						uv.y -= y * vStep;
+#else
+						math::v2 uv{ 0.f, 1.f };
+						uv.x += (f32)(x % 2);
+						uv.y -= (f32)(y % 2);
+#endif
+						uvs.emplace_back(uv);
+					}
+				}
+
+				const u32 rowLength{ xCount + 1 }; //Number of vertices in a row.
+
+				for (u32 y{ 0 }; y < yCount; ++y)
+				{
+					for (u32 x{ 0 }; x < xCount; ++x)
+					{
+						const u32 index[4]
+						{
+							rawIndexOffset + x + y * rowLength,
+							rawIndexOffset + x + (y + 1) * rowLength,
+							rawIndexOffset + (x + 1) + y * rowLength,
+							rawIndexOffset + (x + 1) + (y + 1) * rowLength
+						};
+
+						m.rawIndices.emplace_back(index[0]);
+						m.rawIndices.emplace_back(index[1]);
+						m.rawIndices.emplace_back(index[2]);
+
+						m.rawIndices.emplace_back(index[2]);
+						m.rawIndices.emplace_back(index[1]);
+						m.rawIndices.emplace_back(index[3]);
+					}
+				}
+			}
+
+			m.uvSets.resize(1);
+
+			for (u32 i{ 0 }; i < m.rawIndices.size(); ++i)
+			{
+				m.uvSets[0].emplace_back(uvs[m.rawIndices[i]]);
+			}
+
+			return m;
+		}
+
 		mesh createUvSphere(const primitiveInitInfo& info) 
 		{
-			const u32 phiCount{ clamp(info.segments[axis::x], 3u, 64u) };
-			const u32 thetaCount{ clamp(info.segments[axis::y], 2u, 64u) };
-			const f32 thetaStep{ pi / thetaCount };
-			const f32 phiStep{ tau / phiCount };
+			const u32 phiCount{ math::clamp(info.segments[axis::x], 3u, 64u) };
+			const u32 thetaCount{ math::clamp(info.segments[axis::y], 2u, 64u) };
+			const f32 thetaStep{ math::pi / thetaCount };
+			const f32 phiStep{ math::tau / phiCount };
 			const u32 numVertices{ 2 + phiCount * (thetaCount - 1) };
 			const u32 numIndices{ 2 * 3 * phiCount + 2 * 3 * phiCount * (thetaCount - 2)};
 
@@ -150,7 +241,7 @@ namespace mooncastle::tools
 
 			c = 0;
 			m.rawIndices.resize(numIndices);
-			utl::vector<v2> uvs(numIndices);
+			utl::vector<math::v2> uvs(numIndices);
 			const f32 invThetaCount{ 1.f / thetaCount };
 			const f32 invPhiCount{ 1.f / phiCount };
 
@@ -253,12 +344,21 @@ namespace mooncastle::tools
 			lodGroup lod{};
 			lod.name = "plane";
 			lod.meshes.emplace_back(createPlane(info));
+
 			scene.lodGroups.emplace_back(lod);
 		}
 
-		void createCube(scene&, const primitiveInitInfo&)
+		void createCube(scene& scene, const primitiveInitInfo& info)
 		{
+			mesh cube{};
+			cube.name = "cube";
+			cube.uvSets.resize(1);
 
+			lodGroup lod{};
+			lod.name = "cube";
+			lod.meshes.emplace_back(createCube(info));
+
+			scene.lodGroups.emplace_back(lod);
 		}
 
 		void createUvSphere(scene& scene, const primitiveInitInfo& info) 
@@ -266,6 +366,7 @@ namespace mooncastle::tools
 			lodGroup lod{};
 			lod.name = "UvSphere";
 			lod.meshes.emplace_back(createUvSphere(info));
+
 			scene.lodGroups.emplace_back(lod);
 		}
 

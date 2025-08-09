@@ -3,6 +3,7 @@
 struct ShaderConstants
 {
     uint GPassMainBufferIndex;
+    uint GPassDepthBufferIndex;
 };
 
 ConstantBuffer<GlobalShaderData>    GlobalData      :   register(b0, space0);
@@ -11,6 +12,8 @@ ConstantBuffer<ShaderConstants>     ShaderParams    :   register(b1, space0);
 #define TILE_SIZE 32
 StructuredBuffer<Frustum>           Frustums        :   register(t0, space0);
 StructuredBuffer<uint2>             LightGridOpaque :   register(t1, space0);
+SamplerState                        PointSampler    :   register(s0, space0);
+SamplerState                        LinearSampler   :   register(s1, space0);
 
 uint GetGridIndex(float2 posXY, float viewWidth)
 {
@@ -110,10 +113,28 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     
     return Heatmap(LightGridOpaque, Position.xy, 0.75f);
     
-#elif 1
+#elif 0
     
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     return float4(gpassMain[Position.xy].xyz, 1.f);
+    
+#elif 1 
+
+    Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
+    float depth = gpassDepth[Position.xy].r;
+
+    if (depth > 0.f)
+    {
+        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+        return gpassMain[Position.xy];
+    }
+    else
+    {
+        float3 direction = UnprojectUV(UV, depth, GlobalData.InvViewProjection).xyz;
+        
+        return TextureCube(ResourceDescriptorHeap[GlobalData.AmbientLight.SpecularSRVIndex]).
+            SampleLevel(LinearSampler, direction, 0.1f) * GlobalData.AmbientLight.Intensity;
+    }
     
 #endif
 }

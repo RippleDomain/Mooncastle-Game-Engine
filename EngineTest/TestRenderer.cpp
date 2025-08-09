@@ -292,9 +292,9 @@ bool testInitialize()
 	}
 
 	initTestWorkers(bufferTestWorker);
-	createRenderItems();
 
 	generateLights();
+	createRenderItems();
 
 	renderItemIDCache.resize(4 + 12);
 	geometry::getRenderItemIDs(renderItemIDCache.data(), (u32)renderItemIDCache.size());
@@ -337,9 +337,9 @@ bool testInitialize()
 void testShutdown()
 {
 	input::unbind(std::hash<std::string>()("move"));
-
-	removeLights();
+	
 	destroyRenderItems();
+	removeLights();
 	jointTestWorkers();
 
 	for (u32 i{ 0 }; i < _countof(surfaces); ++i)
@@ -374,8 +374,8 @@ void engineTest::run()
 		{
 			f32 thresholds[4 + 12]{};
 			graphics::frameInfo info{};
-			info.renderItemIDs = renderItemIDCache.data();
-			info.renderItemCount = 4 + 12;
+			info.renderItemIDs = renderItemIDCache.data() + 1;
+			info.renderItemCount = 4 + 12 - 1;
 			info.thresholds = &thresholds[0];
 			info.lightSetKey = lightSetKey;
 			info.averageFrameTime = dt;

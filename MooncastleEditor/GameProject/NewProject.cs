@@ -1,16 +1,9 @@
 ﻿using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -118,14 +111,14 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        private bool _isValid;
+        private bool _isValid = true;
         public bool IsValid
         {
             get
             {
                 return _isValid;
             }
-            set
+            private set
             {
                 if (_isValid != value)
                 {
@@ -142,7 +135,7 @@ namespace MooncastleEditor.GameProject
             {
                 return _errorMessage;
             }
-            set
+            private set
             {
                 if (_errorMessage != value)
                 {
@@ -169,7 +162,7 @@ namespace MooncastleEditor.GameProject
 
             IsValid = false;
 
-            if (string.IsNullOrWhiteSpace(ProjectName))
+            if (string.IsNullOrEmpty(ProjectName))
             {
                 ErrorMessage = "Project name cannot be empty.";
             }
@@ -177,7 +170,7 @@ namespace MooncastleEditor.GameProject
             {
                 ErrorMessage = "Project name should not include invalid characters.";
             }
-            else if (string.IsNullOrWhiteSpace(ProjectPath))
+            else if (string.IsNullOrEmpty(ProjectPath))
             {
                 ErrorMessage = "Select a valid path for your project.";
             }
@@ -200,12 +193,14 @@ namespace MooncastleEditor.GameProject
 
         public string CreateProject(ProjectTemplate template)
         {
-            IsProjectPathValid();
-
-            if (IsValid != true)
+            if (!IsProjectPathValid())
             {
                 return string.Empty;
             }
+
+            ProjectName = ProjectName.Trim();
+            ProjectPath = ProjectPath.Trim();
+
             if (Path.EndsInDirectorySeparator(ProjectPath) != true)
             {
                 ProjectPath += Path.DirectorySeparatorChar;
@@ -283,7 +278,8 @@ namespace MooncastleEditor.GameProject
 
             try
             {
-                var templates = Directory.GetFiles(_templatePath, "template.xml", SearchOption.AllDirectories);
+                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @".\Resources\ProjectTemplates\");
+                var templates = Directory.GetFiles(templatesPath, "template.xml", SearchOption.AllDirectories);
 
                 Debug.Assert(templates.Any());
 

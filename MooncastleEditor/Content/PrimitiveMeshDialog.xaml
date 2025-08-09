@@ -188,6 +188,162 @@
                     Content="Save" />
             </StackPanel>
             <!--  CUBE SETTINGS  -->
+            <StackPanel Background="{DynamicResource Editor.Window.GrayBrush3}">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedItem, ElementName=primTypeComboBox}" Value="{x:Static local:PrimitiveMeshType.Cube}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush6}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="X" />
+                                <Slider
+                                    x:Name="xSliderCube"
+                                    HorizontalAlignment="Stretch"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    TickFrequency="1"
+                                    TickPlacement="BottomRight"
+                                    ValueChanged="OnSlider_ValueChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Y" />
+                                <Slider
+                                    x:Name="ySliderCube"
+                                    HorizontalAlignment="Stretch"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    TickFrequency="1"
+                                    TickPlacement="BottomRight"
+                                    ValueChanged="OnSlider_ValueChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Z" />
+                                <Slider
+                                    x:Name="zSliderCube"
+                                    HorizontalAlignment="Stretch"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    TickFrequency="1"
+                                    TickPlacement="BottomRight"
+                                    ValueChanged="OnSlider_ValueChanged" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label
+                        Margin="20,-3,0,0"
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource Editor.Window.GrayBrush3}"
+                        Content="Segments"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush6}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <StackPanel Margin="5,15,5,5">
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="X" />
+                                <TextBox
+                                    x:Name="xTextBoxCube"
+                                    Text="1"
+                                    TextChanged="OnTextBox_TextChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="5,0">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Y" />
+                                <TextBox
+                                    x:Name="yTextBoxCube"
+                                    Text="1"
+                                    TextChanged="OnTextBox_TextChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock
+                                    Width="20"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Text="Z" />
+                                <TextBox
+                                    x:Name="zTextBoxCube"
+                                    Text="1"
+                                    TextChanged="OnTextBox_TextChanged" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label
+                        Margin="20,-3,0,0"
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource Editor.Window.GrayBrush3}"
+                        Content="Size"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
+                <Grid Margin="0,5">
+                    <Border
+                        Margin="5"
+                        BorderBrush="{DynamicResource Editor.Window.GrayBrush6}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                        <TextBox
+                            x:Name="lodTextBoxCube"
+                            Margin="30,20,10,10"
+                            Text="1"
+                            TextChanged="OnTextBox_TextChanged" />
+                    </Border>
+                    <Label
+                        Margin="20,-3,0,0"
+                        Padding="5,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource Editor.Window.GrayBrush3}"
+                        Content="LOD"
+                        Foreground="{DynamicResource Editor.FontBrush}" />
+                </Grid>
+                <Button
+                    Width="80"
+                    Margin="5,0"
+                    VerticalAlignment="Bottom"
+                    Click="OnSave_Button_Click"
+                    Content="Save" />
+            </StackPanel>
             <!--  UVSPHERE SETTINGS  -->
             <StackPanel Background="{DynamicResource Editor.Window.GrayBrush3}">
                 <StackPanel.Style>

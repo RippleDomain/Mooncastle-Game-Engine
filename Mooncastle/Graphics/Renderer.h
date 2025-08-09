@@ -42,7 +42,7 @@ namespace mooncastle::graphics
         mooncastle::graphics::surface  surface{};
     };
 
-	struct directionalLightParameters {};
+	struct directionalLightParameters{};
 
 	struct pointLightParameters
 	{
@@ -61,6 +61,13 @@ namespace mooncastle::graphics
 		f32      penumbra;
 	};
 
+	struct ambientParams
+	{
+		id::idType diffuseTextureID;
+		id::idType specularTextureID;
+		id::idType brdfLUTTextureID;
+	};
+
 	struct lightInitInfo
 	{
 		u64								lightSetKey{ 0 };
@@ -74,6 +81,7 @@ namespace mooncastle::graphics
 			directionalLightParameters	directionalParams;
 			pointLightParameters		pointParams;
 			spotLightParameters			spotParams;
+			ambientParams               ambientParams;
 		};
 
 		bool							isEnabled{ true };
@@ -147,8 +155,8 @@ namespace mooncastle::graphics
 			entityId = id;
 			type = camera::perspective;
 			up = { 0.0f, 1.0f, 0.0f };
-			nearZ = 0.01f;
-			farZ = 1000.0f;
+			nearZ = 0.1f;
+			farZ = 100.0f;
 			fieldOfView = 0.25f;
 			aspectRatio = 16.0f / 9.0f;
 		}

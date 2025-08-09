@@ -1,16 +1,9 @@
 ﻿using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
 
 namespace MooncastleEditor.Components
 {

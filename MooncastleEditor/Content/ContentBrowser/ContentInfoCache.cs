@@ -1,10 +1,6 @@
-﻿using MooncastleEditor.Content;
-using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
+﻿using MooncastleEditor.Utilities;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace MooncastleEditor.Content
 {

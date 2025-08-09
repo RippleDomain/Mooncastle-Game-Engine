@@ -32,46 +32,6 @@ bool ConeInsidePlane(Cone cone, Plane plane)
     return PointInsidePlane(cone.Tip, plane) && PointInsidePlane(Q, plane);
 }
 
-#if !USE_BOUNDING_SPHERES
-//Check to see if a light is partially contained within the frustum.
-bool SphereInsideFrustum(Sphere sphere, Frustum frustum, float zNear, float zFar)
-{
-    //First check depth.
-    //Here, the view vector points in the -Z axis so the far depth value will be approaching -infinity.
-    return !(sphere.Center.z - sphere.Radius > zNear || sphere.Center.z + sphere.Radius < zFar ||
-             SphereInsidePlane(sphere, frustum.Planes[0]) ||
-             SphereInsidePlane(sphere, frustum.Planes[1]) ||
-             SphereInsidePlane(sphere, frustum.Planes[2]) ||
-             SphereInsidePlane(sphere, frustum.Planes[3]));
-}
-
-bool ConeInsideFrustum(Cone cone, Frustum frustum, float zNear, float zFar)
-{
-    bool result = true;
-
-    Plane nearPlane = { float3(0, 0, -1), -zNear };
-    Plane farPlane = { float3(0, 0, 1), zFar };
-
-    //First check the near and far clipping planes.
-    if (ConeInsidePlane(cone, nearPlane) || ConeInsidePlane(cone, farPlane))
-    {
-        result = false;
-    }
-
-    //Then check frustum planes/
-    for (int i = 0; i < 4 && result; i++)
-    {
-        if (ConeInsidePlane(cone, frustum.Planes[i]))
-        {
-            result = false;
-        }
-    }
-
-    return result;
-}
-
-#endif
-
 //Compute a plane from 3 non-collinear points that form a triangle.
 //This equation assumes a right-handed coordinate system to determine the direction of the plane normal.
 Plane ComputePlane(float3 p0, float3 p1, float3 p2)

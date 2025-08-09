@@ -12,6 +12,7 @@ namespace mooncastle::tools
 {
     bool isNormalMap(const Image *const image);
 
+    HRESULT brdfIntegrationLUT(ID3D11Device* device, u32 sampleCount, ScratchImage& brdfLUT);
     HRESULT prefilterSpecular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredSpecular);
     HRESULT prefilterDiffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredDiffuse);
     HRESULT equirectangularToCubemap(ID3D11Device* device, const Image* envMaps, u32 envMapCount, u32 cubemapSize,
@@ -747,16 +748,14 @@ namespace mooncastle::tools
 
             constexpr u32 sampleCount{ 1024 };
 
-            runOnGPU([&](ID3D11Device* device)
-            {
-                hr = filterType == iblFilter::diffuse ?
-                    prefilterDiffuse(device, cubemaps, sampleCount, cubemaps) :
-                    prefilterSpecular(device, cubemaps, sampleCount, cubemaps);
+            if (!runOnGPU([&](ID3D11Device* device)
+                {
+                    hr = filterType == iblFilter::diffuse ?
+                        prefilterDiffuse(device, cubemaps, sampleCount, cubemaps) :
+                        prefilterSpecular(device, cubemaps, sampleCount, cubemaps);
 
-                return SUCCEEDED(hr);
-            });
-
-            if (FAILED(hr))
+                    return SUCCEEDED(hr);
+                }))
             {
                 info.importError = importError::unknown;
                 return;
@@ -805,6 +804,30 @@ namespace mooncastle::tools
     EDITOR_INTERFACE void PrefilterSpecularIBL(textureData *const data)
     {
         prefilterIBL(data, iblFilter::specular);
+    }
+
+    EDITOR_INTERFACE void ComputeBRDFIntegrationLUT(textureData *const data)
+    {
+        assert(data);
+
+        constexpr u32 sampleCount{ 1024 };
+        HRESULT hr{ S_OK };
+        ScratchImage brdfLUT{};
+
+        if (!runOnGPU([&](ID3D11Device* device)
+            {
+                hr = brdfIntegrationLUT(device, sampleCount, brdfLUT);
+
+                return SUCCEEDED(hr);
+            }))
+        {
+            data->info.importError = importError::unknown;
+
+            return;
+        }
+
+        copySubresources(brdfLUT, data);
+        textureInfoFromMetaData(brdfLUT.GetMetadata(), data->info);
     }
 
     EDITOR_INTERFACE void Decompress(textureData *const data)

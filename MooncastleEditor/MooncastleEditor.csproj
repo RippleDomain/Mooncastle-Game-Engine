@@ -58,4 +58,12 @@
     <PackageReference Include="envdte80" Version="17.14.40260" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
+	</ItemGroup>
+
 </Project>

@@ -1,6 +1,7 @@
 #include "D3D12Light.h"
 #include "Shaders/SharedTypes.h"
 #include "D3D12Core.h"
+#include "D3D12Content.h"
 #include "EngineAPI/GameEntity.h"
 #include "Components/Transform.h"
 
@@ -75,11 +76,29 @@ namespace mooncastle::graphics::d3D12::light
 
                     return graphics::light{ id, info.lightSetKey };
                 }
+                else if (info.type == graphics::light::ambient)
+                {
+                    static_assert(sizeof(graphics::ambientParams) / sizeof(id::idType) == 3);
+
+                    u32 indices[3]{};
+                    content::texture::getDescriptorIndices(&info.ambientParams.diffuseTextureID, 3, &indices[0]);
+
+                    assert(!id::isValid(ambientLightID) && ambientLight.DiffuseSRVIndex == u32_invalid_id);
+
+                    ambientLight.Intensity = info.intensity;
+                    ambientLight.DiffuseSRVIndex = indices[0];
+                    ambientLight.SpecularSRVIndex = indices[1];
+                    ambientLight.BrdfLutSRVIndex = indices[2];
+
+                    lightOwner owner{ gameEntity::entityId{ info.entityID }, u32_invalid_id, info.type, info.isEnabled };
+                    ambientLightID = lightId{ owners.add(owner) };
+                    return graphics::light{ ambientLightID, info.lightSetKey };
+                }
                 else
                 {
                     u32 index{ u32_invalid_id };
 
-                    // Try to find an empty slot
+                    //Tries to find an empty slot.
                     for (u32 i{ enabledLightCount }; i < cullableOwners.size(); ++i)
                     {
                         if (!id::isValid(cullableOwners[i]))
@@ -130,6 +149,13 @@ namespace mooncastle::graphics::d3D12::light
                 {
                     nonCullableOwners[owner.dataIndex] = lightId{ id::invalidId };
                 }
+                else if (owner.type == graphics::light::ambient)
+                {
+                    assert(id == ambientLightID);
+
+                    ambientLight = { -1, u32_invalid_id, u32_invalid_id, u32_invalid_id };
+                    ambientLightID = lightId{ id::invalidId };
+                }
                 else
                 {
                     //Cullable lights.
@@ -177,7 +203,7 @@ namespace mooncastle::graphics::d3D12::light
             {
                 owners[id].isEnabled = isEnabled;
 
-                if (owners[id].type == graphics::light::directional)
+                if (owners[id].type == graphics::light::directional || owners[id].type == graphics::light::ambient)
                 {
                     return;
                 }
@@ -202,6 +228,7 @@ namespace mooncastle::graphics::d3D12::light
                 else if (count > 0)
                 {
                     const u32 last{ count - 1 };
+
                     if (dataIndex < last)
                     {
                         swapCullableLights(dataIndex, last);
@@ -225,6 +252,10 @@ namespace mooncastle::graphics::d3D12::light
                 {
                     assert(index < nonCullableLights.size());
                     nonCullableLights[index].Intensity = intensity;
+                }
+                else if (owner.type == graphics::light::ambient)
+                {
+                    ambientLight.Intensity = intensity;
                 }
                 else
                 {
@@ -285,10 +316,7 @@ namespace mooncastle::graphics::d3D12::light
 
                 cullableLights[index].Range = range;
                 cullingInfo[index].Range = range;
-
-#if USE_BOUNDING_SPHERES
                 cullingInfo[index].CosPenumbra = -1.f;
-#endif
 
                 boundingSpheres[index].Radius = range;
                 makeDirty(index);
@@ -296,12 +324,7 @@ namespace mooncastle::graphics::d3D12::light
                 if (owner.type == graphics::light::spot)
                 {
                     calculateConeBoundingSphere(cullableLights[index], boundingSpheres[index]);
-
-#if USE_BOUNDING_SPHERES
                     cullingInfo[index].CosPenumbra = cullableLights[index].CosPenumbra;
-#else
-                    cullingInfo[index].ConeRadius = calculateConeRadius(range, cullableLights[index].CosPenumbra);
-#endif
                 }
             }
 
@@ -336,12 +359,7 @@ namespace mooncastle::graphics::d3D12::light
                 penumbra = math::clamp(penumbra, getUmbra(id), math::pi);
                 cullableLights[index].CosPenumbra = DirectX::XMScalarCos(penumbra * 0.5f);
 				calculateConeBoundingSphere(cullableLights[index], boundingSpheres[index]);
-
-#if USE_BOUNDING_SPHERES
                 cullingInfo[index].CosPenumbra = cullableLights[index].CosPenumbra;
-#else
-                cullingInfo[index].ConeRadius = calculateConeRadius(getRange(id), cullableLights[index].CosPenumbra);
-#endif
                 makeDirty(index);
             }
 
@@ -451,7 +469,20 @@ namespace mooncastle::graphics::d3D12::light
                 {
                     if (id::isValid(id) && owners[id].isEnabled) ++count;
                 }
+
                 return count;
+            }
+
+            CONSTEXPR hlsl::AmbientLightParameters getAmbientLight()
+            {
+                if (id::isValid(ambientLightID) && owners[ambientLightID].isEnabled)
+                {
+                    assert(owners[ambientLightID].type == graphics::light::ambient);
+
+                    return ambientLight;
+                }
+
+                return { -1.f, u32_invalid_id, u32_invalid_id, u32_invalid_id };
             }
 
             CONSTEXPR void setNonCullableLights(hlsl::DirectionalLightParameters* const lights, [[maybe_unused]] u32 bufferSize) const
@@ -512,12 +543,6 @@ namespace mooncastle::graphics::d3D12::light
                 }
             }
 
-            f32 calculateConeRadius(f32 range, f32 cosPenumbra)
-            {
-                const f32 sinPenumbra{ sqrt(1.f - cosPenumbra * cosPenumbra) };
-                return sinPenumbra * range;
-            }
-
             void updateTransform(u32 index)
             {
                 const gameEntity::entity entity{ gameEntity::entityId{cullableEntityIDs[index]} };
@@ -542,11 +567,6 @@ namespace mooncastle::graphics::d3D12::light
                 assert(info.type != light::directional && index < cullableLights.size());
 
                 hlsl::LightParameters& params{ cullableLights[index] };
-
-#if !USE_BOUNDING_SPHERES
-                params.Type = info.type;
-                assert(params.Type < light::count);
-#endif
 
                 params.Color = info.color;
                 params.Intensity = info.intensity;
@@ -577,20 +597,11 @@ namespace mooncastle::graphics::d3D12::light
                 const hlsl::LightParameters& params{ cullableLights[index] };
                 hlsl::LightCullingLightInfo& newCullingInfo{ cullingInfo[index] };
                 newCullingInfo.Range = boundingSpheres[index].Radius = params.Range;
-
-#if USE_BOUNDING_SPHERES
                 newCullingInfo.CosPenumbra = -1.f;
-#else
-                newCullingInfo.Type = params.Type;
-#endif
 
                 if (info.type == light::spot)
                 {
-#if USE_BOUNDING_SPHERES
                     newCullingInfo.CosPenumbra = params.CosPenumbra;
-#else
-                    newCullingInfo.ConeRadius = calculateConeRadius(params.Range, params.CosPenumbra);
-#endif
                 }
             }
 
@@ -679,6 +690,9 @@ namespace mooncastle::graphics::d3D12::light
 			utl::vector<u8>								    transformFlagsCache;    
             u32                                             enabledLightCount{ 0 };
             u8                                              isSomethingDirty{ 0 };
+
+            hlsl::AmbientLightParameters                    ambientLight{ -1.f, u32_invalid_id, u32_invalid_id, u32_invalid_id };
+            lightId                                         ambientLightID{ id::invalidId };
 
             friend class                                    D3D12LightBuffer;
         };
@@ -1088,6 +1102,13 @@ namespace mooncastle::graphics::d3D12::light
     {
         const D3D12LightBuffer& lightBuffer{ lightBuffers[frameIndex] };
         return lightBuffer.getBoundingSpheres();
+    }
+
+    hlsl::AmbientLightParameters getAmbientLight(u64 lightSetKey)
+    {
+        assert(lightSets.count(lightSetKey));
+                    
+        return lightSets[lightSetKey].getAmbientLight();
     }
 
     u32 getNonCullableLightCount(u64 lightSetKey)

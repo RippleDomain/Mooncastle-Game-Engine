@@ -35,6 +35,12 @@ float Pow4(float x)
     return xx * xx;
 }
 
+float Pow5(float x)
+{
+    float xx = x * x;
+    return xx * xx * x;
+}
+
 float3 GetSampleDirectionEquirectangular(uint face, float x, float y)
 {
     float3 direction[6] = {
@@ -73,6 +79,14 @@ float2 DirectionToEquirectangularUV(float3 dir)
     return float2(u, v);
 }
 
+float V_SmithGGXCorrelated(float NoV, float NoL, float a)
+{
+    float GGXL = NoV * sqrt((-NoL * a + NoL) * NoL + a);
+    float GGXV = NoL * sqrt((-NoV * a + NoV) * NoV + a);
+    
+    return 0.5f * rcp(GGXV + GGXL);
+}
+
 float D_GGX(float NoH, float a)
 {
     float d = (NoH * a - NoH) * NoH + 1.f;
@@ -102,18 +116,53 @@ float3 ImportanceSampleGGX(float2 E, float a)
     return H;
 }
 
-float3 PrefilterEnvMap(float roughness, float3 R)
+float2 IntegrateBRDF(float NoV, float roughness)
+{
+    float a4 = max(Pow4(roughness), 0.00001f);
+    float3 V;
+    
+    V.x = sqrt(1.0f - NoV * NoV); //SIN
+    V.y = 0.f;
+    V.z = NoV; //COS
+    
+    float A = 0.f;
+    float B = 0.f;
+    uint NumSamples = gSampleCount;
+
+    for (uint i = 0; i < NumSamples; i++)
+    {
+        float2 Xi = Hammersley(i, NumSamples);
+        float3 H = ImportanceSampleGGX(Xi, a4);
+        float3 L = 2.f * dot(V, H) * H - V;
+
+        float NoL = saturate(L.z);
+        float NoH = saturate(H.z);
+        float VoH = saturate(dot(V, H));
+
+        if (NoL > 0.f)
+        {
+            float G = V_SmithGGXCorrelated(NoV, NoL, a4);
+            float G_Vis = 4 * NoL * G * VoH / NoH;
+            float Fc = Pow5(1.f - VoH);
+            A += (1.f - Fc) * G_Vis;
+            B += Fc * G_Vis;
+        }
+    }
+    
+    return float2(A, B) / NumSamples;
+}
+
+float3 PrefilterEnvMap(float roughness, float3 N)
 {
     float a4 = Pow4(roughness);
     
-    float3 N = R;
-    float3 V = R;
+    float3 V = N;
 
     float3 PrefilteredColor = 0;
     float TotalWeight = 0;
     uint NumSamples = gSampleCount;
     float resolution = gCubeMapInSize; //Resolution of the source cubemap.
-    float invSaTexel = (6.f * resolution * resolution) * (1.f / 4.f * PI);
+    float invOmegaP = (6.f * resolution * resolution) * PI * 0.25f;
     float mipLevel = 0;
     float3x3 tangentFrame = GetTangentFrame(N);
 
@@ -126,18 +175,12 @@ float3 PrefilterEnvMap(float roughness, float3 R)
 
         if (NoL > 0)
         {
-#if 1       
-            
-            float NoH = max(dot(N, H), 0.f);
-            float HoV = max(dot(H, V), 0.f);
-            float D = D_GGX(NoH, a4);
-            float pdf = D * NoH / (4.f * HoV + 0.0001f);
-            float saSample = 1.f / (float(NumSamples) * pdf + 0.0001f);
+            float NoH = saturate(dot(N, H));
+            float HoV = saturate(dot(H, V));
+            float pdf = D_GGX(NoH, a4) * 0.25f;
+            float omegaS = 1.f / (float(NumSamples) * pdf + 0.0001f);
 
-            mipLevel = roughness == 0.f ? 0.f : 0.5f * log2(saSample * invSaTexel);
-            
-#endif
-
+            mipLevel = roughness == 0.f ? 0.f : 0.5f * log2(omegaS * invOmegaP);
             PrefilteredColor += CubeMapIn.SampleLevel(LinearSampler, L, mipLevel).rgb * NoL;
             TotalWeight += NoL;
         }
@@ -196,7 +239,7 @@ float3 SampleHemisphereRandom(float3 normal)
         float3 transform = float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
         float3 sampleDir = mul(transform, tangentFrame);
 
-        irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb;
+        irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * cosTheta;
     }
 
     irradiance *= (1.f / float(sampleCount));
@@ -226,7 +269,7 @@ float3 SampleHemisphereBrute(float3 normal)
                 {
                     float tmp = 1.f + pos.x * pos.x + pos.y * pos.y;
                     float weight = 4.f * cosTheta / (sqrt(tmp) * tmp);
-                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * weight;
+                    irradiance += CubeMapIn.SampleLevel(LinearSampler, sampleDir, 0).rgb * weight * cosTheta;
                     sampleCount += weight;
                 }
             }
@@ -244,7 +287,10 @@ void EquirectangularToCubeMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, ui
     uint face = GroupID.z;
     uint size = gCubeMapOutSize;
 
-    if (DispatchThreadID.x >= size || DispatchThreadID.y >= size || face >= 6) return;
+    if (DispatchThreadID.x >= size || DispatchThreadID.y >= size || face >= 6)
+    {
+        return;
+    }
 
     float2 uv = (float2(DispatchThreadID.xy) + SAMPLE_OFFSET) / size;
     float2 pos = 2.f * uv - 1.f;
@@ -265,7 +311,9 @@ void PrefilterDiffuseEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
     uint size = gCubeMapOutSize;
 
     if (DispatchThreadID.x >= size || DispatchThreadID.y >= size || face >= 6)
+    {
         return;
+    }
 
     float2 uv = (float2(DispatchThreadID.xy) + SAMPLE_OFFSET) / size;
     float2 pos = 2.f * uv - 1.f;
@@ -276,6 +324,21 @@ void PrefilterDiffuseEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
     //float3 irradiance = SampleHemisphereDiscrete(sampleDirection);
 
     Output[uint3(DispatchThreadID.x, DispatchThreadID.y, face)] = float4(irradiance, 1.f);
+}
+
+[numthreads(16, 16, 1)]
+void ComputeBrdfIntegrationLutCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint size = gCubeMapOutSize;
+    
+    if (DispatchThreadID.x >= size || DispatchThreadID.y >= size)
+    {
+        return;
+    }
+
+    float2 uv = float2(DispatchThreadID.xy) / (size - 1);
+    float2 result = IntegrateBRDF(uv.x, uv.y);
+    Output[uint3(DispatchThreadID.x, DispatchThreadID.y, 0)] = float4(result, 1.f, 1.f);
 }
 
 [numthreads(16, 16, 1)]

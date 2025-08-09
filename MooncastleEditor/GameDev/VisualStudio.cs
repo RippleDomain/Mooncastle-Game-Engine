@@ -1,15 +1,9 @@
 ﻿using EnvDTE;
-using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-using System.Threading;
 
 namespace MooncastleEditor.GameDev
 {

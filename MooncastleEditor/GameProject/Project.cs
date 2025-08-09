@@ -2,18 +2,12 @@
 using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameDev;
 using MooncastleEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace MooncastleEditor.GameProject
 {
@@ -169,7 +163,7 @@ namespace MooncastleEditor.GameProject
         public void Unload()
         {
             UnloadGameCodeDll();
-            VisualStudio.CloseVisualStudio();
+            Task.Run(VisualStudio.CloseVisualStudio);
             UndoRedo.Reset();
             Logger.Clear();
             DeleteTempFolder();

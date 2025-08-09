@@ -49,6 +49,10 @@ namespace
 
 	id::idType textureIDs[textureUsage::count];
 
+	id::idType iblBRDFLUTID{ id::invalidId };
+	id::idType iblDiffuseID{ id::invalidId };
+	id::idType iblSpecularID{ id::invalidId };
+
 	id::idType vertexShaderID{ id::invalidId };
 	id::idType pixelShaderID{ id::invalidId };
 	id::idType texturedPixelShaderID{ id::invalidId };
@@ -58,6 +62,8 @@ namespace
 	//id::idType botMaterialID{ id::invalidId };
 
 	id::idType pbrMaterialIDs[12];
+
+	graphics::light iblLight{};
 
 	[[nodiscard]] id::idType loadAsset(const char* path, content::assetType::type type)
 	{
@@ -177,6 +183,18 @@ namespace
 		//botMaterialID = content::createResource(&info, content::assetType::material);
 	}
 
+	void createIBLLight()
+	{
+		graphics::lightInitInfo info{};
+		info.entityID = 0;
+		info.type = graphics::light::ambient;
+		info.ambientParams.brdfLUTTextureID = iblBRDFLUTID;
+		info.ambientParams.diffuseTextureID = iblDiffuseID;
+		info.ambientParams.specularTextureID = iblSpecularID;
+
+		iblLight = graphics::createLight(info);
+	}
+
 	void removeModel(id::idType modelID)
 	{
 		if (id::isValid(modelID))
@@ -198,6 +216,7 @@ void createRenderItems()
 
 	std::thread threads[]
 	{
+		//Textures.
 		std::thread{ [] { textureIDs[textureUsage::ambientOcclusion] = loadTexture("..\\..\\x64\\excaliburAO.texture"); }},
 		std::thread{ [] { textureIDs[textureUsage::baseColor] = loadTexture("..\\..\\x64\\excaliburBaseColor.texture"); }},
 		std::thread{ [] { textureIDs[textureUsage::emissive] = loadTexture("..\\..\\x64\\excaliburEmissive.texture"); }},
@@ -211,6 +230,11 @@ void createRenderItems()
 		std::thread{ [] { textureIDs[textureUsage::metalRough] = loadTexture("..\\..\\x64\\botMetalRough.texture"); }},
 		std::thread{ [] { textureIDs[textureUsage::normal] = loadTexture("..\\..\\x64\\botNormal.texture"); }},*/
 
+		std::thread{ [] { iblBRDFLUTID = loadTexture("..\\..\\x64\\IBL\\brdfLUT.texture"); } },
+		std::thread{ [] { iblDiffuseID = loadTexture("..\\..\\x64\\IBL\\Set1\\diffuse.texture"); } },
+		std::thread{ [] { iblSpecularID = loadTexture("..\\..\\x64\\IBL\\Set1\\specular.texture"); } },
+
+		//Models.
 		std::thread{ [] { labModelID = loadModel("..\\..\\x64\\labModel.model"); } },
 		std::thread{ [] { fanModelID = loadModel("..\\..\\x64\\fanModel.model"); } },
 		std::thread{ [] { planeModelID = loadModel("..\\..\\x64\\planeModel.model"); } },
@@ -224,6 +248,8 @@ void createRenderItems()
 	{
 		thread.join();
 	}
+
+	createIBLLight();
 
 	createMaterial();
 	id::idType materials[]{ defaultMaterialID };
@@ -290,6 +316,11 @@ void destroyRenderItems()
 	//removeModel(botModelID);
 	removeModel(sphereModelID);
 
+	if (iblLight.isValid())
+	{
+		graphics::removeLight(iblLight.getID(), 0);
+	}
+
 	//Remove materials.
 	if (id::isValid(defaultMaterialID))
 	{
@@ -310,6 +341,21 @@ void destroyRenderItems()
 		{
 			content::destroyResource(id, content::assetType::material);
 		}
+	}
+
+	if (id::isValid(iblBRDFLUTID))
+	{
+		content::destroyResource(iblBRDFLUTID, content::assetType::texture);
+	}
+
+	if (id::isValid(iblDiffuseID))
+	{
+		content::destroyResource(iblDiffuseID, content::assetType::texture);
+	}
+
+	if (id::isValid(iblSpecularID))
+	{
+		content::destroyResource(iblSpecularID, content::assetType::texture);
 	}
 
 	//Remove textures.
