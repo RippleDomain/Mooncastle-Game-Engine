@@ -1,5 +1,4 @@
 #include "TestRenderer.h"
-#include "ShaderCompilation.h"
 #include "Platform/PlatformTypes.h"
 #include "Platform/Platform.h"
 #include "Components/Entity.h"
@@ -8,7 +7,8 @@
 #include "Components/Geometry.h"
 #include "Input/Input.h"
 #include "Graphics/Renderer.h"
-#include "Graphics/DirectX12/D3D12Core.h"
+#include "../EngineDLL/ShaderCompilation.h"
+#include "../EngineDLL/ShaderCompilation.cpp"
 #include "Content/ContentToEngine.h"
 
 #include <filesystem>
@@ -32,10 +32,10 @@ void bufferTestWorker()
 {
 	while (!end)
 	{
-		auto* resource = graphics::d3D12::d3DX::createBuffer((u32)emptyBuffer.size(), emptyBuffer.data());
+		//auto* resource = graphics::d3D12::d3DX::createBuffer((u32)emptyBuffer.size(), emptyBuffer.data());
 
 		//We can also use core::release(resource) since we're not using the buffer for rendering.
-		graphics::d3D12::core::deferredRelease(resource);
+		//graphics::d3D12::core::deferredRelease(resource);
 	}
 }
 

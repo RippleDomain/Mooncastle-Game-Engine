@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugEditor|Win32">
       <Configuration>DebugEditor</Configuration>
@@ -139,9 +140,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|Win32'">
@@ -159,9 +159,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -181,9 +180,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|Win32'">
@@ -203,9 +201,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -223,9 +220,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
@@ -243,9 +239,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -265,9 +260,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
@@ -287,9 +281,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$(SolutionDir)GetDXC.ps1" "$(SolutionDir)packages\DirectXShaderCompiler"
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxcompiler.dll" "$(OutDir)."
-"%SystemRoot%\System32\xcopy.exe" /Y /I /D "$(SolutionDir)packages\DirectXShaderCompiler\bin\x64\dxil.dll" "$(OutDir)."</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -297,17 +290,26 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="RenderItem.cpp" />
     <ClCompile Include="Scripts.cpp" />
-    <ClCompile Include="ShaderCompilation.cpp" />
     <ClCompile Include="TestRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ShaderCompilation.h" />
     <ClInclude Include="Test.h" />
     <ClInclude Include="TestEntityComponents.h" />
     <ClInclude Include="TestRenderer.h" />
     <ClInclude Include="TestWindow.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets'))" />
+  </Target>
 </Project>

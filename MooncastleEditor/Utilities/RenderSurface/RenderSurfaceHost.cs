@@ -16,7 +16,7 @@ namespace MooncastleEditor.Utilities
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
 
-        public int SurfaceId { get; private set; } = ID.InvalidID;
+        public int SurfaceId { get; private set; } = ID.invalidId;
 
         private void Resize(object sender, DelayEventTimerArgs e)
         {
@@ -50,7 +50,7 @@ namespace MooncastleEditor.Utilities
         protected override void DestroyWindowCore(HandleRef hwnd)
         {
             EngineAPI.RemoveRenderSurface(SurfaceId);
-            SurfaceId = ID.InvalidID;
+            SurfaceId = ID.invalidId;
             renderWindowHandle = IntPtr.Zero;
         }
     }

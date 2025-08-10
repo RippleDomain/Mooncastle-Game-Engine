@@ -763,6 +763,7 @@ namespace mooncastle::graphics::d3D12::light
                             {
                                 assert(i * sizeof(hlsl::LightParameters) < neededLightBufferSizes);
                                 assert(i * sizeof(hlsl::LightCullingLightInfo) < neededCullingBufferSizes);
+                                assert(i * sizeof(hlsl::Sphere) < neededBoundingSphereBufferSize);
 
                                 u8 *const lightDST{buffers[lightBuffer::cullableLight].cpuAddress + (i * sizeof(hlsl::LightParameters)) };
                                 u8 *const cullingDST{buffers[lightBuffer::cullingInfo].cpuAddress + (i * sizeof(hlsl::LightCullingLightInfo)) };

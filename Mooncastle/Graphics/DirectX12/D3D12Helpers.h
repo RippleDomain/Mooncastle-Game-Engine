@@ -253,7 +253,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,               //AddressW
 			0.f,                                            //MipLODBias
 			1,                                              //MaxAnisotropy
-			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			D3D12_COMPARISON_FUNC_NONE,						//ComparisonFunc
 			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
 			0.f,					                        //MinLOD
 			D3D12_FLOAT32_MAX,								//MaxLOD
@@ -270,7 +270,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,               //AddressW
 			0.f,                                            //MipLODBias
 			1,                                              //MaxAnisotropy
-			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			D3D12_COMPARISON_FUNC_NONE,						//ComparisonFunc
 			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
 			0.f,					                        //MinLOD
 			D3D12_FLOAT32_MAX,								//MaxLOD
@@ -286,8 +286,8 @@ namespace mooncastle::graphics::d3D12::d3DX
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,               //AddressV
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,               //AddressW
 			0.f,                                            //MipLODBias
-			1,                                              //MaxAnisotropy
-			D3D12_COMPARISON_FUNC_ALWAYS,                   //ComparisonFunc
+			16,                                             //MaxAnisotropy
+			D3D12_COMPARISON_FUNC_NONE,						//ComparisonFunc
 			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,         //BorderColor
 			0.f,					                        //MinLOD
 			D3D12_FLOAT32_MAX,								//MaxLOD

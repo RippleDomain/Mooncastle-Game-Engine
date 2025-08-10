@@ -9,10 +9,9 @@ namespace mooncastle::graphics::d3D12::shaders
 		enum id : u32
 		{
 			fullscreenTriangleVS = 0,
-			fillColorPS = 1,
-			postProcessPS = 2,
-			gridFrustumsCS = 3,
-			lightCullingCS = 4,
+			postProcessPS,
+			gridFrustumsCS,
+			lightCullingCS,
 			count
 		};
 	};

@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿global using IdType = System.Int32;
+
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Threading;
@@ -7,8 +9,8 @@ namespace MooncastleEditor.Utilities
 {
     public static class ID
     {
-        public static int InvalidID = -1;
-        public static bool isValid(int id) => id != InvalidID;
+        public static IdType invalidId => -1;
+        public static bool isValid(IdType id) => id != invalidId;
     }
 
     public static class MathUtil

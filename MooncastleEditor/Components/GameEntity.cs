@@ -12,7 +12,7 @@ namespace MooncastleEditor.Components
     [KnownType(typeof(Script))]
     class GameEntity : ViewModelBase
     {
-        private int _entityId = ID.InvalidID;
+        private int _entityId = ID.invalidId;
         public int EntityId
         {
             get => _entityId;
@@ -44,7 +44,7 @@ namespace MooncastleEditor.Components
                     else if (ID.isValid(EntityId))
                     {
                         EngineAPI.EntityAPI.RemoveGameEntity(this);
-                        EntityId = ID.InvalidID;
+                        EntityId = ID.invalidId;
                     }
 
                     OnPropertyChanged(nameof(IsActive));

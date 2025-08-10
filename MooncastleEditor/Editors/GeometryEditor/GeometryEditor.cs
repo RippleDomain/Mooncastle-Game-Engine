@@ -224,10 +224,10 @@ namespace MooncastleEditor.Editors
                     }
                 }
 
-                if (mesh.ElementType.HasFlag(ElementsType.Normals))
+                if (mesh.ElementType.HasFlag(ElementsType.StaticNormal))
                 {
                     var tSpaceOffset = 0;
-                    if (mesh.ElementType.HasFlag(ElementsType.Joints)) tSpaceOffset = sizeof(short) * 4; //Skips joint indices.
+                    if (mesh.ElementType.HasFlag(ElementsType.Skeletal)) tSpaceOffset = sizeof(short) * 4; //Skips joint indices.
 
                     using (var reader = new BinaryReader(new MemoryStream(mesh.Elements)))
                     {
@@ -246,7 +246,7 @@ namespace MooncastleEditor.Editors
                             avgNormal += normal;
 
                             //Read UVs.
-                            if (mesh.ElementType.HasFlag(ElementsType.TSpace))
+                            if (mesh.ElementType.HasFlag(ElementsType.StaticNormalTexture))
                             {
                                 reader.BaseStream.Position += sizeof(short) * 2; //Skip tangents.
                                 var u = reader.ReadSingle();
@@ -254,7 +254,7 @@ namespace MooncastleEditor.Editors
                                 vertexData.UVs.Add(new Point(u, v));
                             }
 
-                            if (mesh.ElementType.HasFlag(ElementsType.Joints) && mesh.ElementType.HasFlag(ElementsType.Colors))
+                            if (mesh.ElementType.HasFlag(ElementsType.SkeletalColor))
                             {
                                 reader.BaseStream.Position += 4; //Skip colors.
                             }

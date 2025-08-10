@@ -4,7 +4,7 @@
 #include "Graphics/Renderer.h"
 #include "Components/Entity.h"
 #include "Components/Geometry.h"
-#include "ShaderCompilation.h"
+#include "../EngineDLL/ShaderCompilation.h"
 #include "Test.h"
 #include "../ContentTools/Geometry.h"
 
@@ -95,7 +95,7 @@ namespace
 		shaderFileInfo info{};
 		info.fileName = "TestShader.hlsl";
 		info.function = "TestShaderVS";
-		info.type = shaderType::vertex;
+		info.type = graphics::shaderType::vertex;
 
 		const char* shaderPath{ "..\\..\\EngineTest\\" };
 
@@ -122,7 +122,7 @@ namespace
 		extraArgs.clear();
 
 		info.function = "TestShaderPS";
-		info.type = shaderType::pixel;
+		info.type = graphics::shaderType::pixel;
 
 		utl::vector<std::unique_ptr<u8[]>> pixelShaders;
 
@@ -151,8 +151,8 @@ namespace
 
 		graphics::materialInitInfo info{};
 
-		info.shaderIDs[shaderType::vertex] = vertexShaderID;
-		info.shaderIDs[shaderType::pixel] = pixelShaderID;
+		info.shaderIDs[graphics::shaderType::vertex] = vertexShaderID;
+		info.shaderIDs[graphics::shaderType::pixel] = pixelShaderID;
 		info.type = graphics::materialType::opaque;
 
 		defaultMaterialID = content::createResource(&info, content::assetType::material);
@@ -175,7 +175,7 @@ namespace
 			pbrMaterialIDs[i] = content::createResource(&info, content::assetType::material);
 		}
 
-		info.shaderIDs[shaderType::pixel] = texturedPixelShaderID;
+		info.shaderIDs[graphics::shaderType::pixel] = texturedPixelShaderID;
 		info.textureCount = textureUsage::count;
 		info.textureIDs = &textureIDs[0];
 
