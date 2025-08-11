@@ -72,14 +72,14 @@ namespace MooncastleEditor.GameProject
     public class ProjectDataList
     {
         [DataMember]
-        public List<ProjectData> Projects { get; set; } = new List<ProjectData>();
+        public List<ProjectData> Projects { get; set; } = [];
     }
 
     class OpenProject : ViewModelBase
     {
         private static readonly string _appDataPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\MooncastleEditor\";
         private static readonly string _projectDataPath;
-        private static ObservableCollection<ProjectData> _projects = new();
+        private static ObservableCollection<ProjectData> _projects = [];
         public static ReadOnlyObservableCollection<ProjectData> Projects { get; }
 
         private static void ReadProjectData()

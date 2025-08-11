@@ -157,7 +157,7 @@ namespace MooncastleEditor
 
         internal static async Task<List<Asset>> ImportFilesAsync(IEnumerable<AssetProxy> proxies)
         {
-            List<Asset> assets = new();
+            List<Asset> assets = [];
 
             try
             {

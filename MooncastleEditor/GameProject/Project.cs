@@ -1,4 +1,5 @@
 ﻿using MooncastleEditor.Components;
+using MooncastleEditor.Content;
 using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameDev;
 using MooncastleEditor.Utilities;
@@ -58,7 +59,7 @@ namespace MooncastleEditor.GameProject
         }
 
         [DataMember(Name = nameof(Scenes))]
-        private readonly ObservableCollection<Scene> _scenes = new();
+        private readonly ObservableCollection<Scene> _scenes = [];
         public ReadOnlyObservableCollection<Scene> Scenes { get; private set; }
 
         private Scene _sceneOnScreen;
@@ -164,6 +165,7 @@ namespace MooncastleEditor.GameProject
         {
             UnloadGameCodeDll();
             Task.Run(VisualStudio.CloseVisualStudio);
+            AssetRegistry.Save();
             UndoRedo.Reset();
             Logger.Clear();
             DeleteTempFolder();

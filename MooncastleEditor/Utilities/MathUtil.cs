@@ -75,7 +75,7 @@ namespace MooncastleEditor.Utilities
         private readonly DispatcherTimer _timer;
         private readonly TimeSpan _delay;
         private DateTime _lastEventTime = DateTime.Now;
-        private readonly List<object> _data = new();
+        private readonly List<object> _data = [];
 
         public event EventHandler<DelayEventTimerArgs> Triggered;
 
@@ -122,9 +122,9 @@ namespace MooncastleEditor.Utilities
 
     public class DataSizeToStringConverter : IValueConverter
     {
-        static readonly string[] _sizeSuffixes = { "B", "KB", "MB", "TB", "PB", "ZB", "YB" };
+        private static readonly string[] _sizeSuffixes = [ "B", "KB", "MB", "TB", "PB", "ZB", "YB" ];
 
-        static string SizeSuffix(long value, int decimalPlaces = 1)
+        private static string SizeSuffix(long value, int decimalPlaces = 1)
         {
             if (value <= 0 || decimalPlaces < 0) { return string.Empty; }
 

@@ -161,8 +161,6 @@ namespace MooncastleEditor.Content
 
             if (vm.SelectedFolder == vm.ContentFolder) goto _addCurrentDirectory;
 
-            if (vm.SelectedFolder == vm.ContentFolder) return;
-
             string[] paths = new string[3];
             string[] labels = new string[3];
 
@@ -173,7 +171,7 @@ namespace MooncastleEditor.Content
                 paths[i] = path;
                 labels[i] = path[(path.LastIndexOf(Path.DirectorySeparatorChar) + 1)..];
                 if (path == contentPath) break;
-                path = path.Substring(0, path.LastIndexOf(Path.DirectorySeparatorChar));
+                path = path[..path.LastIndexOf(Path.DirectorySeparatorChar)];
             }
 
             if (i == 3) i = 2;
@@ -193,8 +191,7 @@ namespace MooncastleEditor.Content
 
             pathStack.Children.Add(new System.Windows.Shapes.Path());
 
-            _addCurrentDirectory:
-
+        _addCurrentDirectory:
             pathStack.Children.Add(new TextBlock()
             {
                 Text = $"[ {Path.GetFileName(Path.TrimEndingDirectorySeparator(vm.SelectedFolder))} ]",
@@ -255,7 +252,7 @@ namespace MooncastleEditor.Content
             }
         }
 
-        private static IAssetEditor OpenAssetEditor(AssetInfo info)
+        internal static IAssetEditor OpenAssetEditor(AssetInfo info)
         {
             IAssetEditor editor = null;
 

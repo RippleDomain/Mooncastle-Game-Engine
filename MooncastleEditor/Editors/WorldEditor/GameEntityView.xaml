@@ -6,23 +6,26 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Editors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mooncastle="clr-namespace:MooncastleEditor"
     xmlns:vm="clr-namespace:MooncastleEditor.Components"
-    d:DataContext="{d:DesignInstance Type=vm:MSGameEntity,
-                                     IsDesignTimeCreatable=True}"
+    d:DataContext="{d:DesignInstance Type=vm:MSGameEntity}"
     d:DesignHeight="450"
     d:DesignWidth="800"
     Background="{DynamicResource Editor.Window.GrayBrush3}"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <local:NullableBooltoBoolConverter x:Key="nullableBooltoBoolConverter" />
+        <mooncastle:NullableBooltoBoolConverter x:Key="nullableBooltoBoolConverter" />
         <DataTemplate DataType="{x:Type vm:MSTransform}">
-            <local:TransformView />
+            <local:TransformComponentView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:MSScript}">
-            <local:ScriptView />
+            <local:ScriptComponentView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MSGeometry}">
+            <local:GeometryComponentView />
         </DataTemplate>
         <ContextMenu x:Key="addComponentMenu" IsOpen="{Binding Path=IsChecked, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ToggleButton}}}">
-            <MenuItem Header="Geometry" />
+            <MenuItem Click="OnAddGeometryComponent" Header="Geometry" />
             <MenuItem Header="Physics">
                 <MenuItem Header="Rigidbody" />
             </MenuItem>
@@ -76,7 +79,7 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Data="M0, 0 L0, 2 L4, 6 L8, 2 L8, 0 L4, 4 z"
-                                Fill="Black" />
+                                Fill="{DynamicResource Editor.FontBrush}" />
                         </DockPanel>
                     </ToggleButton.Content>
                 </ToggleButton>

@@ -52,7 +52,7 @@ namespace MooncastleEditor.Content
 
                 _contentWatcher.Path = contentFolder;
                 _contentWatcher.EnableRaisingEvents = true;
-                AssetRegistry.Reset(contentFolder);
+                AssetRegistry.Reset(contentFolder, projectPath);
             }
         }
 

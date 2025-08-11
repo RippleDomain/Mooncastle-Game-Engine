@@ -16,7 +16,7 @@ namespace MooncastleEditor.Content
     /// </summary>
     public partial class PrimitiveMeshDialog : Window
     {
-        private static readonly List<ImageBrush> _textures = new();
+        private static readonly List<ImageBrush> _textures = [];
 
         private void OnPrimitiveType_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePrimitive(); 
         private void OnSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdatePrimitive();

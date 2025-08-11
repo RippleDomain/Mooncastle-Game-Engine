@@ -193,6 +193,7 @@ namespace MooncastleEditor.Components
         }
 
         public List<GameEntity> SelectedEntities { get; }
+        public static MSEntity CurrentSelection { get; private set; }
 
         protected virtual bool UpdateGameEntities(string propertyName)
         {
@@ -275,9 +276,11 @@ namespace MooncastleEditor.Components
             _enableUpdates = true;
         }
 
-        protected MSEntity(List<GameEntity> entities)
+        public MSEntity(List<GameEntity> entities)
         {
             Debug.Assert(entities?.Any() == true);
+
+            CurrentSelection = this;
             Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
             SelectedEntities = entities;
             
