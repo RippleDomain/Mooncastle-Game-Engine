@@ -40,7 +40,7 @@ namespace MooncastleEditor.Content
                 CreateDefaultCube(cubeFileName);
             }
 
-            var materialFileName = $@"{defaultAssetsPath}DefaultMaterial.asset";
+            var materialFileName = $@"{defaultAssetsPath}DefaultMaterial.mcasset";
 
             if (!File.Exists(materialFileName))
             {
@@ -49,7 +49,7 @@ namespace MooncastleEditor.Content
 
             BrdfIntegrationLut = Asset.GetAssetInfo(brdfLutFileName);
             DefaultGeometry = Asset.GetAssetInfo(cubeFileName);
-            //DefaultMaterial = Asset.GetAssetInfo(mtlFileName);
+            DefaultMaterial = Asset.GetAssetInfo(materialFileName);
         }
 
         private static void ComputeBrdfIntegrationLut(string file)
@@ -112,16 +112,19 @@ namespace MooncastleEditor.Content
                 var code = string.Empty;
                 var shaderUri = ContentHelper.GetPackUri(@"Resources/MaterialEditor/DefaultMaterialShaders.hlsl", typeof(DefaultAssets));
                 var info = System.Windows.Application.GetResourceStream(shaderUri);
+
                 using (var reader = new StreamReader(info.Stream))
+                {
                     code = reader.ReadToEnd();
+                }
 
                 var vertexShaders = CompileShaderGroup(ShaderType.Vertex, code, "MainVS", vsDefines, vsKeys);
                 var pixelShaders = CompileShaderGroup(ShaderType.Pixel, code, "MainPS", psDefines, psKeys);
 
-                //var mtl = new Material() { MaterialMode = MaterialMode.Default };
-                //mtl.AddShaderGroup(vertexShaders);
-                //mtl.AddShaderGroup(pixelShaders);
-                //mtl.Save(file);
+                var mtl = new Material() { MaterialMode = MaterialMode.Default };
+                mtl.AddShaderGroup(vertexShaders);
+                mtl.AddShaderGroup(pixelShaders);
+                mtl.Save(file);
             }
             catch (Exception ex)
             {

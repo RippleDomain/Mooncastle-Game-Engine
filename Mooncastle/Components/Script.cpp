@@ -8,7 +8,7 @@ namespace mooncastle::script
 {
 	namespace
 	{
-		utl::vector<detail::script_ptr>			entityScripts;
+		utl::vector<detail::scriptPtr>			entityScripts;
 		utl::vector<id::idType>					idMapping;
 		utl::vector<id::generationType>			generations;
 		utl::deque <scriptId>					freeIds;
@@ -18,7 +18,7 @@ namespace mooncastle::script
 		std::unordered_map<id::idType, u32>     cacheMap;
 #endif
 
-		using scriptRegistery = std::unordered_map<size_t, detail::script_creator>;
+		using scriptRegistery = std::unordered_map<size_t, detail::scriptCreator>;
 
 		scriptRegistery& registery() 
 		{
@@ -106,14 +106,14 @@ namespace mooncastle::script
 
 	namespace detail
 	{
-		u8 registerScript(size_t tag, script_creator func) 
+		u8 registerScript(size_t tag, scriptCreator func) 
 		{
 			bool result{ registery().insert(scriptRegistery::value_type{tag, func}).second };
 			assert(result);
 			return result;
 		}
 
-		script_creator getScriptCreator(size_t tag) 
+		scriptCreator getScriptCreator(size_t tag) 
 		{
 			auto script = mooncastle::script::registery().find(tag);
 			assert(script != mooncastle::script::registery().end() && script->first == tag);

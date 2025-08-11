@@ -189,7 +189,7 @@ gameEntity::entity createOneGameEntity(math::v3 position, math::v3 rotation, geo
 
 	if (scriptName)
 	{
-		scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()(scriptName));
+		scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::stringHash()(scriptName));
 		assert(scriptInfo.scriptCreator);
 	}
 

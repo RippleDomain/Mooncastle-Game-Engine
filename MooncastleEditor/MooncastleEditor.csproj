@@ -62,7 +62,7 @@
 	<ItemGroup>
 		<Content Include="Resources\ProjectTemplates\**" Link=".\Resources\ProjectTemplates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
-
+	
 	<ItemGroup>
 	  <Resource Include="resources\materialeditor\DefaultMaterialShaders.hlsl" />
 	</ItemGroup>

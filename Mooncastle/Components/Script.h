@@ -6,7 +6,7 @@ namespace mooncastle::script
 {
 	struct initInfo
 	{
-		detail::script_creator scriptCreator;
+		detail::scriptCreator scriptCreator;
 	};
 
 	component create(initInfo info, gameEntity::entity entity);

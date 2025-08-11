@@ -22,7 +22,7 @@ namespace
 {
 	HMODULE gameCodeDll{ nullptr };
 
-	using _get_script_creator = mooncastle::script::detail::script_creator(*)(size_t);
+	using _get_script_creator = mooncastle::script::detail::scriptCreator(*)(size_t);
 	_get_script_creator getScriptCreator{ nullptr };
 
 	using _get_script_names = LPSAFEARRAY(*)(void);
@@ -51,6 +51,21 @@ namespace
 		u32 dataSize;
 		u8* data;
 	};
+
+    u8* patchMaterialData(u8* data)
+    {
+        utl::blobStreamReader blob{ data };
+        const u32 textureCount{ blob.read<u32>() };
+
+        if (textureCount)
+        {
+            id::idType *const textureIDs{ (id::idType *const)blob.getPosition() };
+            blob.skip(sizeof(id::idType) * textureCount);
+			*reinterpret_cast<id::idType**>(const_cast<u8*>(blob.getPosition())) = textureIDs;
+        }
+
+        return (u8*)blob.getPosition();
+    }
 }
 
 EDITOR_INTERFACE u32 LoadGameCodeDll(const char* dllPath) 
@@ -80,9 +95,9 @@ EDITOR_INTERFACE u32 UnloadGameCodeDll()
 	return TRUE;
 }
 
-EDITOR_INTERFACE script::detail::script_creator GetScriptCreator(const char* name)
+EDITOR_INTERFACE script::detail::scriptCreator GetScriptCreator(const char* name)
 {
-	return (gameCodeDll && getScriptCreator) ? getScriptCreator(script::detail::string_hash()(name)) : nullptr;
+	return (gameCodeDll && getScriptCreator) ? getScriptCreator(script::detail::stringHash()(name)) : nullptr;
 }
 
 EDITOR_INTERFACE LPSAFEARRAY GetScriptNames(const char* name)
@@ -107,16 +122,31 @@ EDITOR_INTERFACE void RemoveRenderSurface(u32 id)
 	platform::removeWindow(surfaces[id].window.getId());
 }
 
+EDITOR_INTERFACE void ResizeRenderSurface(u32 id)
+{
+    assert(id < surfaces.size());
+    surfaces[id].window.resize(0, 0);
+}
+
 EDITOR_INTERFACE HWND GetWindowHandle(u32 id)
 {
 	assert(id < surfaces.size());
 	return (HWND)surfaces[id].window.handle();
 }
 
-EDITOR_INTERFACE void ResizeRenderSurface(u32 id)
+EDITOR_INTERFACE id::idType CreateResource(u8* data, content::assetType::type type)
 {
-	assert(id < surfaces.size());
-	surfaces[id].window.resize(0, 0);
+    if (type == content::assetType::material)
+    {
+        data = patchMaterialData(data);
+    }
+
+    return id::invalidId;
+}
+
+EDITOR_INTERFACE void DestroyResource(id::idType id, content::assetType::type type)
+{
+
 }
 
 EDITOR_INTERFACE id::idType AddShaderGroup(shaderGroupData* data)

@@ -42,6 +42,26 @@ namespace MooncastleEditor.Content
         TriangleStrip
     };
 
+    class MeshInfo
+    {
+        public string Name { get; init; }
+        public byte[] Icon { get; init; }
+        public int IndexCount { get; init; }
+        public int VertexCount { get; init; }
+        public int TriangleCount { get; init; }
+    }
+    class LodInfo
+    {
+        public string Name { get; init; }
+        public float Threshold { get; init; }
+        public List<MeshInfo> Meshes { get; init; }
+    }
+
+    class GeometryMetadata : AssetMetadata
+    {
+        public List<LodInfo> LODs { get; init; }
+    }
+
     class Mesh : ViewModelBase
     {
         public static int PositionSize => sizeof(float) * 3;
@@ -148,7 +168,7 @@ namespace MooncastleEditor.Content
             }
         }
 
-        public ObservableCollection<Mesh> Meshes { get; } = new ObservableCollection<Mesh>();
+        public ObservableCollection<Mesh> Meshes { get; } = [];
     }
 
     class LODGroup : ViewModelBase
@@ -167,7 +187,7 @@ namespace MooncastleEditor.Content
             }
         }
 
-        public ObservableCollection<MeshLOD> LODs { get; } = new ObservableCollection<MeshLOD>();
+        public ObservableCollection<MeshLOD> LODs { get; } = [];
     }
 
     class GeometryImportSettings : ViewModelBase, IAssetImportSettings
@@ -308,7 +328,9 @@ namespace MooncastleEditor.Content
     {
         private readonly object _lock = new();
 
-        private readonly List<LODGroup> _lodGroups = new();
+        private readonly List<LODGroup> _lodGroups = [];
+
+        public static AssetInfo Default => DefaultAssets.DefaultGeometry;
 
         public GeometryImportSettings ImportSettings { get; } = new();
 
@@ -714,21 +736,57 @@ namespace MooncastleEditor.Content
             return lod;
         }
 
-        private static byte[] GenerateIcon(MeshLOD meshLOD)
+        private static byte[] GenerateIcon(MeshLOD meshLOD, int index = -1)
         {
             var width = ContentInfo.IconWidth * 4;
             byte[] icon = null;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(meshLOD, null), width, width);
+                var bmp = Editors.GeometryView.RenderToBitmap(new Editors.MeshRenderer(meshLOD, null), width, width, index);
                 icon = BitmapHelper.GenerateThumbnail(bmp, ContentInfo.IconWidth, ContentInfo.IconWidth);
             });           
 
             return icon;
         }
 
+        public override GeometryMetadata GetMetadata()
+        {
+            var lodGroup = GetLODGroup();
+
+            GeometryMetadata metadata = new() { LODs = [] };
+
+            foreach (var lod in lodGroup.LODs)
+            {
+                LodInfo lodInfo = new() { Name = lod.Name, Threshold = lod.LodThreshold, Meshes = [] };
+                metadata.LODs.Add(lodInfo);
+
+                foreach (var mesh in lod.Meshes)
+                {
+                    MeshInfo meshInfo = new()
+                    {
+                        Name = mesh.Name,
+                        Icon = GenerateIcon(lod, lod.Meshes.IndexOf(mesh)),
+                        IndexCount = mesh.IndexCount,
+                        TriangleCount = mesh.IndexCount / 3,
+                        VertexCount = mesh.VertexCount
+                    };
+
+                    lodInfo.Meshes.Add(meshInfo);
+                }
+            }
+
+            return metadata;
+        }
+
         public Geometry() : base(AssetType.Mesh) { }
+
+        public Geometry(AssetInfo assetInfo) : this()
+        {
+            Debug.Assert(assetInfo != null && assetInfo.Guid != Guid.Empty);
+            Debug.Assert(File.Exists(assetInfo.FullPath) && assetInfo.Type == Type);
+            Load(assetInfo.FullPath);
+        }
 
         public Geometry(IAssetImportSettings importSettings) : this()
         {

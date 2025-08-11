@@ -301,10 +301,11 @@ namespace mooncastle::content
 		/*Expects data to contain:
 		struct 
 		{
+				id::idType*			textureIDs;
+				materialSurface		surface;
 				materialType::type	type;
 				u32					textureCount;
 				id::idType			shaderIDs[shaderType::count];
-				id::idType			textureIDs;
 		} materialInitInfo*/
 		[[nodiscard]] id::idType createMaterialResource(const void* const data)
 		{

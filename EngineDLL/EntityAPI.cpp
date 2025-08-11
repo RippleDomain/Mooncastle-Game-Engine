@@ -37,7 +37,7 @@ namespace
 
 	struct scriptComponent
 	{
-		script::detail::script_creator scriptCreator;
+		script::detail::scriptCreator scriptCreator;
 
 		script::initInfo toInitInfo()
 		{

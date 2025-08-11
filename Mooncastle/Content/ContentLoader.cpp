@@ -60,7 +60,7 @@ namespace mooncastle::content
 
             memcpy(&script_name[0], data, nameLength); data += nameLength;
             script_name[nameLength] = 0;
-            scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::string_hash()(script_name));
+            scriptInfo.scriptCreator = script::detail::getScriptCreator(script::detail::stringHash()(script_name));
 			info.script = &scriptInfo;
 
             return scriptInfo.scriptCreator != nullptr;

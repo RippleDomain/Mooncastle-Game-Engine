@@ -186,6 +186,16 @@ namespace MooncastleEditor.Content
         IsSRGB = 0x40
     }
 
+    class TextureMetadata : AssetMetadata
+    {
+        public int Width { get; init; }
+        public int Height { get; init; }
+        public int DepthOrArraySize { get; init; }
+        public int MipLevels { get; init; }
+        public DXGI_FORMAT Format { get; init; }
+        public TextureDimension Dimension { get; init; }
+    }
+
     class TextureImportSettings : ViewModelBase, IAssetImportSettings
     {
         public ObservableCollection<string> Sources { get; } = new();
@@ -846,7 +856,27 @@ namespace MooncastleEditor.Content
             Slices = TextureData.SlicesFromBinary(decompressed, ArraySize, MipLevels, IsVolumeMap);
         }
 
+        public override TextureMetadata GetMetadata()
+        {
+            return new()
+            {
+                Width = Width,
+                Height = Height,
+                DepthOrArraySize = ArraySize,
+                Format = Format,
+                MipLevels = MipLevels,
+                Dimension = TextureImportSettings.Dimension
+            };
+        }
+
         public Texture() : base(AssetType.Texture) { }
+
+        public Texture(AssetInfo assetInfo) : this()
+        {
+            Debug.Assert(assetInfo != null && assetInfo.Guid != Guid.Empty);
+            Debug.Assert(File.Exists(assetInfo.FullPath) && assetInfo.Type == Type);
+            Load(assetInfo.FullPath);
+        }
 
         public Texture(IAssetImportSettings importSettings) : this()
         {

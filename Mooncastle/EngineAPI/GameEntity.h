@@ -58,20 +58,20 @@ namespace mooncastle::script
 
 	namespace detail
 	{
-		using script_ptr = std::unique_ptr<entityScript>;
-		using script_creator = script_ptr(*)(gameEntity::entity entity);
-		using string_hash = std::hash<std::string>;
+		using scriptPtr = std::unique_ptr<entityScript>;
+		using scriptCreator = scriptPtr(*)(gameEntity::entity entity);
+		using stringHash = std::hash<std::string>;
 
-		u8 registerScript(size_t, script_creator);
+		u8 registerScript(size_t, scriptCreator);
 
 #ifdef USE_WITH_EDITOR
 		extern "C" __declspec(dllexport)
 #endif
-			script_creator getScriptCreator(size_t tag);
+			scriptCreator getScriptCreator(size_t tag);
 
 		template<class script_class>
 
-		script_ptr create_script(gameEntity::entity entity)
+		scriptPtr createScript(gameEntity::entity entity)
 		{
 			assert(entity.isValid());
 			return std::make_unique<script_class>(entity);
@@ -80,14 +80,14 @@ namespace mooncastle::script
 #ifdef USE_WITH_EDITOR
 		u8 addScriptName(const char* name);
 
-#define REGISTER_SCRIPT(TYPE)                                        \
-		namespace {                                                  \
-			static u8                                                \
-			_reg##TYPE =                                             \
-			{ mooncastle::script::detail::registerScript(            \
-			mooncastle::script::detail::string_hash()(#TYPE),        \
-			&mooncastle::script::detail::create_script<TYPE>) };     \
-			const u8 _name_##TYPE                                  \
+#define REGISTER_SCRIPT(TYPE)                                         \
+		namespace {                                                   \
+			static u8                                                 \
+			_reg##TYPE =                                              \
+			{ mooncastle::script::detail::registerScript(             \
+			mooncastle::script::detail::stringHash()(#TYPE),          \
+			&mooncastle::script::detail::createScript<TYPE>) };       \
+			const u8 _name_##TYPE                                     \
 			{ mooncastle::script::detail::addScriptName(#TYPE) };     \
 			}
 #else
@@ -96,8 +96,8 @@ namespace mooncastle::script
 			static u8                                                \
 			_reg##TYPE =                                             \
 			{ mooncastle::script::detail::registerScript(            \
-			mooncastle::script::detail::string_hash()(#TYPE),        \
-			&mooncastle::script::detail::create_script<TYPE>) };     \
+			mooncastle::script::detail::stringHash()(#TYPE),         \
+			&mooncastle::script::detail::createScript<TYPE>) };      \
 			}
 #endif
 	}
