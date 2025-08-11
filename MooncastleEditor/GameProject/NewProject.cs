@@ -145,7 +145,7 @@ namespace MooncastleEditor.GameProject
             }
         }
 
-        private readonly ObservableCollection<ProjectTemplate> _projectTemplates = new();
+        private readonly ObservableCollection<ProjectTemplate> _projectTemplates = [];
         public ReadOnlyObservableCollection<ProjectTemplate> ProjectTemplates {get;}
 
         private bool IsProjectPathValid()
@@ -253,9 +253,6 @@ namespace MooncastleEditor.GameProject
 
             var engineAPIPath = @"$(MOONCASTLE_PATH)Mooncastle\EngineAPI\";
 
-            Debug.WriteLine($"[CreateMSVCSolution] engineAPIPath = '{engineAPIPath}'");
-            Debug.Assert(Directory.Exists(engineAPIPath));
-
             var _0 = ProjectName;
             var _1 = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
             var _2 = engineAPIPath;
@@ -278,7 +275,7 @@ namespace MooncastleEditor.GameProject
 
             try
             {
-                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @".\Resources\ProjectTemplates\");
+                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\ProjectTemplates\");
                 var templates = Directory.GetFiles(templatesPath, "template.xml", SearchOption.AllDirectories);
 
                 Debug.Assert(templates.Any());

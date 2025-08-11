@@ -1,3 +1,5 @@
+#define INITGUID
+
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "D3D12Shaders.h"
@@ -9,9 +11,6 @@
 #include "D3D12LightCulling.h"
 #include "D3D12Camera.h"
 #include "Shaders/SharedTypes.h"
-
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 616; }
-extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = u8".\\D3D12\\"; }
 
 using namespace Microsoft::WRL;
 
@@ -183,8 +182,14 @@ namespace mooncastle::graphics::d3D12::core
             u32                         frameIndex{ 0 };
         };
 
+        constexpr UINT d3D12SDKVersion = 616;
+        constexpr const char* d3D12SDKPath = ".\\D3D12\\";
+        constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
+
         using surfaceCollection = utl::freeList<D3D12Surface>;
 
+        ID3D12SDKConfiguration1*   d3D12SDKConfig{ nullptr };
+        ID3D12DeviceFactory*       d3D12DeviceFactory{ nullptr };
         ID3D12Device*              mainDevice{ nullptr };
         IDXGIFactory7*             dxgiFactory{ nullptr };
         D3D12Command               gfxCommand;
@@ -198,8 +203,6 @@ namespace mooncastle::graphics::d3D12::core
         utl::vector<IUnknown*>     deferredReleases[frameBufferCount]{};
         u32                        deferredReleaseFlag[frameBufferCount]{};
         std::mutex                 deferredReleasesMutex{};
-
-        constexpr D3D_FEATURE_LEVEL minFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
 
         bool failedInit()
         {
@@ -217,7 +220,7 @@ namespace mooncastle::graphics::d3D12::core
             for (u32 i{ 0 }; dxgiFactory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND; ++i)
             {
                 //Pick the first adapter that supports the minimum feature level.
-                if (SUCCEEDED(D3D12CreateDevice(adapter, minFeatureLevel, __uuidof(ID3D12Device), nullptr)))
+                if (SUCCEEDED(d3D12DeviceFactory->CreateDevice(adapter, minFeatureLevel, __uuidof(ID3D12Device), nullptr)))
                 {
                     return adapter;
                 }
@@ -243,7 +246,7 @@ namespace mooncastle::graphics::d3D12::core
             featureLevelInfo.pFeatureLevelsRequested = featureLevels;
 
             ComPtr<ID3D12Device> device;
-            DXCall(D3D12CreateDevice(adapter, minFeatureLevel, IID_PPV_ARGS(&device)));
+            DXCall(d3D12DeviceFactory->CreateDevice(adapter, minFeatureLevel, IID_PPV_ARGS(&device)));
             DXCall(device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &featureLevelInfo, sizeof(featureLevelInfo)));
 
             return featureLevelInfo.MaxSupportedFeatureLevel;
@@ -329,14 +332,22 @@ namespace mooncastle::graphics::d3D12::core
 
         if (mainDevice) shutdown();
 
+        HRESULT hr{ S_OK };
+
+        DXCall(hr = D3D12GetInterface(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&d3D12SDKConfig)));
+        if (FAILED(hr)) return failedInit();
+
+        DXCall(hr = d3D12SDKConfig->CreateDeviceFactory(d3D12SDKVersion, d3D12SDKPath, IID_PPV_ARGS(&d3D12DeviceFactory)));
+        if (FAILED(hr)) return failedInit();
+
         u32 dxgiFactoryFlags{ 0 };
 
 #ifdef _DEBUG
         //Requires "Graphics Tools" optional feature.
         {
-            ComPtr<ID3D12Debug3> debugInterface;
+            ComPtr<ID3D12Debug6> debugInterface;
 
-            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)))) 
+            if (SUCCEEDED(d3D12DeviceFactory->GetConfigurationInterface(CLSID_D3D12Debug, IID_PPV_ARGS(&debugInterface))))
             {
                 debugInterface->EnableDebugLayer();
 #if 0
@@ -353,7 +364,6 @@ namespace mooncastle::graphics::d3D12::core
         }
 #endif
 
-        HRESULT hr{ S_OK };
         DXCall(hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
 
         if (FAILED(hr)) return failedInit();
@@ -369,7 +379,7 @@ namespace mooncastle::graphics::d3D12::core
 
         if (maxFeatureLevel < minFeatureLevel) return failedInit();
 
-        DXCall(hr = D3D12CreateDevice(mainAdapter.Get(), maxFeatureLevel, IID_PPV_ARGS(&mainDevice)));
+        DXCall(hr = d3D12DeviceFactory->CreateDevice(mainAdapter.Get(), maxFeatureLevel, IID_PPV_ARGS(&mainDevice)));
         if (FAILED(hr)) return failedInit();
 
 #ifdef _DEBUG
@@ -388,6 +398,7 @@ namespace mooncastle::graphics::d3D12::core
         result &= dsvDescriptorHeap.initialize(512, false);
         result &= srvDescriptorHeap.initialize(4096, true);
         result &= uavDescriptorHeap.initialize(512, false);
+
         if (!result) return failedInit();
 
         for (u32 i{ 0 }; i < frameBufferCount; ++i)
@@ -474,6 +485,8 @@ namespace mooncastle::graphics::d3D12::core
 #endif
 
         release(mainDevice);
+        release(d3D12DeviceFactory);
+        release(d3D12SDKConfig);
     }
 
     ID3D12Device *const device()

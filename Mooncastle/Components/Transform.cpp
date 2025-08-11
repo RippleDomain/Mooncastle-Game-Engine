@@ -17,9 +17,9 @@ namespace mooncastle::transform
 
 		void calculateTransformMatrices(id::idType index)
 		{
-			assert(rotations.size() >= index);
-			assert(positions.size() >= index);
-			assert(scales.size() >= index);
+			assert(rotations.size() > index);
+			assert(positions.size() > index);
+			assert(scales.size() > index);
 
 			using namespace DirectX;
 			XMVECTOR r{ XMLoadFloat4(&rotations[index]) };

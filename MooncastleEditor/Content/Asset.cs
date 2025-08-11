@@ -2,6 +2,7 @@
 using MooncastleEditor.Utilities;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace MooncastleEditor.Content
 {
@@ -56,10 +57,13 @@ namespace MooncastleEditor.Content
 
     abstract class AssetMetadata { }
 
+    [DataContract]
     abstract class Asset : ViewModelBase
     {
         public static string AssetFileExtension => ".mcasset";
-        public AssetType Type { get; }
+
+        [DataMember]
+        public AssetType Type { get; private set; }
         public byte[] Icon { get; protected set; }
 
         private string _fullPath;
@@ -101,8 +105,7 @@ namespace MooncastleEditor.Content
             Hash = Hash
         };
 
-        public static AssetInfo TryGetAssetInfo(string file) => File.Exists(file) && Path.GetExtension(file) == AssetFileExtension ?
-            AssetRegistry.GetAssetInfo(file) ?? GetAssetInfo(file) : null;
+        public static AssetInfo TryGetAssetInfo(string file) => AssetRegistry.GetAssetInfo(file) ?? GetAssetInfo(file);
 
         private static AssetInfo GetAssetInfo(BinaryReader reader)
         {
@@ -128,19 +131,17 @@ namespace MooncastleEditor.Content
 
         public static AssetInfo GetAssetInfo(string file)
         {
-            Debug.Assert(File.Exists(file) && Path.GetExtension(file) == AssetFileExtension);
+            if (!File.Exists(file) || Path.GetExtension(file) != AssetFileExtension) return null;
 
             try
             {
                 using var reader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read));
                 var info = GetAssetInfo(reader);
                 info.FullPath = file;
+
                 return info;
             }
-            catch (Exception ex) 
-            { 
-                Debug.WriteLine(ex.Message); 
-            }
+            catch (Exception ex) { Debug.WriteLine(ex.Message); }
 
             return null;
         }
@@ -184,7 +185,7 @@ namespace MooncastleEditor.Content
             Icon = info.Icon;
         }
 
-        public Asset(AssetType type)
+        protected Asset(AssetType type)
         {
             Debug.Assert(type != AssetType.Unknown);
             Type = type;
@@ -197,6 +198,7 @@ namespace MooncastleEditor.Content
         public AssetInfo AssetInfo { get; private set; }
         public AssetMetadata Metadata { get; private set; }
         private List<UploadedAsset> _referencedAssets = [];
+        private static readonly Lock _lock = new();
 
         private static readonly Dictionary<Guid, UploadedAsset> _uploadedAssets = [];
 
@@ -253,44 +255,51 @@ namespace MooncastleEditor.Content
             Debug.Assert(assetInfo != null && assetInfo.Guid != Guid.Empty);
             var key = assetInfo.Guid;
 
-            if (_uploadedAssets.TryGetValue(key, out var value))
+            lock (_lock)
             {
-                ++value.ReferenceCount;
-                value._referencedAssets.ForEach(x => ++x.ReferenceCount);
-            }
-            else
-            {
-                var uploadedAsset = UploadAssetToEngine(assetInfo, asset);
-                Debug.Assert(ID.isValid(uploadedAsset.ContentId));
 
-                if (ID.isValid(uploadedAsset.ContentId))
+                if (_uploadedAssets.TryGetValue(key, out var value))
                 {
-                    _uploadedAssets[key] = uploadedAsset;
+                    ++value.ReferenceCount;
+                    value._referencedAssets.ForEach(x => ++x.ReferenceCount);
                 }
                 else
                 {
-                    Logger.Log(MessageType.Error, $"Failed to upload asset {assetInfo.FileName} to engine.");
-                    return null;
+                    var uploadedAsset = UploadAssetToEngine(assetInfo, asset);
+                    Debug.Assert(ID.isValid(uploadedAsset.ContentId));
+
+                    if (ID.isValid(uploadedAsset.ContentId))
+                    {
+                        _uploadedAssets[key] = uploadedAsset;
+                    }
+                    else
+                    {
+                        Logger.Log(MessageType.Error, $"Failed to upload asset {assetInfo.FileName} to engine.");
+                        return null;
+                    }
                 }
+
+                Debug.Assert(_uploadedAssets.ContainsKey(key));
+
+                return _uploadedAssets[key];
             }
-
-            Debug.Assert(_uploadedAssets.ContainsKey(key));
-
-            return _uploadedAssets[key];
         }
 
         public static void RemoveFromScene(UploadedAsset uploadedAsset)
         {
-            Debug.Assert(uploadedAsset != null && _uploadedAssets.ContainsKey(uploadedAsset.AssetInfo.Guid));
-
-            uploadedAsset._referencedAssets.ForEach(RemoveFromScene);
-            --uploadedAsset.ReferenceCount;
-
-            if (uploadedAsset.ReferenceCount == 0)
+            lock (_lock)
             {
-                UnloadAssetFromEngine(uploadedAsset);
-                _uploadedAssets.Remove(uploadedAsset.AssetInfo.Guid);
-                uploadedAsset.ContentId = ID.invalidId;
+                Debug.Assert(uploadedAsset != null && _uploadedAssets.ContainsKey(uploadedAsset.AssetInfo.Guid));
+
+                uploadedAsset._referencedAssets.ForEach(RemoveFromScene);
+                --uploadedAsset.ReferenceCount;
+
+                if (uploadedAsset.ReferenceCount == 0)
+                {
+                    UnloadAssetFromEngine(uploadedAsset);
+                    _uploadedAssets.Remove(uploadedAsset.AssetInfo.Guid);
+                    uploadedAsset.ContentId = ID.invalidId;
+                }
             }
         }
 
@@ -298,7 +307,10 @@ namespace MooncastleEditor.Content
         {
             Debug.Assert(id != Guid.Empty);
 
-            return _uploadedAssets.TryGetValue(id, out var uploadedAsset) ? uploadedAsset.ContentId : ID.invalidId;
+            lock (_lock) 
+            { 
+                return _uploadedAssets.TryGetValue(id, out var uploadedAsset) ? uploadedAsset.ContentId : ID.invalidId; 
+            }
         }
 
         private UploadedAsset() { }

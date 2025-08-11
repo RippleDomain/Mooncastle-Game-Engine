@@ -173,6 +173,8 @@ namespace MooncastleEditor.GameProject
         {
             if (Directory.Exists(TempFolder))
             {
+                //Attributes are being set to normal to delete read-only files.
+                _ = new DirectoryInfo(TempFolder) { Attributes = FileAttributes.Normal };
                 Directory.Delete(TempFolder, true);
             }
         }

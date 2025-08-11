@@ -20,7 +20,18 @@ namespace MooncastleEditor
             Loaded -= MainWindowLoaded;
             DefaultAssets.GenerateDefaultAssets();
             GetEnginePath();
-            openProjectBrowser();
+
+            var initResult = EngineAPI.InitializeEngine();
+
+            if (initResult == EngineAPIStructs.EngineInitError.Succeeded)
+            {
+                openProjectBrowser();
+            }
+            else
+            {
+                MessageBox.Show($"{initResult.GetDescription()}", "Engine initialization failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Shutdown();
+            }
         }
 
         private void GetEnginePath()
@@ -47,6 +58,16 @@ namespace MooncastleEditor
             }
         }
 
+        private void Shutdown()
+        {
+            Closing -= OnMainWindowClosing;
+            Project.Current?.Unload();
+            DataContext = null;
+            ContentToolsAPI.ShutDownContentTools();
+            EngineAPI.ShutdownEngine();
+        }
+
+
         private void OnMainWindowClosing(object sender, CancelEventArgs e)
         {
             if (DataContext == null)
@@ -62,10 +83,7 @@ namespace MooncastleEditor
             }
             else
             {
-                Closing -= OnMainWindowClosing;
-                Project.Current?.Unload();
-                DataContext = null;
-                ContentToolsAPI.ShutDownContentTools();
+                Shutdown();
             }
         }
 
@@ -75,6 +93,7 @@ namespace MooncastleEditor
 
             if (projectBrowser.ShowDialog() == false || projectBrowser.DataContext == null)
             {
+                Shutdown();
                 Application.Current.Shutdown();
             }
             else

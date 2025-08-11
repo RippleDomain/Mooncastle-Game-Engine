@@ -30,6 +30,17 @@ namespace
 
 	utl::vector<graphics::renderSurface> surfaces;
 
+    struct engineInitializationError 
+    {
+        enum errorCode :u32 
+        {
+            succeeded = 0,
+            unknown,
+            shaderCompilation,
+            graphics,
+        };
+    };
+
 	struct shaderData
 	{
 		u32 type;
@@ -66,6 +77,26 @@ namespace
 
         return (u8*)blob.getPosition();
     }
+}
+
+EDITOR_INTERFACE engineInitializationError::errorCode InitializeEngine()
+{
+    while (!compileShaders())
+    {
+        //Pops up a message box giving the user an option to retry compilation.
+        if (MessageBox(nullptr, L"Failed to compile engine shaders!", L"Shader Compilation Error", MB_RETRYCANCEL) != IDRETRY)
+        {
+            return engineInitializationError::shaderCompilation;
+        }
+    }
+
+    return graphics::initialize(graphics::graphicsPlatform::direct3D12) ? 
+        engineInitializationError::succeeded : engineInitializationError::graphics;
+}
+
+EDITOR_INTERFACE void ShutdownEngine()
+{
+    graphics::shutdown();
 }
 
 EDITOR_INTERFACE u32 LoadGameCodeDll(const char* dllPath) 
@@ -141,12 +172,16 @@ EDITOR_INTERFACE id::idType CreateResource(u8* data, content::assetType::type ty
         data = patchMaterialData(data);
     }
 
-    return id::invalidId;
+    assert(data && type < content::assetType::count);
+
+    return content::createResource(data, type);
 }
 
 EDITOR_INTERFACE void DestroyResource(id::idType id, content::assetType::type type)
 {
+    assert(id::isValid(id) && type < content::assetType::count);
 
+    content::destroyResource(id, type);
 }
 
 EDITOR_INTERFACE id::idType AddShaderGroup(shaderGroupData* data)

@@ -59,6 +59,7 @@ namespace MooncastleEditor.Content
 
     class GeometryMetadata : AssetMetadata
     {
+        public string Name { get; init; }
         public List<LodInfo> LODs { get; init; }
     }
 
@@ -326,7 +327,7 @@ namespace MooncastleEditor.Content
 
     class Geometry : Asset
     {
-        private readonly object _lock = new();
+        private static readonly Lock _lock = new();
 
         private readonly List<LODGroup> _lodGroups = [];
 

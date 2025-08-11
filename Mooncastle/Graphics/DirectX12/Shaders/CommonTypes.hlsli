@@ -128,7 +128,7 @@ struct PerObjectData
     float EmissiveIntensity;
     float Metallic;
     float Roughness;
-    uint Pad;
+    uint2 Pad;
 };
 
 #ifdef __cplusplus

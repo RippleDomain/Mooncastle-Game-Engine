@@ -6,7 +6,7 @@ namespace MooncastleEditor.Content
 {
     static class ContentInfoCache
     {
-        private static readonly object _lock = new();
+        private static readonly Lock _lock = new();
 
         private static string _cacheFilePath = string.Empty;
         private static readonly Dictionary<string, ContentInfo> _contentInfoCahce = new();

@@ -17,6 +17,9 @@ namespace MooncastleEditor.Components
 
         public abstract IMSComponent GetMultiSelectionComponent(MSEntity msEntity);
 
+        public virtual void Load() { }
+        public virtual void Unload() { }
+
         public abstract void WriteToBinary(BinaryWriter bw);
 
         public Component(GameEntity owner)
@@ -47,7 +50,7 @@ namespace MooncastleEditor.Components
         public MSComponent(MSEntity msEntity)
         {
             Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
-            SelectedComponents = msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>()).ToList();
+            SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
 
             PropertyChanged += (s, e) =>
             {

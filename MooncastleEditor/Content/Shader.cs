@@ -39,6 +39,8 @@ class ShaderGroup
         public byte[] CombinedHashes { get; private set; }
         public int ReferenceCount { get; private set; }
 
+        private static readonly Lock _lock = new();
+
         private static readonly Dictionary<string, UploadedShaderGroup> _uploadedShaders = [];
         private static readonly Dictionary<IdType, UploadedShaderGroup> _uploadedShaderIds = [];
 
@@ -50,66 +52,71 @@ class ShaderGroup
                 return null;
             }
 
-            var combinedHashes = shaderGroup.Hash.SelectMany(x => x).ToArray();
-
-            if (ID.isValid(shaderGroup.ContentId) && _uploadedShaderIds.TryGetValue(shaderGroup.ContentId, out var uploadedShader))
+            lock (_lock)
             {
+                var combinedHashes = shaderGroup.Hash.SelectMany(x => x).ToArray();
 
-                if (uploadedShader.CombinedHashes.SequenceEqual(combinedHashes))
+                if (ID.isValid(shaderGroup.ContentId) && _uploadedShaderIds.TryGetValue(shaderGroup.ContentId, out var uploadedShader))
                 {
-                    ++uploadedShader.ReferenceCount;
-                    return uploadedShader;
+
+                    if (uploadedShader.CombinedHashes.SequenceEqual(combinedHashes))
+                    {
+                        ++uploadedShader.ReferenceCount;
+                        return uploadedShader;
+                    }
+                    else
+                    {
+                        UnloadFromEngine(uploadedShader.ContentId);
+                    }
                 }
                 else
                 {
-                    UnloadFromEngine(uploadedShader.ContentId);
+                    Debug.Assert(!ID.isValid(shaderGroup.ContentId));
                 }
+
+                var hashString = Convert.ToBase64String(combinedHashes);
+
+                if (_uploadedShaders.TryGetValue(hashString, out var identicalShader))
+                {
+                    ++identicalShader.ReferenceCount;
+                    return identicalShader;
+                }
+
+                var newUploadedShader = new UploadedShaderGroup()
+                {
+                    ContentId = EngineAPI.AddShaderGroup(shaderGroup),
+                    CombinedHashes = combinedHashes,
+                    ReferenceCount = 1
+                };
+
+                Debug.Assert(ID.isValid(newUploadedShader.ContentId));
+
+                _uploadedShaders.Add(hashString, newUploadedShader);
+                _uploadedShaderIds.Add(newUploadedShader.ContentId, newUploadedShader);
+
+                return newUploadedShader;
             }
-            else
-            {
-                Debug.Assert(!ID.isValid(shaderGroup.ContentId));
-            }
-
-            var hashString = Convert.ToBase64String(combinedHashes);
-
-            if (_uploadedShaders.TryGetValue(hashString, out var identicalShader))
-            {
-                ++identicalShader.ReferenceCount;
-                return identicalShader;
-            }
-
-            var newUploadedShader = new UploadedShaderGroup()
-            {
-                ContentId = EngineAPI.AddShaderGroup(shaderGroup),
-                CombinedHashes = combinedHashes,
-                ReferenceCount = 1
-            };
-
-            Debug.Assert(ID.isValid(newUploadedShader.ContentId));
-
-            _uploadedShaders.Add(hashString, newUploadedShader);
-            _uploadedShaderIds.Add(newUploadedShader.ContentId, newUploadedShader);
-
-            return newUploadedShader;
-
         }
 
         public static void UnloadFromEngine(IdType id)
         {
-            Debug.Assert(ID.isValid(id) && _uploadedShaderIds.ContainsKey(id));
-
-            if (ID.isValid(id) && _uploadedShaderIds.TryGetValue(id, out var uploadedShader))
+            lock (_lock)
             {
-                Debug.Assert(uploadedShader.ReferenceCount > 0);
-                --uploadedShader.ReferenceCount;
+                Debug.Assert(ID.isValid(id) && _uploadedShaderIds.ContainsKey(id));
 
-                if (uploadedShader.ReferenceCount == 0)
+                if (ID.isValid(id) && _uploadedShaderIds.TryGetValue(id, out var uploadedShader))
                 {
-                    EngineAPI.RemoveShaderGroup(uploadedShader.ContentId);
-                    var hashString = Convert.ToBase64String(uploadedShader.CombinedHashes);
-                    Debug.Assert(_uploadedShaders.ContainsKey(hashString));
-                    _uploadedShaders.Remove(hashString);
-                    _uploadedShaderIds.Remove(uploadedShader.ContentId);
+                    Debug.Assert(uploadedShader.ReferenceCount > 0);
+                    --uploadedShader.ReferenceCount;
+
+                    if (uploadedShader.ReferenceCount == 0)
+                    {
+                        EngineAPI.RemoveShaderGroup(uploadedShader.ContentId);
+                        var hashString = Convert.ToBase64String(uploadedShader.CombinedHashes);
+                        Debug.Assert(_uploadedShaders.ContainsKey(hashString));
+                        _uploadedShaders.Remove(hashString);
+                        _uploadedShaderIds.Remove(uploadedShader.ContentId);
+                    }
                 }
             }
         }
@@ -130,6 +137,7 @@ class ShaderGroup
     public List<byte[]> Hash { get; set; } = [];
 
     public IdType ContentId { get; private set; } = ID.invalidId;
+    private UploadedShaderGroup _uploadedShader;
 
     public int Count
     {
@@ -219,6 +227,7 @@ class ShaderGroup
     public IdType UploadToEngine()
     {
         var uploadedShader = UploadedShaderGroup.UploadToEngine(this);
+
         Debug.Assert(uploadedShader != null && ID.isValid(uploadedShader.ContentId));
 
         if (uploadedShader == null || !ID.isValid(uploadedShader.ContentId))
@@ -226,6 +235,7 @@ class ShaderGroup
             return ID.invalidId;
         }
 
+        _uploadedShader = uploadedShader;
         ContentId = uploadedShader.ContentId;
 
         return ContentId;
@@ -233,10 +243,14 @@ class ShaderGroup
 
     public void UnloadFromEngine()
     {
-        if (ID.isValid(ContentId))
+        Debug.Assert(ID.isValid(ContentId) && _uploadedShader != null);
+
+        UploadedShaderGroup.UnloadFromEngine(ContentId);
+
+        if (_uploadedShader.ReferenceCount == 0)
         {
-            UploadedShaderGroup.UnloadFromEngine(ContentId);
             ContentId = ID.invalidId;
+            _uploadedShader = null;
         }
     }
 }

@@ -4,6 +4,7 @@
 #include "Components/Entity.h"
 #include "Components/Transform.h"
 #include "Components/Script.h"
+#include "Components/Geometry.h"
 
 using namespace mooncastle;
 
@@ -47,10 +48,28 @@ namespace
 		}
 	};
 
+	struct geometryComponent
+	{
+		id::idType     geometryContentID;
+		u32            materialCount;
+		id::idType*    materialIDs;
+
+		geometry::initInfo toInitInfo()
+		{
+			geometry::initInfo info{};
+			info.geometryContentID = geometryContentID;
+			info.materialCount = materialCount;
+			info.materialIDs = materialIDs;
+
+			return info;
+		}
+	};
+
 	struct gameEntityDescriptor
 	{
 		transformComponent transform;
 		scriptComponent script;
+		geometryComponent geometry;
 	};
 
 	gameEntity::entity entityFromId(id::idType id)
@@ -67,10 +86,13 @@ EDITOR_INTERFACE id::idType CreateGameEntity(gameEntityDescriptor* e)
 
 	transform::initInfo transformInfo{ desc.transform.toInitInfo() };
 	script::initInfo scriptInfo{ desc.script.toInitInfo() };
+	geometry::initInfo geometryInfo{ desc.geometry.toInitInfo() };
+
 	gameEntity::entityInfo entityInfo
 	{ 
 		&transformInfo, 
-		&scriptInfo 
+		&scriptInfo,
+		id::isValid(desc.geometry.geometryContentID) ? &geometryInfo : nullptr,
 	};
 
 	return gameEntity::create(entityInfo).getId();

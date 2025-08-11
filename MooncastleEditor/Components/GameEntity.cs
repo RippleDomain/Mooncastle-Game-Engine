@@ -1,4 +1,5 @@
-﻿using MooncastleEditor.DllWrappers;
+﻿using Microsoft.VisualStudio.OLE.Interop;
+using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
 using System.Collections.ObjectModel;
@@ -10,13 +11,14 @@ namespace MooncastleEditor.Components
     [DataContract]
     [KnownType(typeof(Transform))]
     [KnownType(typeof(Script))]
+    [KnownType(typeof(Geometry))]
     class GameEntity : ViewModelBase
     {
-        private int _entityId = ID.invalidId;
-        public int EntityId
+        private IdType _entityId = ID.invalidId;
+        public IdType EntityId
         {
             get => _entityId;
-            set
+            private set
             {
                 if (_entityId != value)
                 {
@@ -38,12 +40,14 @@ namespace MooncastleEditor.Components
 
                     if (_isActive == true)
                     {
+                        _components.ToList().ForEach(x => x.Load());
                         EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
                         Debug.Assert(ID.isValid(EntityId));
                     }
                     else if (ID.isValid(EntityId))
                     {
                         EngineAPI.EntityAPI.RemoveGameEntity(this);
+                        _components.ToList().ForEach(x => x.Unload());
                         EntityId = ID.invalidId;
                     }
 
@@ -86,7 +90,7 @@ namespace MooncastleEditor.Components
         public Scene ParentScene { get; private set; }
 
         [DataMember(Name = nameof(Components))]
-        private readonly ObservableCollection<Component> _components = new();
+        private readonly ObservableCollection<Component> _components = [];
         public ReadOnlyObservableCollection<Component> Components { get; private set; }
 
         public Component GetComponent(Type type) => Components.FirstOrDefault(c => c.GetType() == type);
@@ -98,14 +102,17 @@ namespace MooncastleEditor.Components
 
             if (!Components.Any(x => x.GetType() == component.GetType()))
             {
+                //An inactive entity should NOT be set to active if a component is added.
+                var wasActive = IsActive;
+
                 IsActive = false;
                 _components.Add(component);
-                IsActive = true;
+                IsActive = wasActive;
 
                 return true;
             }
 
-            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component");
+            Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component.");
 
             return false;
         }
@@ -177,7 +184,7 @@ namespace MooncastleEditor.Components
             }
         }
 
-        private readonly ObservableCollection<IMSComponent> _components = new();
+        private readonly ObservableCollection<IMSComponent> _components = [];
         public ReadOnlyObservableCollection<IMSComponent> Components {get; }
 
         public T GetMSComponent<T>() where T : IMSComponent
@@ -220,21 +227,32 @@ namespace MooncastleEditor.Components
             }
         }
 
+        public static int? GetMixedValue<T>(List<T> objects, Func<T, int> getProperty)
+        {
+            var value = getProperty(objects.First());
+
+            return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
+        }
+
+
         public static float? GetMixedValue<T>(List<T> objects, Func<T, float> getProperty)
         {
             var value = getProperty(objects.First());
-            return objects.Skip(1).Any(x => !getProperty(x).IsTheSameAs(value)) ? (float?)null : value;
+
+            return objects.Skip(1).Any(x => !getProperty(x).IsTheSameAs(value)) ? null : value;
         }
 
         public static bool? GetMixedValue<T>(List<T> objects, Func<T, bool> getProperty)
         {
             var value = getProperty(objects.First());
-            return objects.Skip(1).Any(x => value != getProperty(x)) ? (bool?)null : value;
+
+            return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
 
         public static string GetMixedValue<T>(List<T> objects, Func<T, string> getProperty)
         {
             var value = getProperty(objects.First());
+
             return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
 

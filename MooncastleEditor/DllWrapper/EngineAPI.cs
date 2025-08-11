@@ -3,13 +3,27 @@ using MooncastleEditor.Content;
 using MooncastleEditor.EngineAPIStructs;
 using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MooncastleEditor.EngineAPIStructs
 {
+    enum EngineInitError : int
+    {
+        [Description("Engine initialization succeeded.")]
+        Succeeded = 0,
+        [Description("Unknown error occurred during engine initialization!")]
+        Unknown,
+        [Description("Built-in shader compilation failed!")]
+        ShaderCompilation,
+        [Description("Graphics module initialization failed!")]
+        Graphics
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     class TransformComponent
     {
@@ -25,10 +39,53 @@ namespace MooncastleEditor.EngineAPIStructs
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    class GeometryComponent : IDisposable
+    {
+        public IdType GeometryContentId = ID.invalidId;
+        public int MaterialCount;
+        public IntPtr MaterialIds;
+
+        public GeometryComponent() { }
+
+        public GeometryComponent(Components.Geometry geometry)
+        {
+            GeometryContentId = geometry.ContentId;
+            MaterialCount = geometry.GeometryWithMaterials.LODs.Sum(x => x.Meshes.Count);
+            Debug.Assert(MaterialCount == geometry.MaterialsList.Count);
+
+            byte[] data = null;
+
+            using (var writer = new BinaryWriter(new MemoryStream()))
+            {
+                geometry.MaterialsList.ForEach(mtl => writer.Write(mtl.UploadedAsset.ContentId));
+                writer.Flush();
+                data = (writer.BaseStream as MemoryStream).ToArray();
+            }
+
+            Debug.Assert(data?.Length == geometry.MaterialsList.Count * sizeof(IdType));
+            MaterialIds = Marshal.AllocCoTaskMem(data.Length);
+            Marshal.Copy(data, 0, MaterialIds, data.Length);
+        }
+
+        public void Dispose()
+        {
+            Marshal.FreeCoTaskMem(MaterialIds);
+            MaterialIds = IntPtr.Zero;
+            GC.SuppressFinalize(this);
+        }
+
+        ~GeometryComponent()
+        {
+            Dispose();
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     class GameEntityDescriptor
     {
         public TransformComponent Transform = new();
         public ScriptComponent Script = new();
+        public GeometryComponent Geometry = new();
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -84,6 +141,10 @@ namespace MooncastleEditor.DllWrappers
     static class EngineAPI
     {
         private const string _engineDll = "EngineDll.dll";
+        [DllImport(_engineDll)]
+        public static extern EngineInitError InitializeEngine();
+        [DllImport(_engineDll)]
+        public static extern void ShutdownEngine();
         [DllImport(_engineDll, CharSet = CharSet.Ansi)]
         public static extern int LoadGameCodeDll(string dllPath);
         [DllImport(_engineDll)]
@@ -94,19 +155,31 @@ namespace MooncastleEditor.DllWrappers
         [return: MarshalAs(UnmanagedType.SafeArray)]
         public static extern string[] GetScriptNames();
         [DllImport(_engineDll)]
-        public static extern IdType CreateRenderSurface(IntPtr host, int width, int height);
+        public static extern int CreateRenderSurface(IntPtr host, int width, int height);
         [DllImport(_engineDll)]
-        public static extern void RemoveRenderSurface(IdType surfaceId);
+        public static extern void RemoveRenderSurface(int surfaceId);
         [DllImport(_engineDll)]
-        public static extern void ResizeRenderSurface(IdType surfaceId);
+        public static extern void ResizeRenderSurface(int surfaceId);
         [DllImport(_engineDll)]
-        public static extern IntPtr GetWindowHandle(IdType surfaceId);
+        public static extern IntPtr GetWindowHandle(int surfaceId);
         [DllImport(_engineDll)]
         private static extern IdType CreateResource(IntPtr data, int type);
 
         public static IdType CreateResource(byte[] resourceData, AssetType type)
         {
-            throw new NotImplementedException();
+            IntPtr data = IntPtr.Zero;
+
+            try
+            {
+                data = Marshal.AllocCoTaskMem(resourceData.Length);
+                Marshal.Copy(resourceData, 0, data, resourceData.Length);
+
+                return CreateResource(data, (int)type);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(data);
+            }
         }
 
         [DllImport(_engineDll)]
@@ -237,6 +310,8 @@ namespace MooncastleEditor.DllWrappers
 
         internal static class EntityAPI
         {
+            private static readonly Lock _lock = new();
+
             [DllImport(_engineDll)]
             private static extern IdType CreateGameEntity(GameEntityDescriptor entityDescriptor);
             public static IdType CreateGameEntity(GameEntity entity)
@@ -271,15 +346,31 @@ namespace MooncastleEditor.DllWrappers
                         }
                     }
                 }
+                //Geometry
+                {
+                    var c = entity.GetComponent<Components.Geometry>();
 
-                return CreateGameEntity(descriptor);
+                    if (c != null)
+                    {
+                        Debug.Assert(c.MaterialsList.Count > 0);
+                        descriptor.Geometry = new(c);
+                    }
+                }
+
+                lock (_lock)
+                {
+                    return CreateGameEntity(descriptor);
+                }
             }
 
             [DllImport(_engineDll)]
             private static extern void RemoveGameEntity(IdType entityId);
             public static void RemoveGameEntity(GameEntity entity)
             {
-                RemoveGameEntity(entity.EntityId);
+                lock (_lock)
+                { 
+                    RemoveGameEntity(entity.EntityId);
+                }
             }
         }
     }

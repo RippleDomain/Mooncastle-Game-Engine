@@ -40,7 +40,14 @@ namespace mooncastle::graphics::d3D12::d3DX
 
 		HRESULT hr{ S_OK };
 
-		if (FAILED(hr = D3D12SerializeVersionedRootSignature(&versionedDescription, &signatureBlob, &errorBlob)))
+		ID3D12Device* device{ core::device() };
+		ComPtr<ID3D12DeviceConfiguration1> deviceConfigurations;
+
+		DXCall(hr = device->QueryInterface(IID_PPV_ARGS(&deviceConfigurations)));
+
+		if (FAILED(hr)) return nullptr;
+
+		if (FAILED(hr = deviceConfigurations->SerializeVersionedRootSignature(&versionedDescription, &signatureBlob, &errorBlob)))
 		{
 			DEBUG_OP(const char* errorMsg{ errorBlob ? (const char*)errorBlob->GetBufferPointer() : "" });
 			DEBUG_OP(OutputDebugStringA(errorMsg));
@@ -52,7 +59,7 @@ namespace mooncastle::graphics::d3D12::d3DX
 
 		ID3D12RootSignature* sigature{ nullptr };
 
-		DXCall(hr = core::device()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),signatureBlob->GetBufferSize(), IID_PPV_ARGS(&sigature)));
+		DXCall(hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(),signatureBlob->GetBufferSize(), IID_PPV_ARGS(&sigature)));
 
 		if (FAILED(hr))
 		{

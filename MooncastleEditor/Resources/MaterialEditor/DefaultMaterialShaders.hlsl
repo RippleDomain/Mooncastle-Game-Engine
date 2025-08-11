@@ -266,7 +266,7 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.a2 = roughness * roughness;
     S.NoV = dot(V, S.Normal);
     S.DiffuseColor = S.BaseColor * (1.f - S.Metallic);
-    S.SpecularColor = lerp(0.04f, S.BaseColor, S.Metallic); // AKA F0
+    S.SpecularColor = lerp(0.04f, S.BaseColor, S.Metallic); //AKA F0
     S.SpecularStrength = lerp(1 - min(S.PerceptualRoughness, 0.95f), 1.f, S.Metallic);
 
     return S;
