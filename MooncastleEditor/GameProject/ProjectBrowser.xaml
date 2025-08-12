@@ -118,13 +118,6 @@
             x:Name="browserContent"
             Grid.Row="1"
             Orientation="Horizontal">
-            <!--  DROP SHADOW CAUSES WHOLE PANEL TO BE BLURRED  -->
-            <!--<StackPanel.Effect>
-                <DropShadowEffect
-                    BlurRadius="15"
-                    Opacity="0.6"
-                    ShadowDepth="2" />
-            </StackPanel.Effect>-->
             <local:OpenProjectView x:Name="openProjectView" />
             <local:NewProjectView
                 x:Name="newProjectView"
