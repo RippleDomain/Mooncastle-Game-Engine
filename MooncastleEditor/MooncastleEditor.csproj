@@ -37,16 +37,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\PrimitiveMeshView\chess.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Resource Include="Resources\TextureEditor\ChannelShader.cso" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\PrimitiveMeshView\vilekuna.png" />
-    <Resource Include="Resources\TextureEditor\chess.png" />
+    <Resource Include="Resources\TextureEditor\tiles.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -65,11 +60,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="Resources\TextureEditor\tiles.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Resource Include="resources\materialeditor\DefaultMaterialShaders.hlsl" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Resource Include="Resources\PrimitiveMeshView\CubeCheckermap.png" />
+	  <Resource Include="Resources\PrimitiveMeshView\Checkermap.png" />
+	  <Resource Include="Resources\PrimitiveMeshView\PlaneTexture.png" />
 	</ItemGroup>
 
 </Project>

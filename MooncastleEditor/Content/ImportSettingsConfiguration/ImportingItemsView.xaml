@@ -87,13 +87,13 @@
                         </Grid>
                         <DataTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="assetType" Property="Foreground" Value="{DynamicResource Editor.OrangeBrush}" />
+                                <Setter TargetName="assetType" Property="Foreground" Value="{DynamicResource Editor.FontBrush}" />
                                 <Setter TargetName="itemGrid" Property="Background" Value="Black" />
                             </Trigger>
                             <DataTrigger Binding="{Binding Status}" Value="{x:Static local:ImportStatus.Importing}">
                                 <Setter TargetName="statusText" Property="Text" Value="Importing..." />
-                                <Setter TargetName="statusText" Property="Foreground" Value="{DynamicResource Editor.OrangeBrush}" />
-                                <Setter TargetName="statusBar" Property="Fill" Value="{DynamicResource Editor.OrangeBrush}" />
+                                <Setter TargetName="statusText" Property="Foreground" Value="{DynamicResource Editor.BlueBrush}" />
+                                <Setter TargetName="statusBar" Property="Fill" Value="{DynamicResource Editor.BlueBrush}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Status}" Value="{x:Static local:ImportStatus.Succeeded}">
                                 <Setter TargetName="statusText" Property="Text" Value="Done." />

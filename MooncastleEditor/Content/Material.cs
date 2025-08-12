@@ -705,7 +705,7 @@ class Material : Asset
 
             var bmp = new BitmapImage();
             bmp.BeginInit();
-            bmp.UriSource = new Uri("pack://application:,,,/Resources/TextureEditor/chess.png");
+            bmp.UriSource = new Uri("pack://application:,,,/Resources/TextureEditor/tiles.png");
             bmp.DecodePixelWidth = ContentInfo.IconWidth;
             bmp.EndInit();
             Icon = BitmapHelper.GenerateThumbnail(bmp, ContentInfo.IconWidth, ContentInfo.IconWidth);

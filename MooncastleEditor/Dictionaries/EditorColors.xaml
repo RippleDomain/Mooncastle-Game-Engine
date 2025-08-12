@@ -1,18 +1,18 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Color x:Key="Editor.Window.GrayColor1">#ff1f1f1f</Color>
-    <Color x:Key="Editor.Window.GrayColor2">#ff262626</Color>
-    <Color x:Key="Editor.Window.GrayColor3">#ff313131</Color>
-    <Color x:Key="Editor.Window.GrayColor4">#ff404040</Color>
-    <Color x:Key="Editor.Window.GrayColor5">#ff535353</Color>
-    <Color x:Key="Editor.Window.GrayColor6">#ff6a6a6a</Color>
-    <Color x:Key="Editor.Disabled.FontColor">#ff868686</Color>
-    <Color x:Key="Editor.FontColor">#ffdddddd</Color>
-    <Color x:Key="Editor.RedColor">#ffff5a6a</Color>
-    <Color x:Key="Editor.GreenColor">#ff90ee90</Color>
-    <Color x:Key="Editor.BlueColor">#ff80deff</Color>
-    <Color x:Key="Editor.OrangeColor">#ffffd067</Color>
-    <Color x:Key="Editor.Selected.BackgroundColor">#ff3c67b6</Color>
-    <Color x:Key="Editor.MouseOver.BorderColor">#ff7eb4ea</Color>
+    <Color x:Key="Editor.Window.GrayColor1">#ff141414</Color>
+    <Color x:Key="Editor.Window.GrayColor2">#ff1a1a1a</Color>
+    <Color x:Key="Editor.Window.GrayColor3">#ff252525</Color>
+    <Color x:Key="Editor.Window.GrayColor4">#ff333333</Color>
+    <Color x:Key="Editor.Window.GrayColor5">#ff4a4a4a</Color>
+    <Color x:Key="Editor.Window.GrayColor6">#ff626262</Color>
+    <Color x:Key="Editor.Disabled.FontColor">#ff808080</Color>
+    <Color x:Key="Editor.FontColor">#ffffffff</Color>
+    <Color x:Key="Editor.RedColor">#ffff3347</Color>
+    <Color x:Key="Editor.GreenColor">#ff00ff00</Color>
+    <Color x:Key="Editor.BlueColor">#ff00ccff</Color>
+    <Color x:Key="Editor.OrangeColor">#ffffb300</Color>
+    <Color x:Key="Editor.Selected.BackgroundColor">#ff2f6de8</Color>
+    <Color x:Key="Editor.MouseOver.BorderColor">#ff4db8ff</Color>
 
     <SolidColorBrush x:Key="Editor.Window.GrayBrush1" Color="{StaticResource Editor.Window.GrayColor1}" />
     <SolidColorBrush x:Key="Editor.Window.GrayBrush2" Color="{StaticResource Editor.Window.GrayColor2}" />

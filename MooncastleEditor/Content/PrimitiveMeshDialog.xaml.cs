@@ -120,9 +120,9 @@ namespace MooncastleEditor.Content
         {
             var uris = new List<Uri>
             {
-                new("pack://application:,,,/Resources/PrimitiveMeshView/vilekuna.png"),
+                new("pack://application:,,,/Resources/PrimitiveMeshView/PlaneTexture.png"),
                 new("pack://application:,,,/Resources/PrimitiveMeshView/CubeCheckermap.png"),
-                new("pack://application:,,,/Resources/PrimitiveMeshView/chess.png"),
+                new("pack://application:,,,/Resources/PrimitiveMeshView/Checkermap.png"),
             };
 
             _textures.Clear();
