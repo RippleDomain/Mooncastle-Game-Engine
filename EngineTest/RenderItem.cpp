@@ -231,8 +231,8 @@ void createRenderItems()
 		std::thread{ [] { textureIDs[textureUsage::normal] = loadTexture("..\\..\\x64\\botNormal.texture"); }},*/
 
 		std::thread{ [] { iblBRDFLUTID = loadTexture("..\\..\\x64\\IBL\\brdfLUT.texture"); } },
-		std::thread{ [] { iblDiffuseID = loadTexture("..\\..\\x64\\IBL\\Set1\\diffuse.texture"); } },
-		std::thread{ [] { iblSpecularID = loadTexture("..\\..\\x64\\IBL\\Set1\\specular.texture"); } },
+		std::thread{ [] { iblDiffuseID = loadTexture("..\\..\\x64\\IBL\\Set2\\diffuse.texture"); } },
+		std::thread{ [] { iblSpecularID = loadTexture("..\\..\\x64\\IBL\\Set2\\specular.texture"); } },
 
 		//Models.
 		std::thread{ [] { labModelID = loadModel("..\\..\\x64\\labModel.model"); } },

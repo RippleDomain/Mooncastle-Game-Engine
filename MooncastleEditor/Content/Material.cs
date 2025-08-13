@@ -371,6 +371,7 @@ class AppliedMaterial : Asset
             if (_packedData == null)
             {
                 UnloadShaders();
+
                 return false;
             }
 
@@ -380,6 +381,7 @@ class AppliedMaterial : Asset
             {
                 Debug.Assert(UploadedAsset != null && UploadedAsset.GetContentId(Guid) == UploadedAsset.ContentId);
                 UnloadShaders();
+
                 return true;
             }
 
