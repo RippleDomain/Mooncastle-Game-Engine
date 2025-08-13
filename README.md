@@ -21,6 +21,8 @@ A modern C++ game engine with a WPF-powered editor, a user friendly asset pipeli
 - [Undo/Redo, Logging & Multiselection Support](#undoredo-logging--multiselection-support)
 - [Testing](#testing)
 - [Roadmap](#roadmap)
+- [PBR Examples](#pbr-examples)
+- [Editor Images](#editor-images)
 
 ---
 
@@ -48,13 +50,14 @@ Mooncastle is a hands-on engine + editor that emphasizes:
 
 ---
 
-## Rendering
+## Rendering 
 
 - **DX12 Core:** Device/adapter setup, swap chain, command queues/lists, fences, descriptor heap allocator.
 - **Pipelines:** Helpers for root signatures/PSOs, **G-Pass** and **depth pre-pass**.
 - **Resources:** D3D12 texture class, render/depth textures, vertex/index/constant buffers, correct barriers.
 - **Camera:** API-independent camera with a DX12 path, fully tested.
 - **Foundations for Forward+:** Clustering/tiling groundwork and debug-ready layout.
+- To see some example rendered scenes and models, click [here](#pbr-examples).
 
 ---
 
@@ -118,6 +121,7 @@ Mooncastle is a hands-on engine + editor that emphasizes:
 - **Property & Component Views:** vector and transform editors; bug-fixed component panels.
 - **Scene Tools:** multi-select & batch edit, entity renaming, add/remove scenes, camera controls in 3D previews.
 - **Hotkeys:** undo/redo, save, and common authoring operations.
+- To see the screenshots from the editor and its features, click [here](#editor-images).
 
 ---
 
@@ -161,6 +165,53 @@ Mooncastle is a hands-on engine + editor that emphasizes:
 
 ---
 
-## Screenshots / Demos
+## PBR Examples
 
-_coming soon_
+- Below, you see 12 spheres with different metalness and roughness values. The top row consist of non-metals and the bottom row consist of metals. Each row is displayed with varying roughness values that alter their reflectiveness.
+
+<img width="1917" height="1049" alt="spheres_pbr" src="https://github.com/user-attachments/assets/4b289eb2-a1ad-46aa-8a71-b1c133987036" />
+
+- And here are 2 different sword models that are rendered using PBR. Note that emissive textures that are present in the first one are also supported.
+
+https://github.com/user-attachments/assets/50f80ff2-aa01-4a26-9e95-707d37e76655
+
+https://github.com/user-attachments/assets/6eedbe18-25b7-4c8e-91eb-990689615d72
+
+## Editor Images
+
+- Below is the project browser of the editor. It includes checks for invalid names.
+  
+<img width="1000" height="751" alt="editor_startup" src="https://github.com/user-attachments/assets/1d7821d4-b1e6-4403-8d4a-914460b2c772" />
+
+- Here is the editor itself. To the bottom left, you see the events that happen being displayed.
+- In the bottom middle, our logger that has message filtering feature is displayed.
+- To the right of that, we can see our content browser, that can switch between tile and grid views, and updates at runtime according to changes in its directory.
+- To the bottom right, we can see the information of the game entity that is selected. Note the geometry and transform values of the entity being displayed.
+- From the top right, you can add scenes, game entities, and change between them.
+- The blue windows are empty hosted windows for now. They will be replaced by the real renderer when the renderer and the editor will be combined very soon.
+
+  <img width="1919" height="1079" alt="editor" src="https://github.com/user-attachments/assets/607449ca-7ca5-4bf0-84b6-61cea1cbd6a7" />
+
+- Below, you see the import configurations window. You are able to choose between block compression formats of the textures you import, and you can create 2D and 3D texture arrays, and you are also able to import cubemaps.
+
+<img width="1598" height="998" alt="import_view" src="https://github.com/user-attachments/assets/27d56007-d78a-4e1d-9141-5e7f1b5dbe4a" />
+
+- Below is the imported texture view. You can reimport textures with different settings. The examples below also include a prefiltered cubemap being displayed in diffuse and specular formats.
+
+<img width="1441" height="786" alt="texture_view" src="https://github.com/user-attachments/assets/b1b52ca2-0ee1-4398-a6e1-37340bfcb10b" />
+
+<img width="1440" height="785" alt="specular_view" src="https://github.com/user-attachments/assets/cf072fdd-524d-48b7-be9b-0188609affff" />
+
+<img width="1439" height="781" alt="diffuse_view" src="https://github.com/user-attachments/assets/a2d012ff-bb3e-499c-9525-8c7bd27d827c" />
+
+- Lastly, here are the primitive meshes we can generate from the editor.
+
+<img width="1000" height="751" alt="primitive_plane" src="https://github.com/user-attachments/assets/541a49f4-16b8-4471-b3a5-26e8d6c5c059" />
+
+<img width="999" height="748" alt="primitive_uv_sphere" src="https://github.com/user-attachments/assets/276a9520-f0cd-45d5-b2d4-80bbf85241d5" />
+
+<img width="997" height="745" alt="primitive_cube" src="https://github.com/user-attachments/assets/a8e51f9d-00ee-409b-be41-109bdad27880" />
+
+## Final Notes
+
+- This engine was has taken inspiration from the Game Engine Series by Arash Khatami during its development.
