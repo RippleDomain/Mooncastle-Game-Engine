@@ -18,16 +18,13 @@ public partial class GameEntityView : UserControl
 {
     private Action _undoAction;
     private string _propertyName;
-
     public static GameEntityView Instance { get; private set; }
-
     public GameEntityView()
     {
         InitializeComponent();
         DataContext = null;
         Instance = this;
-
-        DataContextChanged += (_, __) =>
+        DataContextChanged += (_, _) =>
         {
             if (DataContext != null)
             {
@@ -48,7 +45,7 @@ public partial class GameEntityView : UserControl
         });
     }
 
-    private Action GetEnableAction()
+    private Action GetIsEnabledAction()
     {
         var vm = DataContext as MSEntity;
         var selection = vm.SelectedEntities.Select(entity => (entity, entity.IsEnabled)).ToList();
@@ -71,9 +68,7 @@ public partial class GameEntityView : UserControl
         if (_propertyName == nameof(MSEntity.Name) && _undoAction != null)
         {
             var redoAction = GetRenameAction();
-
-            Project.UndoRedo.Add(new UndoRedoAction(_undoAction, redoAction, "Rename game entity."));
-
+            Project.UndoRedo.Add(new UndoRedoAction(_undoAction, redoAction, "Rename game entity"));
             _propertyName = null;
         }
 
@@ -82,23 +77,19 @@ public partial class GameEntityView : UserControl
 
     private void OnIsEnabled_CheckBox_Click(object sender, RoutedEventArgs e)
     {
-        var undoAction = GetEnableAction();
-
+        var undoAction = GetIsEnabledAction();
         var vm = DataContext as MSEntity;
         vm.IsEnabled = (sender as CheckBox).IsChecked == true;
+        var redoAction = GetIsEnabledAction();
 
-        var redoAction = GetEnableAction();
-
-        Project.UndoRedo.Add(new UndoRedoAction(undoAction, redoAction, vm.IsEnabled == true ? "Enable game entity." : "Disable game entity."));
+        Project.UndoRedo.Add(new UndoRedoAction(undoAction, redoAction, vm.IsEnabled == true ? "Enable game entity" : "Disable game entity"));
     }
 
     private void OnAddComponent_Button_PreviewMouse_LBD(object sender, MouseButtonEventArgs e)
     {
         var menu = FindResource("addComponentMenu") as ContextMenu;
         var btn = sender as ToggleButton;
-
         btn.IsChecked = true;
-
         menu.Placement = PlacementMode.Bottom;
         menu.PlacementTarget = btn;
         menu.MinWidth = btn.ActualWidth + 5.0;
@@ -108,7 +99,7 @@ public partial class GameEntityView : UserControl
     private void AddComponent(ComponentType componentType, object data)
     {
         var creationFunction = ComponentFactory.GetCreationFunction(componentType);
-        var changedEntities = new List<(GameEntity entity, Component component)>();
+        var changdedEntities = new List<(GameEntity entity, Component component)>();
         var vm = DataContext as MSEntity;
 
         foreach (var entity in vm.SelectedEntities)
@@ -117,27 +108,26 @@ public partial class GameEntityView : UserControl
 
             if (entity.AddComponent(component))
             {
-                changedEntities.Add((entity, component));
+                changdedEntities.Add((entity, component));
             }
         }
 
-        if (changedEntities.Any())
+        if (changdedEntities.Any())
         {
             vm.Refresh();
 
             Project.UndoRedo.Add(new UndoRedoAction(
-                () =>
-                {
-                    changedEntities.ForEach(x => x.entity.RemoveComponent(x.component));
-                    (DataContext as MSEntity).Refresh();
-                },
-                () =>
-                {
-                    changedEntities.ForEach(x => x.entity.AddComponent(x.component));
-                    (DataContext as MSEntity).Refresh();
-                },
-                $"Add {componentType} component")
-            );
+            () =>
+            {
+                changdedEntities.ForEach(x => x.entity.RemoveComponent(x.component));
+                (DataContext as MSEntity).Refresh();
+            },
+            () =>
+            {
+                changdedEntities.ForEach(x => x.entity.AddComponent(x.component));
+                (DataContext as MSEntity).Refresh();
+            },
+            $"Add {componentType} component"));
         }
     }
 

@@ -19,7 +19,6 @@ class MeshWithMaterial : ViewModelBase
             if (_material != value && value != null)
             {
                 Debug.Assert(ID.isValid(value.UploadedAsset?.ContentId ?? ID.invalidId));
-
                 _material?.UnloadFromEngine();
                 _material = value;
                 OnPropertyChanged(nameof(Material));
@@ -30,7 +29,6 @@ class MeshWithMaterial : ViewModelBase
     public MeshWithMaterial(MeshInfo mesh, AppliedMaterial material)
     {
         Debug.Assert(mesh != null && material != null);
-
         MeshInfo = mesh;
         Material = material;
     }
@@ -82,9 +80,7 @@ class Geometry : Component
     {
         var appliedMtl = new AppliedMaterial(material);
         appliedMtl.UploadToEngine();
-
         Debug.Assert(appliedMtl.UploadedAsset != null);
-
         return appliedMtl;
     }
 
@@ -98,7 +94,6 @@ class Geometry : Component
         if (_geometry?.Metadata is GeometryMetadata metadata && ID.isValid(_geometry.ContentId))
         {
             var index = 0;
-
             GeometryWithMaterials = new(metadata.Name, _geometry.AssetInfo.Icon, [.. metadata.LODs
                 .Select(lod => new LodWithMaterials(lod.Name, lod.Threshold, [.. lod.Meshes
                 .Select(mesh => new MeshWithMaterial(mesh,
@@ -112,9 +107,7 @@ class Geometry : Component
     {
         Debug.Assert(_geometry == null && GeometryWithMaterials == null);
         Debug.Assert(GeometryGuid != Guid.Empty);
-
         var assetInfo = AssetRegistry.GetAssetInfo(GeometryGuid) ?? DefaultAssets.DefaultGeometry;
-
         Debug.Assert(assetInfo?.Type == AssetType.Mesh);
         Debug.Assert(assetInfo?.Guid == GeometryGuid);
 
@@ -144,14 +137,14 @@ class Geometry : Component
     {
         if (_geometry?.AssetInfo.Guid != guid)
         {
-            Owner.IsActive = false; //Removes the game entity and destroy the geometry assets in engine.
+            Owner.IsActive = false;
             GeometryGuid = guid;
-            _materials.Clear();     //Uses default materials for the new geometry.
-            Owner.IsActive = true;  //Creates a new game entity with the new geometry.
+            _materials.Clear();
+            Owner.IsActive = true;
         }
     }
 
-    public override IMSComponent GetMultiSelectionComponent(MSEntity msEntity) => new MSGeometry(msEntity);
+    public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSGeometry(msEntity);
 
     public override void WriteToBinary(BinaryWriter bw) => throw new NotImplementedException();
 
@@ -194,9 +187,9 @@ sealed class MSGeometry : MSComponent<Geometry>
         Refresh();
     }
 
-    protected override bool UpdateSelectedComponents(string propertyName) => false;
+    protected override bool UpdateComponents(string propertyName) => false;
 
-    protected override bool UpdateMSComponents()
+    protected override bool UpdateMSComponent()
     {
         var contentId = MSEntity.GetMixedValue(SelectedComponents, new Func<Geometry, IdType>(x => x.ContentId));
         GeometryWithMaterials = contentId.HasValue ? SelectedComponents.First().GeometryWithMaterials : null;

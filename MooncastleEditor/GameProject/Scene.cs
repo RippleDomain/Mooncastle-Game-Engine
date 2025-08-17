@@ -10,20 +10,16 @@ namespace MooncastleEditor.GameProject
     [DataContract]
     class Scene : ViewModelBase
     {
-        private string name;
-
+        private string _name;
         [DataMember]
         public string Name
         {
-            get 
-            {
-                return name;
-            }
+            get => _name;
             set
             {
-                if (name != value)
+                if (_name != value)
                 {
-                    name = value;
+                    _name = value;
                     OnPropertyChanged(nameof(Name));
                 }
             }
@@ -36,10 +32,7 @@ namespace MooncastleEditor.GameProject
         [DataMember]
         public bool IsOnScreen
         {
-            get
-            {
-                return _isOnScreen;
-            }
+            get => _isOnScreen;
             set
             {
                 if (_isOnScreen != value)
@@ -61,7 +54,6 @@ namespace MooncastleEditor.GameProject
         {
             Debug.Assert(!_gameEntities.Contains(entity));
             entity.IsActive = IsOnScreen;
-
             if (index == -1)
             {
                 _gameEntities.Add(entity);
@@ -71,6 +63,7 @@ namespace MooncastleEditor.GameProject
                 _gameEntities.Insert(index, entity);
             }
         }
+
         private void RemoveGameEntity(GameEntity entity)
         {
             Debug.Assert(_gameEntities.Contains(entity));
@@ -86,7 +79,6 @@ namespace MooncastleEditor.GameProject
                 GameEntities = new ReadOnlyObservableCollection<GameEntity>(_gameEntities);
                 OnPropertyChanged(nameof(GameEntities));
             }
-
             foreach (var entity in _gameEntities)
             {
                 entity.IsActive = IsOnScreen;
@@ -95,7 +87,6 @@ namespace MooncastleEditor.GameProject
             AddGameEntityCommand = new RelayCommand<GameEntity>(x =>
             {
                 AddGameEntity(x);
-
                 var entityIndex = _gameEntities.Count - 1;
 
                 Project.UndoRedo.Add(new UndoRedoAction(
@@ -116,13 +107,11 @@ namespace MooncastleEditor.GameProject
             });
         }
 
-        public Scene(string name, Project project)
+        public Scene(Project project, string name)
         {
             Debug.Assert(project != null);
-
             Project = project;
             Name = name;
-
             OnDeserialized(new StreamingContext());
         }
     }

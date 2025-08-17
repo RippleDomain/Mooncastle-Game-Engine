@@ -347,36 +347,29 @@
     </Style>
 
     <Style x:Key="DropBorderStyle" TargetType="{x:Type Border}">
-        <Setter Property="BorderBrush" Value="{DynamicResource Editor.Window.GrayBrush6}" />
-        <Setter Property="AllowDrop" Value="True" />
+        <Setter Property="Width" Value="64" />
+        <Setter Property="Height" Value="64" />
         <Setter Property="CornerRadius" Value="5" />
         <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="Width" Value="{StaticResource AssetIconWidth}" />
-        <Setter Property="Height" Value="{StaticResource AssetIconWidth}" />
-        <Setter Property="ClipToBounds" Value="True" />
-        <Setter Property="Tag" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Editor.Window.GrayBrush6}" />
+        <Setter Property="AllowDrop" Value="True" />
         <Setter Property="Effect">
             <Setter.Value>
                 <DropShadowEffect
-                    BlurRadius="0"
+                    BlurRadius="18"
+                    Opacity="0"
                     ShadowDepth="0"
-                    Color="{DynamicResource Editor.GreenColor}">
-                    <DropShadowEffect.Opacity>
-                        <Binding Path="Tag" RelativeSource="{RelativeSource AncestorType=Border}" />
-                    </DropShadowEffect.Opacity>
-                </DropShadowEffect>
+                    Color="{DynamicResource Editor.BlueColor}" />
             </Setter.Value>
         </Setter>
+
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource Editor.MouseOver.BorderBrush}" />
-            </Trigger>
             <EventTrigger RoutedEvent="PreviewDragEnter">
                 <BeginStoryboard x:Name="DropBorder_DragEnter_BS">
                     <Storyboard>
                         <DoubleAnimation
                             FillBehavior="HoldEnd"
-                            Storyboard.TargetProperty="Tag"
+                            Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                             To="1"
                             Duration="0:0:0.25" />
                     </Storyboard>
@@ -387,7 +380,7 @@
                     <Storyboard>
                         <DoubleAnimation
                             FillBehavior="HoldEnd"
-                            Storyboard.TargetProperty="Tag"
+                            Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                             To="0"
                             Duration="0:0:0.25" />
                     </Storyboard>
@@ -398,7 +391,7 @@
                     <Storyboard>
                         <DoubleAnimation
                             FillBehavior="Stop"
-                            Storyboard.TargetProperty="Tag"
+                            Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                             To="0"
                             Duration="0:0:0.15" />
                     </Storyboard>

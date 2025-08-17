@@ -14,7 +14,7 @@
 using namespace mooncastle;
 using namespace Microsoft::WRL;
 
-// Assert that COM call to D3D API succeeded
+//Assert that COM call to D3D API succeeded
 #ifdef _DEBUG
 #ifndef DXCall
 #define DXCall(x)                                           \

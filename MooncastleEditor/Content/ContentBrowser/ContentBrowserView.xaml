@@ -2,15 +2,18 @@
     x:Class="MooncastleEditor.Content.ContentBrowserView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:MooncastleEditor.Utilities.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MooncastleEditor.Content"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:utl="clr-namespace:MooncastleEditor.Utilities"
+    d:DataContext="{d:DesignInstance Type=local:ContentBrowserView}"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <utl:DataSizeToStringConverter x:Key="dataSizeToStringConverter" />
+        <local:DataSizeToStringConverter x:Key="dataSizeToStringConverter" />
+        <local:ImageToRectConverter x:Key="imageToRectConverter" />
+
         <Style x:Key="SmallIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding IconSmall}" />
             <Style.Triggers>
@@ -19,20 +22,25 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
         <Style x:Key="LargeIconStyle" TargetType="{x:Type Image}">
             <Setter Property="Source" Value="{Binding Icon}" />
+            <Setter Property="Width" Value="{StaticResource AssetIconWidth}" />
+            <Setter Property="Height" Value="{StaticResource AssetIconWidth}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsDirectory}" Value="True">
                     <Setter Property="Source" Value="pack://application:,,,/Resources/ContentBrowser/largeFolder.png" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
         <Style x:Key="GridViewColumnHeaderGripper" TargetType="{x:Type Thumb}">
             <Setter Property="Canvas.Right" Value="-9" />
             <Setter Property="Width" Value="18" />
             <Setter Property="Height" Value="{Binding Path=ActualHeight, RelativeSource={RelativeSource TemplatedParent}}" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush4}" />
+            <Setter Property="Background" Value="{StaticResource Editor.Window.GrayBrush4}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
@@ -46,6 +54,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style x:Key="{x:Type GridViewColumnHeader}" TargetType="{x:Type GridViewColumnHeader}">
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -74,7 +83,7 @@
                                     TextTrimming="CharacterEllipsis" />
                             </Border>
                             <Canvas>
-                                <Thumb x:Name="PART_HeaderGripper" Style="{StaticResource GridViewColumnHeaderGripper}" />
+                                <Thumb x:Name="PART_HeaderGripper" Style="{DynamicResource GridViewColumnHeaderGripper}" />
                             </Canvas>
                         </Grid>
                         <ControlTemplate.Triggers>
@@ -132,7 +141,8 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="{x:Type ListViewItem}">
+
+        <Style TargetType="{x:Type controls:ListViewItemEx}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Foreground" Value="{DynamicResource Editor.FontBrush}" />
             <Setter Property="Background" Value="Transparent" />
@@ -143,7 +153,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                    <ControlTemplate TargetType="{x:Type controls:ListViewItemEx}">
                         <Border
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -188,6 +198,7 @@
             <EventSetter Event="MouseDoubleClick" Handler="OnContent_Item_MouseDoubleClick" />
             <EventSetter Event="KeyDown" Handler="OnContent_Item_KeyDown" />
         </Style>
+
         <GridView x:Key="gridView">
             <GridViewColumn>
                 <GridViewColumn.Header>
@@ -222,17 +233,15 @@
             </GridViewColumn>
             <GridViewColumn>
                 <GridViewColumn.Header>
-                    <GridViewColumnHeader Content="Date Modified" Tag="DateModified" />
+                    <GridViewColumnHeader Content="Date modified" Tag="DateModified" />
                 </GridViewColumn.Header>
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
-                        <DockPanel>
-                            <TextBlock
-                                Margin="5,2,0,2"
-                                VerticalAlignment="Center"
-                                Text="{Binding DateModified, StringFormat=dd-MMM-yy HH:mm:ss}"
-                                TextTrimming="CharacterEllipsis" />
-                        </DockPanel>
+                        <TextBlock
+                            Margin="5,2,0,2"
+                            VerticalAlignment="Center"
+                            Text="{Binding DateModified, StringFormat=dd-MMM-yy HH:mm:ss}"
+                            TextTrimming="CharacterEllipsis" />
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
@@ -242,17 +251,18 @@
                 </GridViewColumn.Header>
             </GridViewColumn>
         </GridView>
+
         <DataTemplate x:Key="tileTemplate">
-            <StackPanel
-                Width="96"
-                Margin="-4,0,0,0"
-                HorizontalAlignment="Center">
+            <StackPanel Width="{StaticResource AssetIconWidth}" HorizontalAlignment="Center">
                 <Border MinHeight="{StaticResource AssetIconWidth}">
-                    <Image
-                        Width="{StaticResource AssetIconWidth}"
-                        Height="{StaticResource AssetIconWidth}"
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource LargeIconStyle}" />
+                    <Image Style="{StaticResource LargeIconStyle}">
+                        <Image.Clip>
+                            <RectangleGeometry
+                                RadiusX="5"
+                                RadiusY="5"
+                                Rect="{Binding Child, RelativeSource={RelativeSource AncestorType={x:Type Border}}, Converter={StaticResource imageToRectConverter}}" />
+                        </Image.Clip>
+                    </Image>
                 </Border>
                 <Grid>
                     <TextBlock
@@ -277,19 +287,21 @@
                 </Grid>
             </StackPanel>
         </DataTemplate>
+
         <local:PlainView x:Key="tileView" ItemTemplate="{StaticResource tileTemplate}">
             <local:PlainView.ItemContainerStyle>
-                <Style BasedOn="{StaticResource ListBoxItemStyle}" TargetType="{x:Type ListBoxItem}">
+                <Style BasedOn="{StaticResource ListBoxItemStyle}" TargetType="{x:Type controls:ListViewItemEx}">
+                    <Setter Property="Padding" Value="2" />
                     <EventSetter Event="MouseDoubleClick" Handler="OnContent_Item_MouseDoubleClick" />
                     <EventSetter Event="KeyDown" Handler="OnContent_Item_KeyDown" />
                 </Style>
             </local:PlainView.ItemContainerStyle>
         </local:PlainView>
+
         <Style
             x:Key="ListViewToggleButtonStyle"
             BasedOn="{StaticResource MooncastleButtonStyle}"
             TargetType="{x:Type ToggleButton}">
-            <Setter Property="Focusable" Value="False" />
             <Setter Property="Content">
                 <Setter.Value>
                     <Image
@@ -299,6 +311,7 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="ToolTip" Value="Toggle list view" />
+
             <Style.Triggers>
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Content">
@@ -313,6 +326,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
         <ContextMenu x:Key="contextMenu">
             <MenuItem Header="New">
                 <MenuItem Click="OnCreateNewFolder" Header="Folder" />
@@ -322,20 +336,22 @@
             </MenuItem>
         </ContextMenu>
     </UserControl.Resources>
+
     <Grid Background="{DynamicResource Editor.Window.GrayBrush2}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <ListView
+
+        <controls:ListViewEx
             x:Name="folderListView"
             Grid.Row="1"
             ContextMenu="{StaticResource contextMenu}"
             IsTextSearchEnabled="True"
             ItemsSource="{Binding FolderContent}"
             TextSearch.TextPath="FileName">
-            <ListView.Style>
-                <Style TargetType="{x:Type ListView}">
+            <controls:ListViewEx.Style>
+                <Style TargetType="{x:Type controls:ListViewEx}">
                     <Setter Property="Background" Value="{DynamicResource Editor.Window.GrayBrush2}" />
                     <Setter Property="ListBox.BorderThickness" Value="0" />
                     <Setter Property="AllowDrop" Value="{Binding Path=AllowImport, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
@@ -343,14 +359,18 @@
                     <Setter Property="SelectionMode" Value="{Binding Path=SelectionMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:ContentBrowserView}}}" />
                     <EventSetter Event="DragEnter" Handler="OnFolderContent_ListView_DragEnter" />
                     <EventSetter Event="SelectionChanged" Handler="OnFolderContent_ListView_SelectionChanged" />
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnFolderContent_ListView_PreviewMouse_LBD" />
+                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="OnFolderContent_ListView_PreviewMouse_LBU" />
+                    <EventSetter Event="MouseMove" Handler="OnFolderContent_ListView_MouseMove" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=IsChecked, ElementName=listViewToggle}" Value="False">
                             <Setter Property="View" Value="{StaticResource tileView}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.Style>
-        </ListView>
+            </controls:ListViewEx.Style>
+        </controls:ListViewEx>
+
         <Border
             x:Name="dropBorder"
             Grid.Row="1"
@@ -377,7 +397,7 @@
                 </Grid>
                 <Border
                     Background="#66000000"
-                    BorderBrush="{StaticResource Editor.FontBrush}"
+                    BorderBrush="{DynamicResource Editor.BlueBrush}"
                     BorderThickness="2"
                     CornerRadius="50"
                     IsHitTestVisible="False"
@@ -387,7 +407,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Background="#cc000000"
-                        BorderBrush="{StaticResource Editor.FontBrush}"
+                        BorderBrush="{DynamicResource Editor.BlueBrush}"
                         BorderThickness="2"
                         CornerRadius="20">
                         <StackPanel>
@@ -433,7 +453,7 @@
                                 Storyboard.TargetName="filesBorder"
                                 Storyboard.TargetProperty="Background.Color"
                                 From="Transparent"
-                                To="{StaticResource Editor.Selected.BackgroundColor}"
+                                To="{StaticResource Editor.BlueColor}"
                                 Duration="0:0:0.2" />
                             <DoubleAnimation
                                 Storyboard.TargetName="filesBorder"
@@ -456,7 +476,7 @@
                             <ColorAnimation
                                 Storyboard.TargetName="filesBorder"
                                 Storyboard.TargetProperty="Background.Color"
-                                From="{StaticResource Editor.Selected.BackgroundColor}"
+                                From="{StaticResource Editor.BlueColor}"
                                 To="Transparent"
                                 Duration="0:0:0.2" />
                             <DoubleAnimation
@@ -481,7 +501,7 @@
                                 Storyboard.TargetName="cfgBorder"
                                 Storyboard.TargetProperty="Background.Color"
                                 From="Transparent"
-                                To="{StaticResource Editor.Selected.BackgroundColor}"
+                                To="{StaticResource Editor.BlueColor}"
                                 Duration="0:0:0.2" />
                             <DoubleAnimation
                                 Storyboard.TargetName="cfgBorder"
@@ -504,7 +524,7 @@
                             <ColorAnimation
                                 Storyboard.TargetName="cfgBorder"
                                 Storyboard.TargetProperty="Background.Color"
-                                From="{StaticResource Editor.Selected.BackgroundColor}"
+                                From="{StaticResource Editor.BlueColor}"
                                 To="Transparent"
                                 Duration="0:0:0.2" />
                             <DoubleAnimation
@@ -524,6 +544,7 @@
                 </EventTrigger>
             </Border.Triggers>
         </Border>
+
         <Border VerticalAlignment="Top" Background="{DynamicResource Editor.Window.GrayBrush3}">
             <Border.Effect>
                 <DropShadowEffect
@@ -537,6 +558,7 @@
                         Margin="5,0"
                         DockPanel.Dock="Right"
                         Orientation="Horizontal">
+
                         <Button
                             Margin="0,0,5,0"
                             Padding="2"
@@ -593,7 +615,7 @@
                                                 BorderBrush="Transparent"
                                                 BorderThickness="0"
                                                 CornerRadius="1"
-                                                SnapsToDevicePixels="True" />
+                                                SnapsToDevicePixels="true" />
                                             <ContentPresenter
                                                 x:Name="contentPresenter"
                                                 Margin="{TemplateBinding Padding}"
@@ -603,6 +625,7 @@
                                                 RecognizesAccessKey="True"
                                                 SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                         </Grid>
+
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="true">
                                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="White" />
@@ -620,6 +643,7 @@
                             </Setter>
                             <EventSetter Event="Click" Handler="OnPathStack_Button_Click" />
                         </Style>
+
                         <Style x:Key="{x:Type Path}" TargetType="{x:Type Path}">
                             <Setter Property="Margin" Value="0,3,0,0" />
                             <Setter Property="Data" Value="M0,0 L1.5,0 L4.5,3 L1.5,6 L0,6 L3,3 z" />
@@ -629,7 +653,7 @@
                         </Style>
                     </StackPanel.Resources>
                     <Image
-                        Width="18"
+                        Width="24"
                         Margin="5,0,0,2"
                         Source="pack://application:,,,/Resources/ContentBrowser/folder.png" />
                 </StackPanel>

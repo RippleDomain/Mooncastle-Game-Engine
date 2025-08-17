@@ -12,9 +12,9 @@ namespace
 {
 	struct transformComponent
 	{
-		f32 position[3];  // x, y, z
-		f32 rotation[3];  // x, y, z
-		f32 scale[3];     // x, y, z
+		f32 position[3];  //x, y, z
+		f32 rotation[3];  //x, y, z
+		f32 scale[3];     //x, y, z
 
 		transform::initInfo toInitInfo()
 		{

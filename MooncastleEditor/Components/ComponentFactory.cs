@@ -7,23 +7,22 @@ enum ComponentType
 {
     Transform,
     Script,
-    Geometry
+    Geometry,
 }
 
 static class ComponentFactory
 {
-    private static readonly Func<GameEntity, object, Component>[] _function =
-    [
-        (entity, data) => new Transform(entity),
-        (entity, data) => new Script(entity) { Name = (string)data },
-        (entity, data) => new Geometry(entity, (AssetInfo)data)
-    ];
+    private static readonly Func<GameEntity, object, Component>[] _functions =
+        [
+            (entity, data) => new Transform(entity),
+            (entity, data) => new Script(entity){ Name = (string)data},
+            (entity, data) => new Geometry(entity, (AssetInfo)data),
+        ];
 
     public static Func<GameEntity, object, Component> GetCreationFunction(ComponentType componentType)
     {
-        Debug.Assert((int)componentType < _function.Length);
-
-        return _function[(int)componentType];
+        Debug.Assert((int)componentType < _functions.Length);
+        return _functions[(int)componentType];
     }
 
     public static ComponentType ToEnumType(this Component component)

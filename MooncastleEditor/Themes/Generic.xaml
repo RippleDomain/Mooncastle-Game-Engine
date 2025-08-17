@@ -1,12 +1,13 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:content="clr-namespace:MooncastleEditor.Content">
+    xmlns:content="clr-namespace:MooncastleEditor.Content"
+    xmlns:controls="clr-namespace:MooncastleEditor.Utilities.Controls">
     <Style
         x:Key="{ComponentResourceKey TypeInTargetAssembly={x:Type content:PlainView},
                                      ResourceId=PlainViewResourceId}"
         BasedOn="{StaticResource {x:Type ListBox}}"
-        TargetType="{x:Type ListView}">
+        TargetType="{x:Type controls:ListViewEx}">
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="ItemContainerStyle" Value="{Binding (ListView.View).ItemContainerStyle, RelativeSource={RelativeSource Self}}" />
         <Setter Property="ItemTemplate" Value="{Binding (ListView.View).ItemTemplate, RelativeSource={RelativeSource Self}}" />

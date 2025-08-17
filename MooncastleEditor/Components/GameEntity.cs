@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio.OLE.Interop;
-using MooncastleEditor.DllWrappers;
+﻿using MooncastleEditor.DllWrappers;
 using MooncastleEditor.GameProject;
 using MooncastleEditor.Utilities;
 using System.Collections.ObjectModel;
@@ -37,12 +36,11 @@ namespace MooncastleEditor.Components
                 if (_isActive != value)
                 {
                     _isActive = value;
-
-                    if (_isActive == true)
+                    if (_isActive)
                     {
                         _components.ToList().ForEach(x => x.Load());
                         EntityId = EngineAPI.EntityAPI.CreateGameEntity(this);
-                        Debug.Assert(ID.isValid(EntityId));
+                        Debug.Assert(ID.isValid(_entityId));
                     }
                     else if (ID.isValid(EntityId))
                     {
@@ -56,8 +54,8 @@ namespace MooncastleEditor.Components
             }
         }
 
-        [DataMember]
         private bool _isEnabled = true;
+        [DataMember]
         public bool IsEnabled
         {
             get => _isEnabled;
@@ -99,30 +97,22 @@ namespace MooncastleEditor.Components
         public bool AddComponent(Component component)
         {
             Debug.Assert(component != null);
-
             if (!Components.Any(x => x.GetType() == component.GetType()))
             {
-                //An inactive entity should NOT be set to active if a component is added.
                 var wasActive = IsActive;
-
                 IsActive = false;
                 _components.Add(component);
                 IsActive = wasActive;
-
                 return true;
             }
-
             Logger.Log(MessageType.Warning, $"Entity {Name} already has a {component.GetType().Name} component.");
-
             return false;
         }
 
         public void RemoveComponent(Component component)
         {
             Debug.Assert(component != null);
-
             if (component is Transform) return;
-
 
             if (_components.Contains(component))
             {
@@ -153,9 +143,7 @@ namespace MooncastleEditor.Components
 
     abstract class MSEntity : ViewModelBase
     {
-        //Enable to update entities that are selected.
         private bool _enableUpdates = true;
-
         private bool? _isEnabled;
         public bool? IsEnabled
         {
@@ -170,7 +158,7 @@ namespace MooncastleEditor.Components
             }
         }
 
-        private string _name; 
+        private string _name;
         public string Name
         {
             get => _name;
@@ -185,7 +173,7 @@ namespace MooncastleEditor.Components
         }
 
         private readonly ObservableCollection<IMSComponent> _components = [];
-        public ReadOnlyObservableCollection<IMSComponent> Components {get; }
+        public ReadOnlyObservableCollection<IMSComponent> Components { get; }
 
         public T GetMSComponent<T>() where T : IMSComponent
         {
@@ -193,37 +181,22 @@ namespace MooncastleEditor.Components
         }
 
         public List<GameEntity> SelectedEntities { get; }
+
         public static MSEntity CurrentSelection { get; private set; }
-
-        protected virtual bool UpdateGameEntities(string propertyName)
-        {
-            switch (propertyName)
-            {
-                case (nameof(IsEnabled)): SelectedEntities.ForEach(x => x.IsEnabled = IsEnabled.Value); return true;
-                case (nameof(Name)): SelectedEntities.ForEach(x => x.Name = Name); return true;
-            }
-
-            return false;
-        }
 
         private void MakeComponentList()
         {
             _components.Clear();
-
             var firstEntity = SelectedEntities.FirstOrDefault();
-            if (firstEntity == null)
-            {
-                return;
-            }
+            if (firstEntity == null) return;
 
             foreach (var component in firstEntity.Components)
             {
                 var type = component.GetType();
-
                 if (!SelectedEntities.Skip(1).Any(entity => entity.GetComponent(type) == null))
                 {
                     Debug.Assert(Components.FirstOrDefault(x => x.GetType() == type) == null);
-                    _components.Add(component.GetMultiSelectionComponent(this));
+                    _components.Add(component.GetMultiselectionComponent(this));
                 }
             }
         }
@@ -231,32 +204,36 @@ namespace MooncastleEditor.Components
         public static int? GetMixedValue<T>(List<T> objects, Func<T, int> getProperty)
         {
             var value = getProperty(objects.First());
-
             return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
-
 
         public static float? GetMixedValue<T>(List<T> objects, Func<T, float> getProperty)
         {
             var value = getProperty(objects.First());
-
             return objects.Skip(1).Any(x => !getProperty(x).IsTheSameAs(value)) ? null : value;
         }
 
         public static bool? GetMixedValue<T>(List<T> objects, Func<T, bool> getProperty)
         {
             var value = getProperty(objects.First());
-
             return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
 
         public static string GetMixedValue<T>(List<T> objects, Func<T, string> getProperty)
         {
             var value = getProperty(objects.First());
-
             return objects.Skip(1).Any(x => value != getProperty(x)) ? null : value;
         }
 
+        protected virtual bool UpdateGameEntities(string propertyName)
+        {
+            switch (propertyName)
+            {
+                case nameof(IsEnabled): SelectedEntities.ForEach(x => x.IsEnabled = IsEnabled.Value); return true;
+                case nameof(Name): SelectedEntities.ForEach(x => x.Name = Name); return true;
+            }
+            return false;
+        }
 
         protected virtual bool UpdateMSGameEntity()
         {
@@ -269,28 +246,24 @@ namespace MooncastleEditor.Components
         public void Refresh()
         {
             _enableUpdates = false;
-
             UpdateMSGameEntity();
             MakeComponentList();
-
             _enableUpdates = true;
         }
 
         public MSEntity(List<GameEntity> entities)
         {
             Debug.Assert(entities?.Any() == true);
-
             CurrentSelection = this;
             Components = new ReadOnlyObservableCollection<IMSComponent>(_components);
             SelectedEntities = entities;
-            
             PropertyChanged += (s, e) => { if (_enableUpdates) UpdateGameEntities(e.PropertyName); };
         }
     }
 
     class MSGameEntity : MSEntity
     {
-        public MSGameEntity(List<GameEntity> entities) : base (entities)
+        public MSGameEntity(List<GameEntity> entities) : base(entities)
         {
             Refresh();
         }

@@ -18,7 +18,6 @@ static class AssetRegistry
     private static void RegisterAllAssets(string path)
     {
         Debug.Assert(Directory.Exists(path));
-
         foreach (var entry in Directory.GetFileSystemEntries(path))
         {
             if (ContentHelper.IsDirectory(entry))
@@ -45,8 +44,7 @@ static class AssetRegistry
                 info ??= Asset.GetAssetInfo(file);
                 Debug.Assert(info != null);
                 info.RegisterTime = DateTime.Now;
-
-                //Handles the case when the same asset file was imported using a different guid.
+                
                 if (!isNew && _assetsFileDictionary[file].Guid != info.Guid)
                 {
                     _assetsGuidDictionary.Remove(_assetsFileDictionary[file].Guid);
@@ -68,10 +66,7 @@ static class AssetRegistry
                 }
             }
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-        }
+        catch (Exception ex) { Debug.WriteLine(ex.Message); }
     }
 
     private static void UnregisterAsset(string file)
@@ -79,9 +74,8 @@ static class AssetRegistry
         if (_assetsFileDictionary.TryGetValue(file, out var info))
         {
             _assets.Remove(info);
-            _assetsFileDictionary.Remove(file);
+            _assetsFileDictionary.Remove(file); 
 
-            //When a file's renamed, the same GUID will be registered with the new name.
             if (_assetsGuidDictionary.TryGetValue(info.Guid, out var value) && !File.Exists(value.FullPath))
             {
                 _assetsGuidDictionary.Remove(info.Guid);
@@ -170,14 +164,13 @@ static class AssetRegistry
         {
             Debug.WriteLine(ex.Message);
             Logger.Log(MessageType.Warning, "Failed to write Asset Registry cache file.");
-            File.Delete(_cachePath); //If the save operation fails, delete the cache file to eliminate the risk of using the curropted version.
+            File.Delete(_cachePath);
         }
     }
 
-
     private static void OnContentModified(object sender, ContentModifiedEventArgs e)
     {
-        lock(_lock)
+        lock (_lock)
         {
             if (ContentHelper.IsDirectory(e.FullPath))
             {
@@ -197,7 +190,6 @@ static class AssetRegistry
         ContentWatcher.ContentModified -= OnContentModified;
 
         Debug.Assert(!string.IsNullOrEmpty(projectPath) && Directory.Exists(projectPath));
-
         _cachePath = $@"{projectPath}.Mooncastle\AssetInfoCache.bin";
         LoadCacheFile();
 

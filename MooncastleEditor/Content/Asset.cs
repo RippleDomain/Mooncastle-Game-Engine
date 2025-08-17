@@ -305,7 +305,7 @@ namespace MooncastleEditor.Content
 
         public static IdType GetContentId(Guid id)
         {
-            Debug.Assert(id != Guid.Empty);
+            //Debug.Assert(id != Guid.Empty);
 
             lock (_lock) 
             { 

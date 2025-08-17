@@ -576,8 +576,6 @@ namespace mooncastle::tools
                 type = elementTypes::staticColor;
             }
 
-            // TODO: Will expand for skeletal meshes.
-
             return type;
         }
 

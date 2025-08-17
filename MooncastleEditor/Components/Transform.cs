@@ -53,7 +53,7 @@ namespace MooncastleEditor.Components
             }
         }
 
-        public override IMSComponent GetMultiSelectionComponent(MSEntity msEntity) => new MSTransform(msEntity);
+        public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSTransform(msEntity);
 
         public override void WriteToBinary(BinaryWriter bw)
         {
@@ -62,10 +62,7 @@ namespace MooncastleEditor.Components
             bw.Write(_scale.X); bw.Write(_scale.Y); bw.Write(_scale.Z);
         }
 
-        public Transform(GameEntity owner) : base(owner)
-        {
-            
-        }
+        public Transform(GameEntity owner) : base(owner) { }
     }
 
     sealed class MSTransform : MSComponent<Transform>
@@ -83,6 +80,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _posY;
         public float? PosY
         {
@@ -96,6 +94,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _posZ;
         public float? PosZ
         {
@@ -109,6 +108,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _rotX;
         public float? RotX
         {
@@ -122,6 +122,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _rotY;
         public float? RotY
         {
@@ -135,6 +136,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _rotZ;
         public float? RotZ
         {
@@ -148,6 +150,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _scaleX;
         public float? ScaleX
         {
@@ -161,6 +164,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _scaleY;
         public float? ScaleY
         {
@@ -174,6 +178,7 @@ namespace MooncastleEditor.Components
                 }
             }
         }
+
         private float? _scaleZ;
         public float? ScaleZ
         {
@@ -188,42 +193,34 @@ namespace MooncastleEditor.Components
             }
         }
 
-        protected override bool UpdateSelectedComponents(string propertyName)
+
+        protected override bool UpdateComponents(string propertyName)
         {
             switch (propertyName)
             {
                 case nameof(PosX):
                 case nameof(PosY):
                 case nameof(PosZ):
-                    SelectedComponents.ForEach(c => c.Position = new Vector3(
-                        PosX ?? c.Position.X,
-                        PosY ?? c.Position.Y,
-                        PosZ ?? c.Position.Z));
+                    SelectedComponents.ForEach(c => c.Position = new Vector3(_posX ?? c.Position.X, _posY ?? c.Position.Y, _posZ ?? c.Position.Z));
                     return true;
 
                 case nameof(RotX):
                 case nameof(RotY):
                 case nameof(RotZ):
-                    SelectedComponents.ForEach(c => c.Rotation = new Vector3(
-                        RotX ?? c.Rotation.X,
-                        RotY ?? c.Rotation.Y,
-                        RotZ ?? c.Rotation.Z));
+                    SelectedComponents.ForEach(c => c.Rotation = new Vector3(_rotX ?? c.Rotation.X, _rotY ?? c.Rotation.Y, _rotZ ?? c.Rotation.Z));
                     return true;
 
                 case nameof(ScaleX):
                 case nameof(ScaleY):
                 case nameof(ScaleZ):
-                    SelectedComponents.ForEach(c => c.Scale = new Vector3(
-                        ScaleX ?? c.Scale.X,
-                        ScaleY ?? c.Scale.Y,
-                        ScaleZ ?? c.Scale.Z));
+                    SelectedComponents.ForEach(c => c.Scale = new Vector3(_scaleX ?? c.Scale.X, _scaleY ?? c.Scale.Y, _scaleZ ?? c.Scale.Z));
                     return true;
-            }
 
+            }
             return false;
         }
 
-        protected override bool UpdateMSComponents()
+        protected override bool UpdateMSComponent()
         {
             PosX = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Position.X));
             PosY = MSEntity.GetMixedValue(SelectedComponents, new Func<Transform, float>(x => x.Position.Y));

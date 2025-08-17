@@ -22,12 +22,11 @@ namespace MooncastleEditor.Components
             }
         }
 
-        public override IMSComponent GetMultiSelectionComponent(MSEntity msEntity) => new MSScript(msEntity);
+        public override IMSComponent GetMultiselectionComponent(MSEntity msEntity) => new MSScript(msEntity);
 
         public override void WriteToBinary(BinaryWriter bw)
         {
             var nameBytes = Encoding.UTF8.GetBytes(Name);
-
             bw.Write(nameBytes.Length);
             bw.Write(nameBytes);
         }
@@ -51,26 +50,24 @@ namespace MooncastleEditor.Components
             }
         }
 
-        protected override bool UpdateSelectedComponents(string propertyName)
+        protected override bool UpdateComponents(string propertyName)
         {
             if (propertyName == nameof(Name))
             {
                 SelectedComponents.ForEach(c => c.Name = _name);
-
                 return true;
             }
 
             return false;
         }
 
-        protected override bool UpdateMSComponents()
+        protected override bool UpdateMSComponent()
         {
             Name = MSEntity.GetMixedValue(SelectedComponents, new Func<Script, string>(x => x.Name));
-
             return true;
         }
 
-        public MSScript(MSEntity msEntity) : base(msEntity) 
+        public MSScript(MSEntity msEntity) : base(msEntity)
         {
             Refresh();
         }

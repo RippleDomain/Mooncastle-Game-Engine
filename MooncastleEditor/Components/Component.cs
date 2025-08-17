@@ -4,10 +4,7 @@ using System.Runtime.Serialization;
 
 namespace MooncastleEditor.Components
 {
-    interface IMSComponent
-    {
-        
-    }
+    interface IMSComponent { }
 
     [DataContract]
     abstract class Component : ViewModelBase
@@ -15,12 +12,11 @@ namespace MooncastleEditor.Components
         [DataMember]
         public GameEntity Owner { get; private set; }
 
-        public abstract IMSComponent GetMultiSelectionComponent(MSEntity msEntity);
+        public abstract IMSComponent GetMultiselectionComponent(MSEntity msEntity);
+        public abstract void WriteToBinary(BinaryWriter bw);
 
         public virtual void Load() { }
         public virtual void Unload() { }
-
-        public abstract void WriteToBinary(BinaryWriter bw);
 
         public Component(GameEntity owner)
         {
@@ -32,18 +28,15 @@ namespace MooncastleEditor.Components
     abstract class MSComponent<T> : ViewModelBase, IMSComponent where T : Component
     {
         private bool _enableUpdates = true;
-
         public List<T> SelectedComponents { get; }
 
-        protected abstract bool UpdateSelectedComponents(string propertyName);
-        protected abstract bool UpdateMSComponents();
+        protected abstract bool UpdateComponents(string propertyName);
+        protected abstract bool UpdateMSComponent();
 
         public void Refresh()
         {
             _enableUpdates = false;
-
-            UpdateMSComponents();
-
+            UpdateMSComponent();
             _enableUpdates = true;
         }
 
@@ -51,14 +44,7 @@ namespace MooncastleEditor.Components
         {
             Debug.Assert(msEntity?.SelectedEntities?.Any() == true);
             SelectedComponents = [.. msEntity.SelectedEntities.Select(entity => entity.GetComponent<T>())];
-
-            PropertyChanged += (s, e) =>
-            {
-                if (_enableUpdates)
-                {
-                    UpdateSelectedComponents(e.PropertyName);
-                }
-            };
+            PropertyChanged += (s, e) => { if (_enableUpdates) UpdateComponents(e.PropertyName); };
         }
     }
 }

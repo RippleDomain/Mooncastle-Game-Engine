@@ -126,5 +126,10 @@ namespace MooncastleEditor.Dictionaries
             var window = (Window)((FrameworkElement)sender).TemplatedParent;
             window.WindowState = WindowState.Minimized;
         }
+
+        private void DropBorder_PreviewDragEnter(object sender, DragEventArgs e)
+        {
+
+        }
     }
 }
